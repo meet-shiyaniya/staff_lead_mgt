@@ -112,19 +112,25 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
       filteredLeads = results;
     });
   }
-
-  void _updateAppliedFilters(Map<String, dynamic> filters) {
-    setState(() {
-      appliedFilters = filters;
-      filteredId = filters['Id'];
-    });
-  }
-
+  String? filteredPhone;
   void resetFilters() {
     setState(() {
       filteredLeads = List.from(LeadList); // Reset the list to the original
       appliedFilters.clear(); // Clear all applied filters
       filteredId = null; // Clear filtered ID
+      filteredName = null; // Clear filtered Name
+      filteredPhone = null; // Clear filtered Phone
+      filteredStatus.clear(); // Clear filtered Status
+    });
+  }
+
+  void _updateAppliedFilters(Map<String, dynamic> filters) {
+    setState(() {
+      appliedFilters = filters;
+      filteredId = filters['Id'];
+      filteredName = filters['Name'];
+      filteredPhone = filters['Phone'];
+      filteredStatus = List.from(filters['Status'] ?? []);
     });
   }
 
@@ -160,7 +166,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:AppBar(
+      appBar: AppBar(
         title: Text("Dismiss Request", style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -182,6 +188,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
       ),
       body: Column(
         children: [
+          // Applied Filters section
           if (anySelected)
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -219,9 +226,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                         },
                         items: actions.map((action) => DropdownMenuItem(
                           value: action,
-                          child: Text(action,
-                              style: TextStyle(
-                                  fontFamily: "poppins_thin")),
+                          child: Text(action, style: TextStyle(fontFamily: "poppins_thin")),
                         )).toList(),
                       ),
                     ),
@@ -260,9 +265,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                         items: employees
                             .map((employee) => DropdownMenuItem(
                           value: employee,
-                          child: Text(employee,
-                              style: TextStyle(
-                                  fontFamily: "poppins_thin")),
+                          child: Text(employee, style: TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
                       ),
@@ -271,15 +274,12 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                   const SizedBox(height: 8.0),
                   Center(
                     child: SizedBox(
-                      // width: 100, // Limit the width of the button
                       child: GradientButton(
                         buttonText: "Submit",
                         onPressed: () {
                           if (selectedAction == null || selectedEmployee == null) {
-                            // Show dialog to prompt the user to select data
                             showsubmitdialog(context);
                           } else {
-                            // Show confirmation dialog
                             showConfirmationDialog(context);
                             handleAction(selectedAction!, selectedEmployee!);
                           }
@@ -290,35 +290,81 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                 ],
               ),
             ),
+          // Applied Filters UI
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                // Display ID filter if set
+                if (filteredId != null)
+                  FilterChip(
+                    label: Text('ID: $filteredId'),
+                    onDeleted: () {
+                      setState(() {
+                        filteredId = null;
+                        appliedFilters.remove('Id');
+                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                      });
+                    }, onSelected: (bool value) {  },
+                  ),
+
+                // Display Name filter if set
+                if (filteredName != null)
+                  FilterChip(
+                    label: Text('Name: $filteredName'),
+                    onDeleted: () {
+                      setState(() {
+                        filteredName = null;
+                        appliedFilters.remove('Name');
+                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                      });
+                    }, onSelected: (bool value) {  },
+                  ),
+
+                // Display Phone filter if set
+                if (filteredPhone != null)
+                  FilterChip(
+                    label: Text('Phone: $filteredPhone'),
+                    onDeleted: () {
+                      setState(() {
+                        filteredPhone = null;
+                        appliedFilters.remove('Phone');
+                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                      });
+                    }, onSelected: (bool value) {  },
+                  ),
+
+                // Display Status filter if set
+                if (filteredStatus.isNotEmpty)
+                  FilterChip(
+                    label: Text('Status: ${filteredStatus.join(', ')}'),
+                    onDeleted: () {
+                      setState(() {
+                        filteredStatus.clear();
+                        appliedFilters.remove('Status');
+                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                      });
+                    }, onSelected: (bool value) {  },
+                  ),
+
+                Spacer(),
+
+                // "Clear All" button
+                ElevatedButton(
+                  onPressed: resetFilters,
+                  child: Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
 
-    Padding(
-    padding: const EdgeInsets.all(8.0),
-    child: Row(
-    children: [
-    if (filteredId != null)
-    Container(
-    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(8),
-    color: Colors.grey.shade300,
-    ),
-    child: Text('ID: $filteredId', style: TextStyle(fontFamily: 'poppins_thin')),
-    ),
-    Spacer(),
-    ElevatedButton(
-    onPressed: resetFilters,
-    child: Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin')),
-    style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.red,
-    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    ),
-    ],
-    ),
-    ),
-
+          // Display List of Leads or No Results
           Expanded(
             child: filteredLeads.isEmpty
                 ? Column(
@@ -330,91 +376,42 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                 Center(
                   child: Text(
                     "No results found",
-                    style: TextStyle(color: Colors.red, fontSize: 26,fontFamily: "poppins_thin"),
+                    style: TextStyle(color: Colors.red, fontSize: 26, fontFamily: "poppins_thin"),
                   ),
                 ),
               ],
             )
-                : Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          if (filteredId != null)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              color: Colors.blue.shade100,
-                              child: Text('ID: $filteredId'),
-                            ),
-                          if (filteredName != null)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              color: Colors.green.shade100,
-                              child: Text('Name: $filteredName'),
-                            ),
-                          if (filteredMobile != null)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              color: Colors.red.shade100,
-                              child: Text('Mobile: $filteredMobile'),
-                            ),
-                          if (filteredStatus.isNotEmpty)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              color: Colors.yellow.shade100,
-                              child: Text('Status: ${filteredStatus.join(', ')}'),
-                            ),
-                          Spacer(),
-                          ElevatedButton(
-                            onPressed: resetFilters,
-                            child: Text("Clear All"),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ListView.builder(
-                                  itemCount: filteredLeads.length,
-                                  itemBuilder: (context, index) {
-                    return StatefulBuilder(
-                      builder: (context,setState){
-                        return GestureDetector(
-                          onLongPress: () {
-                            toggleSelection(index);
-                          },
-
-                          child: TestCard(
-                            id: filteredLeads[index].id,
-                            name: filteredLeads[index].name,
-                            username: filteredLeads[index].username,
-                            label: filteredLeads[index].label,
-                            followUpDate: filteredLeads[index].followUpDate,
-                            nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                            inquiryType:filteredLeads[index].inquiryType,
-                            phone: filteredLeads[index].phone,
-                            email:filteredLeads[index].email,
-                            source: filteredLeads[index].source,
-                            isSelected: selectedCards[index],
-                            onSelect: () {
-                              toggleSelection(index);
-                            }, callList: ["Followup","Dismissed","Appointment","Negotiation","Feedback","Cnr"],
-                            // selectedTime: selectedTime,
-                            // selectedPurpose: selectedPurpose,
-                            // selectedApx: selectedApx,
-                            // selectedAction: selectedAction,
-                            selectedcallFilter: selectedcallFilter,
-                            // selectedEmployee: selectedEmployee,
-                            data: filteredLeads[index],
-                            isTiming:true,
-                            nextFollowupcontroller: nextFollowupcontroller,
-                          ),
-                        );
-                      },
-                    );
-                                  },
-                                ),
-                  ],
-                ),
+                : ListView.builder(
+              itemCount: filteredLeads.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onLongPress: () {
+                    toggleSelection(index);
+                  },
+                  child: TestCard(
+                    id: filteredLeads[index].id,
+                    name: filteredLeads[index].name,
+                    username: filteredLeads[index].username,
+                    label: filteredLeads[index].label,
+                    followUpDate: filteredLeads[index].followUpDate,
+                    nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+                    inquiryType: filteredLeads[index].inquiryType,
+                    phone: filteredLeads[index].phone,
+                    email: filteredLeads[index].email,
+                    source: filteredLeads[index].source,
+                    isSelected: selectedCards[index],
+                    onSelect: () {
+                      toggleSelection(index);
+                    },
+                    callList: ["Followup", "Dismissed", "Appointment", "Negotiation", "Feedback", "Cnr"],
+                    selectedcallFilter: selectedcallFilter,
+                    data: filteredLeads[index],
+                    isTiming: true,
+                    nextFollowupcontroller: nextFollowupcontroller,
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
