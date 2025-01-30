@@ -83,7 +83,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
                       child: Container(
 
                         height: 40,
-                        width: 174,
+                        width: 164  ,
 
                         decoration: BoxDecoration(
 
@@ -152,7 +152,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
                       child: Container(
 
                         height: 40,
-                        width: 174,
+                        width: 164,
 
                         decoration: BoxDecoration(
 

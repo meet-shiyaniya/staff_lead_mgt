@@ -186,7 +186,8 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                     Container(
 
                                         height: 17,
-                                        width: 100,
+                                        width: 70,
+                                        color: Colors.blue,
 
                                         child: Text(leave.status, style: TextStyle(color: leave.status == "Pending" ? Colors.orange.shade700 : leave.status == "Rejected" ? Colors.red.shade900 : Colors.green.shade900, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
@@ -207,7 +208,8 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                     Container(
 
                                         height: 17,
-                                        width: 100,
+                                        width: 120,
+                                        color: Colors.blue,
 
                                         child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
@@ -227,7 +229,8 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                     Container(
 
                                         height: 17,
-                                        width: 100,
+                                        width: 72,
+                                        color: Colors.blue,
 
                                         child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
