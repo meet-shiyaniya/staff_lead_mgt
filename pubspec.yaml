@@ -93,8 +93,6 @@ flutter:
     - family: poppins_thin
       fonts:
         - asset: fonts/poppins_thin.ttf
-        - asset: fonts/poppins.ttf
-        - asset: fonts/poppins_light.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
     - family: poppins
