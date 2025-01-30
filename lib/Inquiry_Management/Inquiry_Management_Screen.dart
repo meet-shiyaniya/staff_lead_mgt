@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 // import 'package:inquiry_management_ui/Utils/Colors/app_Colors.dart';
 import 'package:lottie/lottie.dart';
@@ -21,6 +22,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    bool isLargeScreen = screenWidth > 600;
 
     return Scaffold(
       // appBar: AppBar(
@@ -67,39 +69,27 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                            height: 120,
-                            width: 120,
-                            decoration: BoxDecoration(
-                              // color: Colors.orangeAccent.shade200,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Lottie.asset('asset/Inquiry_module/inquiry_manage.json',fit: BoxFit.contain,width: 200,height: 200)
+                          height: isLargeScreen ? 150 : 120,
+                          width: isLargeScreen ? 150 : 120,
+                          child: Lottie.asset(
+                            'asset/Inquiry_module/inquiry_manage.json',
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          // crossAxisAlignment: CrossAxisAlignment.center,
-                          children:  [
-
-                            Text(
-                              'Manage Inquiries \nEffortlessly',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontFamily: "poppins_thin",
-                                color: Colors.black,
-                              ),
-                              textAlign: TextAlign.center,
+                        Flexible(
+                          child: AutoSizeText(
+                            'Manage Inquiries \nEffortlessly',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.06,
+                              fontFamily: "poppins_thin",
+                              color: Colors.black,
                             ),
-                            // SizedBox(height: 8),
-                            // Text(
-                            //   'Get \$10 off your first bundle visit',
-                            //   style: TextStyle(
-                            //     fontSize: 14,
-                            //     color: Colors.black54,
-                            //   ),
-                            // ),
-                          ],
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            minFontSize: 10, // Adjust as needed
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-
                       ],
                     ),
                   ),
