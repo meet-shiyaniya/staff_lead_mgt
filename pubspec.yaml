@@ -46,6 +46,10 @@ dependencies:
   google_fonts:
   emoji_picker_flutter:
   rive:
+  lottie: ^3.3.1
+  flutter_animate: ^4.5.2
+  auto_size_text: ^3.0.0
+  dotted_border: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +80,7 @@ flutter:
    - asset/HR Screen Images/Leave/
    - asset/social_module/images/icon/
    - asset/social_module/images/login/
+   - asset/Inquiry_module/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
