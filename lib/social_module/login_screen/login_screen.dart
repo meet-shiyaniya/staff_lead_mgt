@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child:Column(
                     children:[
                       Text("Login Here",style: GoogleFonts.dancingScript(color: Colors.grey,fontSize: 20),),
-                      Image.asset('assets/images/login/newlogin.png', height: 160, width: 160),
+                      Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
                       Text(
                         'Welcome Back! Lets get started.',
                         textAlign: TextAlign.center,

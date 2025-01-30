@@ -248,7 +248,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset("assets/images/icon/whatsapp.png",
+                            Image.asset("asset/social_module/images/icon/whatsapp.png",
                                 height: 20, width: 20),
                             Text("Whatsapp",
                                 style: TextStyle(fontFamily: font_thin)),
@@ -280,7 +280,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset("assets/images/icon/messenger.png",
+                            Image.asset("asset/social_module/images/icon/messenger.png",
                                 height: 20, width: 20),
                             Text("Messenger",
                                 style: TextStyle(fontFamily: font_thin)),

@@ -67,7 +67,7 @@ class _LoginScreenState extends State<RegisterScreen> {
                       child: Column(
                           children:[
                             Text("Register Here",style: GoogleFonts.dancingScript(color: Colors.grey,fontSize: 20),),
-                            Image.asset('assets/images/login/newlogin.png', height: 160, width: 160),
+                            Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
                             Text(
                               "Join the Team, Unlock Possibilities!",
                               textAlign: TextAlign.center,

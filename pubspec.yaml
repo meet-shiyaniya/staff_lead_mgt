@@ -74,8 +74,8 @@ flutter:
    - asset/
    - asset/HR Screen Images/
    - asset/HR Screen Images/Leave/
-   - assets/social_module/images/icon/
-   - assets/social_module/images/login/
+   - asset/social_module/images/icon/
+   - asset/social_module/images/login/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
