@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:social_media_chat/social_module/chatting_module/example.dart';
+
+import '../chatting_module/example.dart';
 import '../colors/colors.dart';
 import '../registration_screen/register_screen.dart';
 

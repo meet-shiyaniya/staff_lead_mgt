@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:social_media_chat/custom_widget/appbar_button.dart';
-import 'package:social_media_chat/login_screen/login_screen.dart';
 
+
+import '../colors/colors.dart';
+import '../custom_widget/appbar_button.dart';
+import '../login_screen/login_screen.dart';
 import 'chat_screen.dart';
-import '../../colors/colors.dart';
+
 
 class ExampleTabbar extends StatefulWidget {
   const ExampleTabbar({super.key});

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:social_media_chat/login_screen/login_screen.dart';
-import '../../colors/colors.dart';
-import '../../registration_screen/register_screen.dart';
+
+import 'colors/colors.dart';
+import 'login_screen/login_screen.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

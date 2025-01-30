@@ -6,7 +6,8 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:image_picker/image_picker.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
-import '../../colors/colors.dart';
+import '../colors/colors.dart';
+
 
 class ChatScreen extends StatefulWidget {
   final Map<String, String> contact;
