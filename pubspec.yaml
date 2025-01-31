@@ -46,8 +46,6 @@ dependencies:
   google_fonts:
   emoji_picker_flutter:
   rive:
-  percent_indicator:
-  animate_do:
 
 dev_dependencies:
   flutter_test:

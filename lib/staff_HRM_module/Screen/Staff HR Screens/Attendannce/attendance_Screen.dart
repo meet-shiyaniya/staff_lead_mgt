@@ -291,7 +291,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
                 // color: appColor.boxColor,
 
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.deepPurple.shade900, width: 1.2),
+                border: Border.all(color: Colors.deepPurple.shade200, width: 1.2),
 
               ),
 
@@ -329,7 +329,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        Text(date, style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                        Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
                       ],
 
@@ -408,11 +408,11 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
     if (selectedFilter == "Last 7 Days") {
 
-      startDate = now.subtract(Duration(days: 7));
+      startDate = now.subtract(Duration(days: 6));
 
     } else if (selectedFilter == "Last 30 Days") {
 
-      startDate = now.subtract(Duration(days: 30));
+      startDate = now.subtract(Duration(days: 29));
 
     } else if (selectedFilter == "Last Month") {
 
