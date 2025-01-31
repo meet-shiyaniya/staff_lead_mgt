@@ -210,7 +210,7 @@ class _DashboardState extends State<Dashboard> {
                               ),
                               child: Center(
                                 child: Text(
-                                  "Working Hours: ${getElapsedTime()}",
+                                  "Working Time: ${getElapsedTime()}",
                                   style: TextStyle(
                                       fontFamily: "poppins_thin",
                                       fontSize: 10,
