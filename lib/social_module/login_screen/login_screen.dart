@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../dashboard.dart';
 import '../chatting_module/example.dart';
 import '../colors/colors.dart';
 import '../registration_screen/register_screen.dart';
@@ -13,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final String font="poppins";
   final _formKey = GlobalKey<FormState>();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
@@ -21,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.whiteColor,
       body: Stack(
         children: [
           Container(
@@ -72,8 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 24,
-                            // fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor.withOpacity(0.8)
                           // color: Colors.black54,
                         ),
                       ),
@@ -90,6 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Email',
                                 hintText: 'Enter your email',
+                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
+                                hintStyle:TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.email, color: AppColors.primaryColor),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -113,6 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
+                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
+                                hintStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.lock, color: AppColors.primaryColor),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -149,13 +156,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>ExampleTabbar()));
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>Dashboard()));
                                   }
                                 },
                                 child: const Text(
                                   'Login',
                                   style: TextStyle(
-                                      color: Colors.white, fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold),
+                                      color: Colors.white, fontFamily: 'Poppins_thin', fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -167,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                               child: Text(
                                 'Forgot Password?',
-                                style: TextStyle(fontFamily: 'Poppins', color: AppColors.primaryColor),
+                                style: TextStyle(fontFamily:font, color: AppColors.primaryColor,fontWeight: FontWeight.bold),
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -175,8 +182,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text('New User? ',
-                                    style: TextStyle(fontFamily: 'Poppins')),
+                                 Text('New User? ',
+                                    style: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold)),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -184,9 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         MaterialPageRoute(
                                             builder: (context) => RegisterScreen()));
                                   },
-                                  child: const Text('Create an Account',
+                                  child:  Text('Create an Account',
                                       style: TextStyle(
-                                          fontFamily: 'Poppins', color: Colors.blue)),
+                                          fontFamily: AppColors.font, color: Colors.blue,fontWeight: FontWeight.bold)),
                                 ),
                               ],
                             ),
