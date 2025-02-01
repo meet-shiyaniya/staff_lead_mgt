@@ -187,7 +187,7 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
                                         height: 17,
                                         width: 70,
-                                        color: Colors.blue,
+                                        // color: Colors.blue,
 
                                         child: Text(leave.status, style: TextStyle(color: leave.status == "Pending" ? Colors.orange.shade700 : leave.status == "Rejected" ? Colors.red.shade900 : Colors.green.shade900, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
@@ -198,20 +198,22 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                 ),
 
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
 
-                                    Text("Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Leave Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
                                     Container(
 
                                         height: 17,
-                                        width: 120,
-                                        color: Colors.blue,
+                                        width: 130,
+                                        // color: Colors.blue,
 
-                                        child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                        child: Center(
+                                          child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                        ),
 
                                     ),
 
@@ -222,17 +224,17 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
 
-                                    Text("Apply", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Apply Days", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
                                     Container(
 
                                         height: 17,
-                                        width: 72,
-                                        color: Colors.blue,
+                                        width: 70,
+                                        // color: Colors.blue,
 
-                                        child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                        child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,)
 
                                     ),
 
