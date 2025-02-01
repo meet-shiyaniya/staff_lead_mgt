@@ -1,23 +1,22 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-// import 'package:auto_size_text/auto_size_text.dart';
 
 class TaskContainer extends StatelessWidget {
   final String title;
   final Color color;
-  final String imagePath; // Path to the image
-  final double? height; // Optional height parameter
-  final double imageHeight; // Height for the image
-  final double imageWidth; // Width for the image
+  final String imagePath;
+  final double? height;
+  final double imageHeight;
+  final double imageWidth;
 
   const TaskContainer({
     Key? key,
     required this.title,
     required this.color,
-    required this.imagePath, // Image path passed to the widget
-    this.height, // Optional height parameter
-    this.imageHeight = 40.0, // Default height if not provided
-    this.imageWidth = 40.0,  // Default width if not provided
+    required this.imagePath,
+    this.height,
+    this.imageHeight = 40.0,
+    this.imageWidth = 40.0,
   }) : super(key: key);
 
   @override
@@ -26,7 +25,8 @@ class TaskContainer extends StatelessWidget {
       elevation: 6,
       color: color,
       child: Container(
-        height: height ?? 100.0, // Default height if not provided
+        height: height ?? 100.0,
+        width: double.infinity,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
@@ -36,29 +36,31 @@ class TaskContainer extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with adjustable height and width
-            SizedBox(
-              height: imageHeight, // Adjustable height for each image
-              width: imageWidth,   // Adjustable width for each image
-              child: Image.asset(imagePath), // Display the image using Image.asset
+            // Image
+            Flexible(
+              child: SizedBox(
+                height: imageHeight,
+                width: imageWidth,
+                child: Image.asset(imagePath),
+              ),
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: AutoSizeText(
-                    title,
-                    maxLines: 2, // Limit to 2 lines
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: "poppins_thin",
-                    ),
-                    overflow: TextOverflow.ellipsis, // Add ellipsis for overflow
+                AutoSizeText(
+                  title,
+                  maxLines: 2,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamily: "poppins_thin",
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const Icon(Icons.arrow_forward, color: Colors.black54),
-              ],
+                ],
             ),
+
           ],
         ),
       ),

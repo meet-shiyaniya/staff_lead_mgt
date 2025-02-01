@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 import '../../../Model/Staff HR Screen Model/profile_Model.dart';
 import '../../Color/app_Color.dart';
 
@@ -154,7 +153,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
                             child: Container(
 
                               height: 35,
-                              width: 150,
+                              width: 148,
                               decoration: BoxDecoration(
 
                                 borderRadius: BorderRadius.circular(6),
@@ -198,7 +197,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
                             child: Container(
 
                               height: 35,
-                              width: 150,
+                              width: 148,
                               decoration: BoxDecoration(
 
                                 borderRadius: BorderRadius.circular(6),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../Model/HR Screen Models/Leave/Leave Menu/approve_Model.dart';
 import '../../../Color/app_Color.dart';
 
@@ -210,7 +209,8 @@ class _approveScreenState extends State<approveScreen> {
                                       Container(
 
                                           height: 17,
-                                          width: 100,
+                                          width: 110,
+                                          // color: Colors.blue,
 
                                           child: Text(leave.leaveReason, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
@@ -231,6 +231,7 @@ class _approveScreenState extends State<approveScreen> {
 
                                           height: 17,
                                           width: 100,
+                                          // color: Colors.blue,
 
                                           child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
@@ -250,7 +251,8 @@ class _approveScreenState extends State<approveScreen> {
                                       Container(
 
                                           height: 17,
-                                          width: 100,
+                                          width: 70,
+                                          // color: Colors.blue,
 
                                           child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 

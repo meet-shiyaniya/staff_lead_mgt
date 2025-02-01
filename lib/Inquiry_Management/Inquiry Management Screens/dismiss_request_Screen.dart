@@ -1,33 +1,17 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-// import 'package:inquiry_management_ui/Utils/Custom%20widgets/custom_search.dart';
 import 'package:lottie/lottie.dart';
-
 import '../Model/category_Model.dart';
 import '../Model/followup_Model.dart';
-import '../Utils/Colors/app_Colors.dart';
 import '../Utils/Custom widgets/custom_buttons.dart';
 import '../Utils/Custom widgets/custom_dialog.dart';
 import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
-// import '../test_Screen.dart';
-import 'Followup Screen/list_filter_Screen.dart';
-
-class DismissRequestScreen extends StatefulWidget {
-  const DismissRequestScreen({super.key});
-
-  @override
-  State<DismissRequestScreen> createState() => _DismissRequestScreenState();
-}
-
-
-
-final TextEditingController nextFollowupcontroller=TextEditingController();
+// import 'filter_modal.dart';
+final TextEditingController nextFollowupcontroller = TextEditingController();
 String selectedcallFilter = "Follow Up";
-List<String> callList=['Followup','Dismissed','Appointment','Cnr'];
-
-
+List<String> callList = ['Followup', 'Dismissed', 'Appointment', 'Cnr'];
 String? selectedMembership;
 String? selectedApx;
 String? selectedPurpose;
@@ -36,62 +20,55 @@ String selectedList = "All Leads";
 String selectedValue = "15";
 int? selectedIndex;
 List<LeadModel> LeadList = [
-  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"jaisdjshadkanadabcbcamnmnsaasddadsdsSS"),
-  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NASDNAXNSXMN"),
-  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJASHNDJNASN"),
-  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NANDNASMD"),
-  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DUIQOJSZ"),
-  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJIJSAJKJ"),
-  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"UWIDHNXN"),
-  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IDUEIWYDJANXM"),
-  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"JEIOJDNMKS"),
-  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIOWJFDMKX"),
-  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"E9UWJIODKSMX"),
-  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIJMFKDASJIED"),
-  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"OIUJDISKAMX "),
-  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEUWIOEJDSKMX"),
-  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEDJSKMX"),
+  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "jaisdjshadkanadabcbcamnmnsaasddadsdsSS"),
+  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "NASDNAXNSXMN"),
+  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "DJASHNDJNASN"),
+  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "NANDNASMD"),
+  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "DUIQOJSZ"),
+  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "DJIJSAJKJ"),
+  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "UWIDHNXN"),
+  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "IDUEIWYDJANXM"),
+  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "JEIOJDNMKS"),
+  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "EIOWJFDMKX"),
+  LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "E9UWJIODKSMX"),
+  LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "EIJMFKDASJIED"),
+  LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "OIUJDISKAMX "),
+  LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "IEUWIOEJDSKMX"),
+  LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook", 'table', '1-2 days', 'ielts', '3 months', "IEDJSKMX"),
 ];
-
 List<CategoryModel> categoryList = [];
 List<LeadModel> filteredLeads = [];
 List<bool> selectedCards = [];
 bool anySelected = false;
+String? selectedAction = null;
+String? selectedEmployee = null;
+final List<String> actions = ['markAsComplete', 'assignToUser', 'delete'];
+final List<String> employees = ['employee 1', 'employee 2', 'employee 3'];
 
+class DismissRequestScreen extends StatefulWidget {
+  const DismissRequestScreen({super.key});
 
-String? selectedAction = null; // Set to null initially
-String? selectedEmployee = null; // Set to null initially
-final List<String> actions = ['markAsComplete','assignToUser','delete'];
-final List<String> employees = ['employee 1','employee 2','employee 3'];
-
+  @override
+  State<DismissRequestScreen> createState() => _DismissRequestScreenState();
+}
 
 class _DismissRequestScreenState extends State<DismissRequestScreen> {
-
   void handleAction(String action, String employee) {
-    // print("Action: $action on items: $selectedItemsPerFilter");
     setState(() {
-      // selectedItemsPerFilter[selectedIndex]?.clear();
-      // isSelectionMode = false;
       selectedAction = null;
-      selectedEmployee=null;
+      selectedEmployee = null;
     });
   }
+
   void toggleSelection(int index) {
     selectedCards[index] = !selectedCards[index];
     anySelected = selectedCards.contains(true);
-    print("anySelected : $anySelected");
     setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
-
-    // Print LeadList for debugging
-    for (var lead in LeadList) {
-      print("Name: ${lead.name}, Number: ${lead.phone}, Username: ${lead.username}");
-    }
-
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
       CategoryModel("Feedback", LeadList.where((lead) => lead.label == "Feedback").toList()),
@@ -106,63 +83,57 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
 
   String? filteredId;
   Map<String, dynamic> appliedFilters = {};
-
   void _updateSearchResults(List<LeadModel> results) {
     setState(() {
       filteredLeads = results;
     });
   }
-  String? filteredPhone;
   void resetFilters() {
     setState(() {
       filteredLeads = List.from(LeadList); // Reset the list to the original
       appliedFilters.clear(); // Clear all applied filters
       filteredId = null; // Clear filtered ID
       filteredName = null; // Clear filtered Name
-      filteredPhone = null; // Clear filtered Phone
+      filteredPhone = null;
       filteredStatus.clear(); // Clear filtered Status
+
     });
   }
+  String? filteredPhone;
 
   void _updateAppliedFilters(Map<String, dynamic> filters) {
     setState(() {
       appliedFilters = filters;
       filteredId = filters['Id'];
       filteredName = filters['Name'];
-      filteredPhone = filters['Phone'];
+      filteredPhone= filters['Mobile'];
       filteredStatus = List.from(filters['Status'] ?? []);
     });
   }
 
   void showBottomModalSheet(BuildContext context) {
-
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.6,
+        child: FilterModal(
+          onFilterApplied: (List<LeadModel> filteredList, Map<String, dynamic> filters) {
+            _updateSearchResults(filteredList);
+            _updateAppliedFilters(filters);
+          },
+          appliedFilters: appliedFilters,
         ),
-        builder: (context) => FractionallySizedBox(
-          heightFactor: 0.6,
-          child: FilterModal(
-            onFilterApplied: (List<LeadModel> filteredList, Map<String, dynamic> filters) {
-              _updateSearchResults(filteredList); // Pass the filtered list
-              _updateAppliedFilters(filters); // Update the applied filters in the parent
-            },
-            appliedFilters: appliedFilters,
-          ),
-        ),
-      );
-
-
+      ),
+    );
   }
-
-  // Track the applied filters
-  // String? filteredId;
   String? filteredName;
-  String? filteredMobile;
   List<String> filteredStatus = [];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,25 +141,25 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
         title: Text("Dismiss Request", style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         backgroundColor: Colors.deepPurple.shade300,
         actions: [
           SearchBar1(onSearch: _updateSearchResults, items: LeadList),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           CircleAvatar(
             backgroundColor: Colors.white,
             child: IconButton(
               onPressed: () => showBottomModalSheet(context),
-              icon: Icon(Icons.filter_list_outlined, color: Colors.black),
+              icon: const Icon(Icons.filter_list_outlined, color: Colors.black),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
         ],
       ),
       body: Column(
         children: [
-          // Applied Filters section
+          // Action Selection Panel (when cards selected)
           if (anySelected)
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -226,7 +197,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                         },
                         items: actions.map((action) => DropdownMenuItem(
                           value: action,
-                          child: Text(action, style: TextStyle(fontFamily: "poppins_thin")),
+                          child: Text(action, style: const TextStyle(fontFamily: "poppins_thin")),
                         )).toList(),
                       ),
                     ),
@@ -265,13 +236,13 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                         items: employees
                             .map((employee) => DropdownMenuItem(
                           value: employee,
-                          child: Text(employee, style: TextStyle(fontFamily: "poppins_thin")),
+                          child: Text(employee, style: const TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8.0),
+                  const   SizedBox(height: 8.0),
                   Center(
                     child: SizedBox(
                       child: GradientButton(
@@ -320,16 +291,14 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                       });
                     }, onSelected: (bool value) {  },
                   ),
-
-                // Display Phone filter if set
                 if (filteredPhone != null)
                   FilterChip(
                     label: Text('Phone: $filteredPhone'),
                     onDeleted: () {
                       setState(() {
                         filteredPhone = null;
-                        appliedFilters.remove('Phone');
-                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                        appliedFilters.remove('Mobile');
+                        filteredLeads = List.from(LeadList);
                       });
                     }, onSelected: (bool value) {  },
                   ),
@@ -342,22 +311,21 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                       setState(() {
                         filteredStatus.clear();
                         appliedFilters.remove('Status');
-                        filteredLeads = List.from(LeadList); // Reset the filtered leads
+                        filteredLeads = List.from(LeadList);
                       });
                     }, onSelected: (bool value) {  },
                   ),
-
-                Spacer(),
+                const  Spacer(),
 
                 // "Clear All" button
                 ElevatedButton(
                   onPressed: resetFilters,
-                  child: Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
+                  child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin')),
                 ),
               ],
             ),
