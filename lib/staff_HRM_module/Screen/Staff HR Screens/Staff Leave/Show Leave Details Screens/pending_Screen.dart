@@ -211,7 +211,7 @@ class _pendingScreenState extends State<pendingScreen> {
                                       Container(
 
                                           height: 17,
-                                          width: 100,
+                                          width: 110,
 
                                           child: Text(leave.leaveReason, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
@@ -251,7 +251,7 @@ class _pendingScreenState extends State<pendingScreen> {
                                       Container(
 
                                           height: 17,
-                                          width: 100,
+                                          width: 70,
 
                                           child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
