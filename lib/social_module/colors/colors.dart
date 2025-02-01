@@ -5,4 +5,5 @@ class AppColors {
   static final Color SecondryColor = const Color(0xFFb55dcd);
   static const Color whiteColor = Colors.white;
   static const Color blackColor = Colors.black;
+  static final String font="poppins";
 }

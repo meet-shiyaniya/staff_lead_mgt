@@ -72,9 +72,9 @@ class _LoginScreenState extends State<RegisterScreen> {
                               "Join the Team, Unlock Possibilities!",
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: AppColors.font,
                                   fontSize: 24,
-                                  // fontWeight: FontWeight.w600,
+                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primaryColor
                                 // color: Colors.black54,
                               ),
@@ -92,6 +92,8 @@ class _LoginScreenState extends State<RegisterScreen> {
                                       fillColor: Colors.grey[200],
                                       labelText: 'Mobile Number',
                                       hintText: 'Enter your mobile number',
+                                      labelStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
+                                      hintStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
                                       prefixIcon: Icon(Icons.verified, color: AppColors.primaryColor),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
@@ -115,6 +117,8 @@ class _LoginScreenState extends State<RegisterScreen> {
                                       fillColor: Colors.grey[200],
                                       labelText: 'Create Password',
                                       hintText: 'Enter your password',
+                                      labelStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
+                                      hintStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
                                       prefixIcon: Icon(Icons.lock_outline, color: AppColors.primaryColor),
                                       suffixIcon: IconButton(
                                         icon: Icon(
@@ -149,6 +153,8 @@ class _LoginScreenState extends State<RegisterScreen> {
                                       fillColor: Colors.grey[200],
                                       labelText: 'Confirm Password',
                                       hintText: 'Re-enter your password',
+                                      labelStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
+                                      hintStyle: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold),
                                       prefixIcon: Icon(Icons.lock, color: AppColors.primaryColor),
                                       suffixIcon: IconButton(
                                         icon: Icon(
@@ -188,27 +194,8 @@ class _LoginScreenState extends State<RegisterScreen> {
                                     child: TextButton(
                                       onPressed: () {
                                         if (_formKey.currentState!.validate()) {
-                                          showDialog(
-                                            context: context,
-                                            builder: (_) => AlertDialog(
-                                              title: const Text('Welcome!',
-                                                  style: TextStyle(
-                                                      fontFamily: 'Poppins',
-                                                      fontWeight: FontWeight.bold)),
-                                              content: Text(
-                                                  'Welcome back, ${mobileNumberController.text}!',
-                                                  style: const TextStyle(fontFamily: 'Poppins')),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: const Text('OK',
-                                                      style: TextStyle(fontFamily: 'Poppins')),
-                                                ),
-                                              ],
-                                            ),
-                                          );
+                                          Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
+
                                         }
                                       },
                                       child: const Text(
@@ -225,11 +212,11 @@ class _LoginScreenState extends State<RegisterScreen> {
 
                                        Text(
                                          'Already Have an Account?',
-                                         style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+                                         style: TextStyle(fontFamily: AppColors.font, color: Colors.grey,fontWeight: FontWeight.bold),
                                        ),
                                        TextButton(onPressed: (){
                                          Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
-                                       }, child: Text("Login",style: TextStyle(fontFamily: "poppins",fontSize: 16),),)
+                                       }, child: Text("Login",style: TextStyle(fontFamily: AppColors.font,fontSize: 16,fontWeight: FontWeight.bold),),)
                                      ],
                                   )
                                   // Forgot Password
