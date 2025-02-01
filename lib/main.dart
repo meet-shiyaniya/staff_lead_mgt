@@ -12,7 +12,8 @@ void main() {
 
     debugShowCheckedModeBanner: false,
     // home: staffDashScreen(),
-    home:InquiryManagementScreen()
+    // home:InquiryManagementScreen()
+    home: Dashboard(),
   )
   );
 

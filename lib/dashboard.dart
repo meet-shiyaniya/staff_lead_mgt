@@ -26,7 +26,7 @@ class _DashboardState extends State<Dashboard> {
       progressValue = 0.0;
       elapsedSeconds = 0;
       isDayStarted = true;
-      entryTime = DateFormat('hh:mm:ss a').format(DateTime.now());
+      entryTime = DateFormat('hh:mm:ss').format(DateTime.now());
       exitTime = ""; // Reset exit time
     });
 
@@ -151,7 +151,7 @@ class _DashboardState extends State<Dashboard> {
           Container(
             height: 155,
             width: double.infinity,
-            margin: const EdgeInsets.all(15),
+            margin: const EdgeInsets.only(left: 15,right: 15,top: 15),
             decoration: BoxDecoration(
               color: AppColors.primaryColor.withOpacity(0.3),
               borderRadius: BorderRadius.circular(20),
@@ -249,8 +249,9 @@ class _DashboardState extends State<Dashboard> {
               ],
             ),
           ),
-          if (exitTime.isNotEmpty)
+          if (isDayStarted)
             Container(
+              height: MediaQuery.of(context).size.height / 10,
               width: double.infinity,
               margin: const EdgeInsets.all(15),
               padding: const EdgeInsets.all(15),
@@ -265,27 +266,169 @@ class _DashboardState extends State<Dashboard> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text(
-                    "Entry Time: $entryTime",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  SizedBox(),
+                  Image.asset("asset/intime.png",height: 30,width: 30,),
+                  Column(
+                    // crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "In Time :",
+                        style: TextStyle(
+                          fontFamily: "poppins_thin",
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      Text(entryTime.isNotEmpty ? entryTime : "--:--:--"),
+                    ],
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    "Exit Time: $exitTime",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  const VerticalDivider(
+                    color: Colors.grey,
+                    thickness: 0.5,
+                    width: 18,
+                  ),
+                  SizedBox(),
+                  Image.asset("asset/workingHour.png",height: 30,width: 30,),
+                  Column(
+                    // crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+
+                      const Text(
+                        "Working Hour :",
+                        style: TextStyle(
+                          fontFamily: "poppins_thin",
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      Text(getElapsedTime(), style: const TextStyle(fontFamily: "poppins_thin")),
+                    ],
                   ),
                 ],
               ),
             ),
+
+
+
+
+
+          if (exitTime.isNotEmpty)
+            Container(
+              height: MediaQuery.of(context).size.height/10,
+              width: double.infinity,
+              margin: const EdgeInsets.all(15),
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade300,
+                    blurRadius: 5,
+                    offset: const Offset(1, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(),
+
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Image.asset("asset/intime.png",height: 20,width: 20,),
+                          SizedBox(width:3),
+                          Text("In Time :",style: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold,color: Colors.green),),
+                        ],
+                      ),
+
+                      Text("$entryTime",style: TextStyle(fontFamily:"poppins_thin"))
+                    ],
+                  ),
+                  VerticalDivider(
+                    color: Colors.grey,
+                    thickness: 0.5,
+                    width: 18,
+                  ),
+
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Image.asset("asset/out time.png",height: 20,width: 20,),
+                          SizedBox(width:3),
+                          Text("Out Time :",style: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold,color: Colors.red),),
+                        ],
+                      ),
+
+                      Text("$exitTime",style: TextStyle(fontFamily:"poppins_thin"),)
+                    ],
+                  ),
+                  SizedBox(),
+
+                  // Image.asset("asset/workingHour.png",height: 30,width: 30,),
+                  VerticalDivider(
+                    color: Colors.grey,
+                    thickness: 0.5,
+                    width: 18,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Image.asset("asset/workingHour.png",height: 20,width: 20,),
+                          SizedBox(width:3),
+                          Text("Work Hour:",style: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold,color: Colors.blue),),
+                        ],
+                      ),
+
+                      Text("${getElapsedTime()}")
+                    ],
+                  ),
+
+                ],
+              ),
+              // child: Column(
+              //   crossAxisAlignment: CrossAxisAlignment.start,
+              //   children: [
+              //     Text(
+              //       "Entry Time: $entryTime",
+              //       style: const TextStyle(
+              //         fontSize: 14,
+              //         fontWeight: FontWeight.bold,
+              //       ),
+              //     ),
+              //     const SizedBox(height: 5),
+              //     Text(
+              //       "Exit Time: $exitTime",
+              //       style: const TextStyle(
+              //         fontSize: 14,
+              //         fontWeight: FontWeight.bold,
+              //       ),
+              //     ),
+              //   ],
+              // ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 20,right: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children:[
+                Text("Daily Activities",style: TextStyle(fontFamily: "poppins_thin"),),
+                Image.asset("asset/peopleDashboard.png",height: 50,width: 50,)
+              ]
+            ),
+          )
         ],
       ),
     );
