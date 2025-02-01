@@ -641,17 +641,15 @@
 //   }
 // }
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import '../../Inquiry Management Screens/dismiss_request_Screen.dart';
 import '../../Model/followup_Model.dart';
 import 'custom_buttons.dart';
 
+
 class FilterModal extends StatefulWidget {
   final Function(List<LeadModel>, Map<String, dynamic>) onFilterApplied;
-
-  final Map<String, dynamic> appliedFilters; // New appliedFilters argument
+  final Map<String, dynamic> appliedFilters;
   final List<String> Items = [
     'Fresh',
     'Qualified',
@@ -675,11 +673,10 @@ class _FilterModalState extends State<FilterModal> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   List<String> selectedItems = [];
+
   @override
   void initState() {
     super.initState();
-
-    // Pre-populate the fields with existing applied filters
     _idController.text = widget.appliedFilters['Id'] ?? '';
     _nameController.text = widget.appliedFilters['Name'] ?? '';
     _mobileController.text = widget.appliedFilters['Mobile'] ?? '';
@@ -690,34 +687,44 @@ class _FilterModalState extends State<FilterModal> {
     List<LeadModel> filteredList = LeadList;
 
     if (_idController.text.isNotEmpty) {
-      filteredList = filteredList.where((lead) => lead.id.contains(_idController.text)).toList();
+      filteredList = filteredList.where((lead) =>
+          lead.id.toLowerCase().contains(_idController.text.toLowerCase())).toList();
     }
 
     if (_nameController.text.isNotEmpty) {
-      filteredList = filteredList.where((lead) => lead.name.contains(_nameController.text)).toList();
+      filteredList = filteredList.where((lead) =>
+          lead.name.toLowerCase().contains(_nameController.text.toLowerCase())).toList();
     }
 
     if (_mobileController.text.isNotEmpty) {
-      filteredList = filteredList.where((lead) => lead.phone.contains(_mobileController.text)).toList();
+      filteredList = filteredList.where((lead) =>
+          lead.phone.toLowerCase().contains(_mobileController.text.toLowerCase())).toList();
     }
 
     if (selectedItems.isNotEmpty) {
       filteredList = filteredList.where((lead) => selectedItems.contains(lead.label)).toList();
     }
 
-    widget.onFilterApplied(filteredList,{
+    widget.onFilterApplied(filteredList, {
       'Id': _idController.text,
       'Name': _nameController.text,
       'Mobile': _mobileController.text,
       'Status': selectedItems,
-    }); // Pass the filtered list back to parent
+    });
+  }
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    _nameController.dispose();
+    _mobileController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
-
     final paddingValue = isSmallScreen ? 8.0 : 16.0;
     final textFontSize = isSmallScreen ? 14.0 : 16.0;
 
@@ -734,9 +741,9 @@ class _FilterModalState extends State<FilterModal> {
                 onPressed: () {
                   Navigator.pop(context); // Close the dialog
                 },
-                icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
               ),
-              Text(
+              const Text(
                 "Filter",
                 style: TextStyle(fontFamily: "poppins_thin", color: Colors.white, fontSize: 20),
               ),
@@ -757,7 +764,7 @@ class _FilterModalState extends State<FilterModal> {
                     controller: _idController,
                     decoration: InputDecoration(
                       labelText: "Id",
-                      labelStyle: TextStyle(fontFamily: "poppins_thin"),
+                      labelStyle: const TextStyle(fontFamily: "poppins_thin"),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onChanged: (_) => applyFilters(), // Apply filter on change
@@ -769,7 +776,7 @@ class _FilterModalState extends State<FilterModal> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: "Enter Name",
-                      labelStyle: TextStyle(fontFamily: "poppins_thin"),
+                      labelStyle: const TextStyle(fontFamily: "poppins_thin"),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onChanged: (_) => applyFilters(), // Apply filter on change
@@ -781,7 +788,7 @@ class _FilterModalState extends State<FilterModal> {
                     controller: _mobileController,
                     decoration: InputDecoration(
                       labelText: "Mobile No",
-                      labelStyle: TextStyle(fontFamily: "poppins_thin"),
+                      labelStyle: const TextStyle(fontFamily: "poppins_thin"),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onChanged: (_) => applyFilters(), // Apply filter on change
@@ -794,7 +801,7 @@ class _FilterModalState extends State<FilterModal> {
                     child: DropdownButton2(
                       isExpanded: true,
                       customButton: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           color: Colors.grey.shade100,
@@ -836,6 +843,7 @@ class _FilterModalState extends State<FilterModal> {
                                     } else {
                                       selectedItems.add(item);
                                     }
+                                    applyFilters();
                                   });
                                   menuSetState(() {}); // Rebuild menu state
                                 },
@@ -851,11 +859,12 @@ class _FilterModalState extends State<FilterModal> {
                                             selectedItems.remove(item);
                                           }
                                         });
+                                        applyFilters(); // Update filter immediately
                                         menuSetState(() {}); // Update menu UI
                                       },
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(item, style: TextStyle(fontFamily: "poppins_thin")),
+                                    const SizedBox(width: 8),
+                                    Text(item, style: const TextStyle(fontFamily: "poppins_thin")),
                                   ],
                                 ),
                               );
@@ -863,8 +872,8 @@ class _FilterModalState extends State<FilterModal> {
                           ),
                         );
                       }).toList(),
-                      onChanged: (_) {}, // Required but unused
-                      iconStyleData: IconStyleData(
+                      onChanged: (_) {},
+                      iconStyleData: const IconStyleData(
                         icon: Icon(Icons.arrow_drop_down, color: Colors.black),
                       ),
                     ),
@@ -874,7 +883,7 @@ class _FilterModalState extends State<FilterModal> {
             ),
           ),
         ),
-        // Apply Filters Button
+        // No Apply Filters Button
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: GradientButton(
