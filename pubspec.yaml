@@ -82,6 +82,7 @@ flutter:
    - asset/HR Screen Images/Leave/
    - asset/social_module/images/icon/
    - asset/social_module/images/login/
+   - asset/Inquiry_module/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -99,8 +100,6 @@ flutter:
     - family: poppins_thin
       fonts:
         - asset: fonts/poppins_thin.ttf
-        - asset: fonts/poppins.ttf
-        - asset: fonts/poppins_light.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
     - family: poppins
