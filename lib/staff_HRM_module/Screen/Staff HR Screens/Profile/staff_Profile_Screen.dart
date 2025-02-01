@@ -16,7 +16,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
     profileModel(FontAwesomeIcons.solidIdCard, "Employee ID", "122"),
     profileModel(FontAwesomeIcons.user, "User Name", "admin_Meet"),
-    profileModel(FontAwesomeIcons.birthdayCake, "Date Of Birth", "16/08/2004"),
+    profileModel(FontAwesomeIcons.calendar, "Date Of Birth", "16/08/2004"),
     profileModel(FontAwesomeIcons.person, "Gender", "Male"),
     profileModel(FontAwesomeIcons.solidHeart, "Marital Status", "Unmarried"),
     profileModel(FontAwesomeIcons.house, "Address", "102, Vrundavan Society, Dabholi Char Rasta, Katargam, Surat - 395004"),
