@@ -46,6 +46,12 @@ dependencies:
   google_fonts:
   emoji_picker_flutter:
   rive:
+  lottie: ^3.3.1
+  flutter_animate: ^4.5.2
+  auto_size_text: ^3.0.0
+  dotted_border: ^2.1.0
+  percent_indicator: ^4.2.4
+  animate_do: ^3.3.4
 
 dev_dependencies:
   flutter_test:
