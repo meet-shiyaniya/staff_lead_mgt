@@ -201,7 +201,7 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
 
-                                    Text("Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Leave Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
@@ -224,7 +224,7 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
 
-                                    Text("Apply", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Apply Days", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
