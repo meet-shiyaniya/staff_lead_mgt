@@ -896,7 +896,7 @@ class _FilterModalState extends State<FilterModal> {
           child: GradientButton(
             buttonText: "Apply Filters",
             onPressed: () {
-              applyFilters;
+              applyFilters();
               Navigator.pop(context);
             }, // Apply filters when clicked
           ),
