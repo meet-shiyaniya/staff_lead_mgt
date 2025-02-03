@@ -5,6 +5,7 @@ import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staf
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/staff_Dash_Screen.dart';
 
 import 'Inquiry_Management/Inquiry_Management_Screen.dart';
+import 'Inquiry_Management/test.dart';
 
 class BottomNavScreen extends StatefulWidget {
   @override
@@ -17,6 +18,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   final List<Widget> _screens = [
     Dashboard(),
     InquiryManagementScreen(),
+    // TestScreen(),
     staffDashScreen(),
     staffProfileScreen(),
   ];

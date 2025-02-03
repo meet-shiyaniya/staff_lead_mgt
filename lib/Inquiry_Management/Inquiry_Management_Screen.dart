@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import '../social_module/colors/colors.dart';
 import 'Inquiry Management Screens/all_inquiries_Screen.dart';
 import 'Inquiry Management Screens/assign_to_other_Screen.dart';
 import 'Inquiry Management Screens/contact_block_Screen.dart';
@@ -38,7 +39,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                     AutoSizeText(
                       "Effortless Inquiry ",
                       style: TextStyle(
-                          fontSize: isLargeScreen ? 28 : 24,
+                          fontSize: isLargeScreen ? 20 : 16,
                           fontFamily: "poppins_light"),
                       maxLines: 1,
                       minFontSize: 18,
@@ -46,12 +47,12 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                     AutoSizeText(
                       "Tracking & Management",
                       style: TextStyle(
-                          fontSize: isLargeScreen ? 32 : 28,
+                          fontSize: isLargeScreen ? 24 : 20,
                           fontFamily: "poppins_thin"),
                       maxLines: 1,
                       minFontSize: 22,
                     ),
-                    const SizedBox(height: 16),
+                    // const SizedBox(height: 16),
 
                     // Header Section
                     Padding(
@@ -59,18 +60,19 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                           vertical: 16.0, horizontal: 6),
                       child: Container(
                         height: isLargeScreen
-                            ? screenHeight * 0.25
-                            : screenHeight * 0.2,
+                            ? screenHeight * 0.20
+                            : screenHeight * 0.16,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.orange.shade100,
-                              Colors.orangeAccent
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: Colors.deepPurple.shade200,
+                          // gradient: LinearGradient(
+                          //   colors: [
+                          //     Colors.orange.shade100,
+                          //     Colors.orangeAccent
+                          //   ],
+                          //   begin: Alignment.topLeft,
+                          //   end: Alignment.bottomRight,
+                          // ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -100,26 +102,28 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                               ),
                             ),
                             Flexible(
-                              child: AutoSizeText(
-                                'Manage Inquiries \nEffortlessly',
-                                style: TextStyle(
-                                  fontSize: isLargeScreen
-                                      ? screenWidth * 0.04
-                                      : screenWidth * 0.06,
-                                  fontFamily: "poppins_thin",
-                                  color: Colors.black,
+                              child: Center(
+                                child: AutoSizeText(
+                                  'Manage Inquiries \nEffortlessly',
+                                  style: TextStyle(
+                                    fontSize: isLargeScreen
+                                        ? screenWidth * 0.03
+                                        : screenWidth * 0.05,
+                                    fontFamily: "poppins_thin",
+                                    color: Colors.black,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  minFontSize: 10,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                minFontSize: 10,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    // const SizedBox(height: 8),
 
                     // All Leads Section
                     Padding(
@@ -128,14 +132,14 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                         "All Leads",
                         style: TextStyle(
                           fontFamily: "poppins_thin",
-                          fontSize: isLargeScreen ? 32 : 28,
+                          fontSize: isLargeScreen ? 30 : 24,
                           color: Colors.black,
                         ),
                         maxLines: 1,
                         minFontSize: 22,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    // const SizedBox(height: 16),
 
                     // Task Containers
                     Row(
@@ -262,80 +266,91 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                     const SizedBox(height: 20),
 
                     // Contact Block Section
-                GestureDetector(
-                onTap: () {
-                Navigator.push(
-                context,
-                MaterialPageRoute(
-                builder: (context) =>  BlockedContactsScreen(), // Make sure this exists
-                ),
-                );
-                },
-                child: LayoutBuilder(
-                builder: (context, constraints) {
-                // screenWidth and screenHeight for relative sizing
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                BlockedContactsScreen(), // Make sure this exists
+                          ),
+                        );
+                      },
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // screenWidth and screenHeight for relative sizing
 
-                final screenWidth = constraints.maxWidth;
-                final cardHeight =
-                constraints.maxHeight != double.infinity ? constraints.maxHeight : screenWidth * 0.3;
+                          final screenWidth = constraints.maxWidth;
+                          final cardHeight =
+                              constraints.maxHeight != double.infinity
+                                  ? constraints.maxHeight
+                                  : screenWidth * 0.3;
 
-                return Card(
-                elevation: 6,
-                color: Colors.orange.shade100,
-                child: Container(
-                height: cardHeight, // Relative height
-                width: double.infinity,
-                decoration: BoxDecoration(
-                gradient: LinearGradient(
-                colors: [
-                Colors.red.shade100,
-                Colors.redAccent.shade100,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                Expanded(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                AutoSizeText(
-                'Contact Block',
-                style: TextStyle(
-                fontSize: screenWidth * 0.05, // Responsive font size
-                fontFamily: "poppins_thin",
-                ),
-                maxLines: 1,
-                minFontSize: 14,
-                ),
-                SizedBox(height: screenWidth * 0.01), // Responsive spacing
-                AutoSizeText(
-                'Manage blocked contacts',
-                style: TextStyle(
-                fontSize: screenWidth * 0.035, // Responsive font size
-                fontFamily: "poppins_thin",
-                color: Colors.black54,
-                ),
-                maxLines: 1,
-                minFontSize: 12,
-                ),
-                ],
-                ),
-                ),
-                const Icon(Icons.arrow_forward, color: Colors.black54),
-                ],
-                ),
-                ),
-                );
-                },
-                ),
-                ),
+                          return Card(
+                            elevation: 6,
+                            color: Colors.orange.shade100,
+                            child: Container(
+                              height: cardHeight,
+                              // Relative height
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.red.shade100,
+                                    Colors.redAccent.shade100,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        AutoSizeText(
+                                          'Contact Block',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.05,
+                                            // Responsive font size
+                                            fontFamily: "poppins_thin",
+                                          ),
+                                          maxLines: 1,
+                                          minFontSize: 14,
+                                        ),
+                                        SizedBox(height: screenWidth * 0.01),
+                                        // Responsive spacing
+                                        AutoSizeText(
+                                          'Manage blocked contacts',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.035,
+                                            // Responsive font size
+                                            fontFamily: "poppins_thin",
+                                            color: Colors.black54,
+                                          ),
+                                          maxLines: 1,
+                                          minFontSize: 12,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward,
+                                      color: Colors.black54),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 );
               },
