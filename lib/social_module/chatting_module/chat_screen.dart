@@ -98,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
           widget.contact['name']!,
           style: GoogleFonts.poppins(color: Colors.white),
         ),
-        backgroundColor: AppColors.primaryColor.withOpacity(0.7),
+        backgroundColor: AppColors.primaryColor.withOpacity(0.2),
       ),
       body: Column(
         children: [

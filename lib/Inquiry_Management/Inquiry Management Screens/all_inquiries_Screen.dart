@@ -373,6 +373,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                       // Show ID filter only if it's not null or empty
                       if (filteredId != null && filteredId!.isNotEmpty)
                         FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           label: Text('ID: $filteredId'),
                           onDeleted: () {
                             setState(() {
@@ -387,6 +388,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 // Show Name filter only if it's not null or empty
                       if (filteredName != null && filteredName!.isNotEmpty)
                         FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           label: Text('Name: $filteredName'),
                           onDeleted: () {
                             setState(() {
@@ -401,6 +403,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 // Show Phone filter only if it's not null or empty
                       if (filteredPhone != null && filteredPhone!.isNotEmpty)
                         FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           label: Text('Phone: $filteredPhone'),
                           onDeleted: () {
                             setState(() {
@@ -415,6 +418,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 // Show Status filter only if it has values
                       if (filteredStatus.isNotEmpty)
                         FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           label: Text('Status: ${filteredStatus.join(', ')}'),
                           onDeleted: () {
                             setState(() {
@@ -434,12 +438,13 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                 ),
                 // "Clear All" button
                 if (filteredId != null || filteredName != null || filteredPhone != null || filteredStatus.isNotEmpty)
+
                   ElevatedButton(
                     onPressed: resetFilters,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple.shade300,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                     ),
                     child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin',color: Colors.white)),
                   ),
