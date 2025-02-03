@@ -52,6 +52,8 @@ dependencies:
   dotted_border: ^2.1.0
   percent_indicator: ^4.2.4
   animate_do: ^3.3.4
+  google_nav_bar: ^5.0.7
+  shared_preferences: ^2.5.1
 
 dev_dependencies:
   flutter_test:

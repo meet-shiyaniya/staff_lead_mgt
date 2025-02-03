@@ -13,11 +13,11 @@ class _approveScreenState extends State<approveScreen> {
 
   final List<approveModel> approveList = [
 
-    approveModel(1, "admin_Meet", "https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC", "Flutter Developer", "2025-01-10", "2025-01-15", "Sick Leave", "High fever", 5, "Paid", "Approve",),
+    approveModel(1, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-10", "2025-01-15", "Sick Leave", "High fever", 5, "Paid", "Approve",),
 
-    approveModel(2, "admin_Meet", "https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC", "Flutter Developer", "2025-01-08", "2025-01-12", "Casual Leave", "Family function", 4, "Unpaid", "Approve",),
+    approveModel(2, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-08", "2025-01-12", "Casual Leave", "Family function", 4, "Unpaid", "Approve",),
 
-    approveModel(3, "admin_Meet", "https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC", "Flutter Developer", "2025-01-20", "2025-01-22", "Maternity Leave", "Wife's support", 3, "Paid", "Approve",),
+    approveModel(3, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-20", "2025-01-22", "Maternity Leave", "Wife's support", 3, "Paid", "Approve",),
 
   ];
 
