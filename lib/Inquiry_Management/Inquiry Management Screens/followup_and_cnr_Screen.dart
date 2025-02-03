@@ -2311,6 +2311,8 @@ class _FollowupAndCnrScreenState extends State<FollowupAndCnrScreen> {
   //       ));
   // }
 
+
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController (
@@ -2325,23 +2327,24 @@ class _FollowupAndCnrScreenState extends State<FollowupAndCnrScreen> {
               Navigator.pop(context);
             },
           ),
+          centerTitle: true,
           title: Text(
             "Leads",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontFamily: "poppins_thin"),
           ),
           actions: [
             // SearchBar1(),
-            SizedBox(width: 5,),
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              child: IconButton(
-                icon: Icon(Icons.filter_list, color: Colors.black),
-                onPressed: () {
-                  // showBottomModalSheet(context);
-                },
-              ),
-            ),
-            SizedBox(width: 10,)
+            // SizedBox(width: 5,),
+            // CircleAvatar(
+            //   backgroundColor: Colors.white,
+            //   child: IconButton(
+            //     icon: Icon(Icons.filter_list, color: Colors.black),
+            //     onPressed: () {
+            //       // showBottomModalSheet(context);
+            //     },
+            //   ),
+            // ),
+            // SizedBox(width: 10,)
           ],
           bottom: TabBar(
             labelColor: Colors.white,

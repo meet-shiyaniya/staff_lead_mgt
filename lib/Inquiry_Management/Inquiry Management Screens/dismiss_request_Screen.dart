@@ -8,7 +8,7 @@ import '../Utils/Custom widgets/custom_dialog.dart';
 import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
-// import 'filter_modal.dart';
+
 final TextEditingController nextFollowupcontroller = TextEditingController();
 String selectedcallFilter = "Follow Up";
 List<String> callList = ['Followup', 'Dismissed', 'Appointment', 'Cnr'];
@@ -104,12 +104,15 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
   void _updateAppliedFilters(Map<String, dynamic> filters) {
     setState(() {
       appliedFilters = filters;
-      filteredId = filters['Id'];
-      filteredName = filters['Name'];
-      filteredPhone= filters['Mobile'];
-      filteredStatus = List.from(filters['Status'] ?? []);
+
+      // Set filters only if they have a value
+      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty) ? filters['Id'] : null;
+      filteredName = (filters['Name'] != null && filters['Name'].toString().isNotEmpty) ? filters['Name'] : null;
+      filteredPhone = (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty) ? filters['Mobile'] : null;
+      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty ? List.from(filters['Status']) : [];
     });
   }
+
 
   void showBottomModalSheet(BuildContext context) {
     showModalBottomSheet(
@@ -264,70 +267,88 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
           // Applied Filters UI
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
+            child: Column(
               children: [
-                // Display ID filter if set
-                if (filteredId != null)
-                  FilterChip(
-                    label: Text('ID: $filteredId'),
-                    onDeleted: () {
-                      setState(() {
-                        filteredId = null;
-                        appliedFilters.remove('Id');
-                        filteredLeads = List.from(LeadList); // Reset the filtered leads
-                      });
-                    }, onSelected: (bool value) {  },
-                  ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Display ID filter if set
+                  // Show ID filter only if it's not null or empty
+                  if (filteredId != null && filteredId!.isNotEmpty)
+    FilterChip(
+    label: Text('ID: $filteredId'),
+    onDeleted: () {
+    setState(() {
+    filteredId = null;
+    appliedFilters.remove('Id');
+    filteredLeads = List.from(LeadList);
+    });
+    }, onSelected: (bool value) {  },
+    ),
+SizedBox(width: 5,),
 
-                // Display Name filter if set
-                if (filteredName != null)
-                  FilterChip(
-                    label: Text('Name: $filteredName'),
-                    onDeleted: () {
-                      setState(() {
-                        filteredName = null;
-                        appliedFilters.remove('Name');
-                        filteredLeads = List.from(LeadList); // Reset the filtered leads
-                      });
-                    }, onSelected: (bool value) {  },
-                  ),
-                if (filteredPhone != null)
-                  FilterChip(
-                    label: Text('Phone: $filteredPhone'),
-                    onDeleted: () {
-                      setState(() {
-                        filteredPhone = null;
-                        appliedFilters.remove('Mobile');
-                        filteredLeads = List.from(LeadList);
-                      });
-                    }, onSelected: (bool value) {  },
-                  ),
+// Show Name filter only if it's not null or empty
+    if (filteredName != null && filteredName!.isNotEmpty)
+    FilterChip(
+    label: Text('Name: $filteredName'),
+    onDeleted: () {
+    setState(() {
+    filteredName = null;
+    appliedFilters.remove('Name');
+    filteredLeads = List.from(LeadList);
+    });
+    }, onSelected: (bool value) {  },
+    ),
+                      SizedBox(width: 5,),
 
-                // Display Status filter if set
-                if (filteredStatus.isNotEmpty)
-                  FilterChip(
-                    label: Text('Status: ${filteredStatus.join(', ')}'),
-                    onDeleted: () {
-                      setState(() {
-                        filteredStatus.clear();
-                        appliedFilters.remove('Status');
-                        filteredLeads = List.from(LeadList);
-                      });
-                    }, onSelected: (bool value) {  },
-                  ),
-                const  Spacer(),
+// Show Phone filter only if it's not null or empty
+    if (filteredPhone != null && filteredPhone!.isNotEmpty)
+    FilterChip(
+    label: Text('Phone: $filteredPhone'),
+    onDeleted: () {
+    setState(() {
+    filteredPhone = null;
+    appliedFilters.remove('Mobile');
+    filteredLeads = List.from(LeadList);
+    });
+    }, onSelected: (bool value) {  },
+    ),
+                      SizedBox(width: 5,),
 
-                // "Clear All" button
-                ElevatedButton(
-                  onPressed: resetFilters,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+// Show Status filter only if it has values
+    if (filteredStatus.isNotEmpty)
+    FilterChip(
+    label: Text('Status: ${filteredStatus.join(', ')}'),
+    onDeleted: () {
+    setState(() {
+    filteredStatus.clear();
+    appliedFilters.remove('Status');
+    filteredLeads = List.from(LeadList);
+    });
+    }, onSelected: (bool value) {  },
+    ),
+                      SizedBox(width: 5,),
+
+    // const  Spacer(),
+
+
+                    ],
                   ),
-                  child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin')),
                 ),
-              ],
+                // "Clear All" button
+    if (filteredId != null || filteredName != null || filteredPhone != null || filteredStatus.isNotEmpty)
+    ElevatedButton(
+    onPressed: resetFilters,
+    style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.deepPurple.shade300,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin',color: Colors.white)),
+    ),
+
+    ],
             ),
           ),
 
