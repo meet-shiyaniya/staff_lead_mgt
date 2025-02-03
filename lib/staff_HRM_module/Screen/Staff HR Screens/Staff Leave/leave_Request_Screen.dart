@@ -15,17 +15,17 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
   List<leaveReqModel> employeeLeaveList = [
 
-    leaveReqModel(1, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer', '01-02-2025', '02-02-2025', 'Sick Leave', 'Feeling unwell and not so good at the time that is reason.', 2, 'Paid', "Pending"),
+    leaveReqModel(1, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '01-02-2025', '02-02-2025', 'Sick Leave', 'Feeling unwell and not so good at the time that is reason.', 2, 'Paid', "Pending"),
 
-    leaveReqModel(2, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer', '03-02-2025', '05-02-2025', 'Casual Leave', 'Personal work with some notice work and give report', 3, 'Paid', "Approved"),
+    leaveReqModel(2, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '03-02-2025', '05-02-2025', 'Casual Leave', 'Personal work with some notice work and give report', 3, 'Paid', "Approved"),
 
-    leaveReqModel(3, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer', '10-02-2025', '12-02-2025', 'Vacation Leave', 'Family vacation to went to a goa with some days', 3, 'Unpaid', "Approved"),
+    leaveReqModel(3, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '10-02-2025', '12-02-2025', 'Vacation Leave', 'Family vacation to went to a goa with some days', 3, 'Unpaid', "Approved"),
 
-    leaveReqModel(4, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer', '15-02-2025', '16-02-2025', 'Emergency Leave', 'Medical emergency, sick emergency and blood', 2, 'Paid', "Rejected"),
+    leaveReqModel(4, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '15-02-2025', '16-02-2025', 'Emergency Leave', 'Medical emergency, sick emergency and blood', 2, 'Paid', "Rejected"),
 
-    leaveReqModel(5, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer', '20-02-2025', '22-02-2025', 'Maternity Leave', 'new member comes with a new happiness in home', 3, 'Paid', "Pending"),
+    leaveReqModel(5, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '20-02-2025', '22-02-2025', 'Maternity Leave', 'new member comes with a new happiness in home', 3, 'Paid', "Pending"),
 
-    leaveReqModel(6, 'admin_Meet', 'https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC', 'Flutter Developer','25-02-2025','26-02-2025','Sick Leave','Flu symptoms and accident with car so very effect',2,'Unpaid', "Rejected"),
+    leaveReqModel(6, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer','25-02-2025','26-02-2025','Sick Leave','Flu symptoms and accident with car so very effect',2,'Unpaid', "Rejected"),
 
   ];
 

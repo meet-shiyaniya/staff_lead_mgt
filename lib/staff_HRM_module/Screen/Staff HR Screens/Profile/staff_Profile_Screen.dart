@@ -121,7 +121,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
                     SizedBox(height: 55,),
 
-                    Center(child: Text("Meet Shiyaniya", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)),
+                    Center(child: Text("Meet Patel", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)),
                     Center(child: Text("meetpatel579@gmail.com", style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: "poppins_light"),)),
 
                     SizedBox(height: 8,),
@@ -349,7 +349,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
                   border: Border.all(color: Colors.deepPurple.shade900, width: 2),
 
-                  image: DecorationImage(image: NetworkImage("https://scontent.famd1-2.fna.fbcdn.net/v/t39.30808-6/475131181_635656495479414_715511376224210954_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=s2nw4seXsIMQ7kNvgEfaYO6&_nc_zt=23&_nc_ht=scontent.famd1-2.fna&_nc_gid=AY4ArClBOcybX-Lubhk0KGY&oh=00_AYCwSlw-LcFI4nSfdPA7XEO6DKJpv6nix_Q3re2cMQedSg&oe=679F93EC")),
+                  image: DecorationImage(image: NetworkImage("https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg")),
 
                 ),
 
