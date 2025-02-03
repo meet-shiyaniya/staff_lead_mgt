@@ -61,7 +61,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
       CategoryModel("Feedback", LeadList.where((lead) => lead.label == "Feedback").toList()),
-      CategoryModel("Negotiations", LeadList.where((lead) => lead.label == "Negotiation").toList()),
+      CategoryModel("Negotiations", LeadList.where((lead) => lead.label == "Negotiations").toList()),
       CategoryModel("Appointment", LeadList.where((lead) => lead.label == "Appointment").toList()),
       CategoryModel("Qualified", LeadList.where((lead) => lead.label == "Qualified").toList()),
       CategoryModel("Fresh", LeadList.where((lead) => lead.label == "Fresh").toList()),
@@ -69,12 +69,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     ];
     filteredLeads = List.from(LeadList);
   }
-  void _updateSearchResults(List<LeadModel> results) {
-    setState(() {
-      filteredLeads = results;
-    });
-  }
-
 
   void filterLeads(String category) {
     setState(() {
@@ -114,23 +108,39 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   String? selectedPurpose;
   String? selectedTime;
 
+
   Map<String, dynamic> appliedFilters = {};
-
-
-  void _updateAppliedFilters(Map<String, dynamic> filters) {
+  void _updateSearchResults(List<LeadModel> results) {
     setState(() {
-      appliedFilters = filters;
-      filteredId = filters['Id'];
+      filteredLeads = results;
     });
   }
-
   void resetFilters() {
     setState(() {
       filteredLeads = List.from(LeadList); // Reset the list to the original
       appliedFilters.clear(); // Clear all applied filters
       filteredId = null; // Clear filtered ID
+      filteredName = null; // Clear filtered Name
+      filteredPhone = null;
+      filteredStatus.clear(); // Clear filtered Status
+
     });
   }
+  String? filteredPhone;
+
+  void _updateAppliedFilters(Map<String, dynamic> filters) {
+    setState(() {
+      appliedFilters = filters;
+
+      // Set filters only if they have a value
+      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty) ? filters['Id'] : null;
+      filteredName = (filters['Name'] != null && filters['Name'].toString().isNotEmpty) ? filters['Name'] : null;
+      filteredPhone = (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty) ? filters['Mobile'] : null;
+      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty ? List.from(filters['Status']) : [];
+    });
+  }
+
+
 
   void showBottomModalSheet(BuildContext context) {
 
@@ -350,6 +360,95 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               ),
             ),
           ),
+          // Applied Filters UI
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Display ID filter if set
+                      // Show ID filter only if it's not null or empty
+                      if (filteredId != null && filteredId!.isNotEmpty)
+                        FilterChip(
+                          label: Text('ID: $filteredId'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredId = null;
+                              appliedFilters.remove('Id');
+                              filteredLeads = List.from(LeadList);
+                            });
+                          }, onSelected: (bool value) {  },
+                        ),
+                      SizedBox(width: 5,),
+
+// Show Name filter only if it's not null or empty
+                      if (filteredName != null && filteredName!.isNotEmpty)
+                        FilterChip(
+                          label: Text('Name: $filteredName'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredName = null;
+                              appliedFilters.remove('Name');
+                              filteredLeads = List.from(LeadList);
+                            });
+                          }, onSelected: (bool value) {  },
+                        ),
+                      SizedBox(width: 5,),
+
+// Show Phone filter only if it's not null or empty
+                      if (filteredPhone != null && filteredPhone!.isNotEmpty)
+                        FilterChip(
+                          label: Text('Phone: $filteredPhone'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredPhone = null;
+                              appliedFilters.remove('Mobile');
+                              filteredLeads = List.from(LeadList);
+                            });
+                          }, onSelected: (bool value) {  },
+                        ),
+                      SizedBox(width: 5,),
+
+// Show Status filter only if it has values
+                      if (filteredStatus.isNotEmpty)
+                        FilterChip(
+                          label: Text('Status: ${filteredStatus.join(', ')}'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredStatus.clear();
+                              appliedFilters.remove('Status');
+                              filteredLeads = List.from(LeadList);
+                            });
+                          }, onSelected: (bool value) {  },
+                        ),
+                      SizedBox(width: 5,),
+
+                      // const  Spacer(),
+
+
+                    ],
+                  ),
+                ),
+                // "Clear All" button
+                if (filteredId != null || filteredName != null || filteredPhone != null || filteredStatus.isNotEmpty)
+                  ElevatedButton(
+                    onPressed: resetFilters,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade300,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin',color: Colors.white)),
+                  ),
+
+              ],
+            ),
+          ),
+
+
           Expanded(
             child: filteredLeads.isEmpty
                 ? Column(

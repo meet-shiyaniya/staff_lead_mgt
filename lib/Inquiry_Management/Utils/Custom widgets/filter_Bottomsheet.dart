@@ -726,7 +726,7 @@ class _FilterModalState extends State<FilterModal> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
     final paddingValue = isSmallScreen ? 8.0 : 16.0;
-    final textFontSize = isSmallScreen ? 14.0 : 16.0;
+    final textFontSize = isSmallScreen ? 16.0 : 18.0;
 
     return Column(
       children: [
@@ -735,6 +735,7 @@ class _FilterModalState extends State<FilterModal> {
             borderRadius: BorderRadius.only(topRight: Radius.circular(20), topLeft: Radius.circular(20)),
             color: Colors.deepPurple.shade400,
           ),
+          padding: EdgeInsets.all(8),
           child: Row(
             children: [
               IconButton(
@@ -758,6 +759,7 @@ class _FilterModalState extends State<FilterModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ID and Name fields row
+                SizedBox(height: 10,),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: paddingValue, vertical: paddingValue / 2),
                   child: TextField(
@@ -770,6 +772,7 @@ class _FilterModalState extends State<FilterModal> {
                     onChanged: (_) => applyFilters(), // Apply filter on change
                   ),
                 ),
+                SizedBox(height: 10,),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: paddingValue, vertical: paddingValue / 2),
                   child: TextField(
@@ -782,6 +785,7 @@ class _FilterModalState extends State<FilterModal> {
                     onChanged: (_) => applyFilters(), // Apply filter on change
                   ),
                 ),
+                SizedBox(height: 10,),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: paddingValue, vertical: paddingValue / 2),
                   child: TextField(
@@ -794,8 +798,10 @@ class _FilterModalState extends State<FilterModal> {
                     onChanged: (_) => applyFilters(), // Apply filter on change
                   ),
                 ),
+                SizedBox(height: 10,),
                 Container(
                   width: double.infinity,
+                  height: 50,
                   padding: EdgeInsets.symmetric(horizontal: paddingValue),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton2(
@@ -815,6 +821,7 @@ class _FilterModalState extends State<FilterModal> {
                             fontSize: textFontSize,
                             fontFamily: "poppins_thin",
                             color: Colors.black,
+
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),

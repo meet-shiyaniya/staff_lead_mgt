@@ -57,7 +57,7 @@ class _LeadsListState extends State<LeadsList> {
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
       CategoryModel("Feedback", LeadList.where((lead) => lead.label == "Feedback").toList()),
-      CategoryModel("Negotiations", LeadList.where((lead) => lead.label == "Negotiation").toList()),
+      CategoryModel("Negotiations", LeadList.where((lead) => lead.label == "Negotiations").toList()),
       CategoryModel("Appointment", LeadList.where((lead) => lead.label == "Appointment").toList()),
       CategoryModel("Qualified", LeadList.where((lead) => lead.label == "Qualified").toList()),
       CategoryModel("Fresh", LeadList.where((lead) => lead.label == "Fresh").toList()),
