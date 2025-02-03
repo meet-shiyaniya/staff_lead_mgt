@@ -52,6 +52,8 @@ dependencies:
   dotted_border: ^2.1.0
   percent_indicator: ^4.2.4
   animate_do: ^3.3.4
+  geolocator: ^13.0.2
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
