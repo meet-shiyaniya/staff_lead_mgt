@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/social_module/login_screen/login_screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Attendannce/attendance_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification/notification_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/staff_Leave_Home_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Working%20Details/staff_Work_Det_Screen.dart';
 
 class profileScreen extends StatelessWidget {
   @override
@@ -10,7 +14,7 @@ class profileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          SizedBox(height: 18),
+          SizedBox(height: 12),
           _buildProfileCard(context),
           SizedBox(height: 20),
           Expanded(child: _buildSettingsList(context)),
@@ -26,7 +30,7 @@ class profileScreen extends StatelessWidget {
       height: 140,
       width: MediaQuery.of(context).size.width.toDouble(),
       margin: EdgeInsets.symmetric(horizontal: 15),
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 25),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -43,7 +47,7 @@ class profileScreen extends StatelessWidget {
         children: [
 
           CircleAvatar(
-            radius: 50,
+            radius: 40,
             backgroundImage: NetworkImage("https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg"),
           ),
 
@@ -57,8 +61,8 @@ class profileScreen extends StatelessWidget {
             children: [
 
               // SizedBox(height: 10),
-              Text("Jhonson King", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black)),
-              Text("jhonking@gmail.com", style: TextStyle(color: Colors.grey.shade600, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13)),
+              Text("Jhonson King", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black)),
+              Text("jhonking@gmail.com", style: TextStyle(color: Colors.grey.shade500, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13)),
               SizedBox(height: 10),
               GestureDetector(
 
@@ -68,7 +72,7 @@ class profileScreen extends StatelessWidget {
 
                 child: Container(
 
-                  height: 31,
+                  height: 30,
                   width: 126,
 
                   decoration: BoxDecoration(
@@ -80,7 +84,7 @@ class profileScreen extends StatelessWidget {
 
                   child: Center(
 
-                    child: Text("View More", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
+                    child: Text("View More", style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
 
                   ),
 
@@ -110,7 +114,7 @@ class profileScreen extends StatelessWidget {
         SizedBox(height: 5,),
         _buildListItem(context, Icons.calendar_month_rounded, "Attendance", 0),
         _buildListItem(context, Icons.leave_bags_at_home_rounded, "Leave", 1),
-        _buildListItem(context, Icons.location_on, "Location", 2),
+        _buildListItem(context, Icons.laptop_mac_rounded, "Working Details", 2),
         SizedBox(height: 20,),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
@@ -118,10 +122,13 @@ class profileScreen extends StatelessWidget {
         ),
         SizedBox(height: 5,),
         _buildListItem(context, Icons.notifications_rounded, "Pop-up Notification", 3),
-        SizedBox(height: 15,),
-        Divider(color: Colors.grey.shade400,),
-        SizedBox(height: 15,),
-        _buildListItem(context, Icons.logout, "Log Out", 4),
+        SizedBox(height: 20,),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+          child: Text("Account Logout", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
+        ),
+        SizedBox(height: 5,),
+        _buildListItem(context, Icons.power_settings_new_rounded, "Log Out", 4),
       ],
     );
   }
@@ -142,17 +149,58 @@ class profileScreen extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon, color: Colors.deepPurple.shade300, size: 24),
         title: Text(text, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.grey.shade800)),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade800),
+        trailing: index == 4 ? null : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade800),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => index == 0 ? attendanceScreen() : staffLeaveHomeScreen(),
-            ),
-          );
+          if (index == 4) {
+            _showLogoutDialog(context);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => index == 0 ? attendanceScreen() : index == 1 ? staffLeaveHomeScreen() : index == 2 ? staffWorkDetScreen() : NotificationScreen(),
+              ),
+            );
+          }
         },
       ),
     );
   }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: appColor.subFavColor,
+          title: Text("Confirm Logout", style: TextStyle(fontSize: 22, color: Colors.black, fontFamily: "poppins_thin"),),
+          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: TextStyle(fontSize: 13.5, color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w100),),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("Cancel", style: TextStyle(color: appColor.favColor, fontFamily: "poppins_thin", fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: (){
+
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false,);
+
+              },
+              child: Text("Logout", style: TextStyle(color: Colors.white, fontFamily: "poppins_thin", fontSize: 14)),
+              style: ElevatedButton.styleFrom(
+
+                backgroundColor: Colors.red.shade400
+
+              ),
+            ),
+
+          ],
+        );
+      },
+    );
+  }
+
 
 }

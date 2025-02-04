@@ -17,21 +17,21 @@ class CustomAppBarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
-      width: 40,
-      margin: EdgeInsets.only(right:10),
+      height: 44,
+      width: 44,
+      // margin: EdgeInsets.all(7),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
         boxShadow: [
           BoxShadow(
             offset: Offset(1,3),
-            blurRadius: 5,
+            blurRadius: 3,
             color: Colors.grey.shade400
           )
         ]
       ),
-      child: Icon(icon,size: 18,),
+      child: Icon(icon,size: 20,),
     );
   }
 }
