@@ -253,7 +253,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Hello, Meetashri Patel",
+                    "Hello, Maulik Patel",
                     style: TextStyle(
                       fontFamily: "poppins_thin",
                       fontWeight: FontWeight.bold,

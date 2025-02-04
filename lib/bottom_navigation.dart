@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:hr_app/Inquiry_Management/test.dart';
 import 'package:hr_app/dashboard.dart';
 import 'package:hr_app/social_module/chatting_module/example.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
@@ -19,7 +20,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
 
   final List<Widget> _screens = [
     Dashboard(),
-    InquiryManagementScreen(),
+    TestScreen(),
     ExampleTabbar(),
     profileScreen(),
   ];
