@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:animate_do/animate_do.dart'; // For animation effects
 import 'package:shared_preferences/shared_preferences.dart';
@@ -382,7 +383,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
                           //   ),
                           //   textAlign: TextAlign.center,
                           // ),
-                          center:Image.asset("asset/dashboardChartImage.png",height: 50,width: 50,),
+                          center:Lottie.asset('asset/Inquiry_module/no_result.json', fit: BoxFit.contain, width: 50, height: 50),
                           progressColor: AppColors.primaryColor,
                           backgroundColor: Colors.grey.shade200,
                           circularStrokeCap: CircularStrokeCap.round,

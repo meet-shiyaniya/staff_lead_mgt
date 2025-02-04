@@ -23,13 +23,13 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
   int _selectedPeriod = 0;  // 0 - Today, 1 - Last 7 Days, 2 - Last Month, 3 - Yearly
   final GlobalKey _iconKey = GlobalKey();
   final List<List<double>> inquiryValuesByPeriod = [
-    [50, 30, 15, 5,20,10],  // Today
-    [220, 100, 80, 40,10,20], // Last 7 Days
-    [500, 200, 150, 100,40,30], // Last Month
-    [2000, 800, 600, 400,200,30], // Yearly
+    [50, 30, 15, 5],  // Today
+    [220, 100, 80, 40], // Last 7 Days
+    [500, 200, 150, 100], // Last Month
+    [2000, 800, 600, 400], // Yearly
   ];
 
-  final List<String> labels = ["All", "Dismiss", "Today's","Pending","Cnr", "Assigned"];
+  final List<String> labels = ["Inquiries", "Visit","Booking Cancel   ", "Conversion"];
   // int _selectedPeriod = 0; // 0 - Today, 1 - Last 7 Days, 2 - Last Month, 3 - Yearly
   // final GlobalKey _iconKey = GlobalKey();
   //
