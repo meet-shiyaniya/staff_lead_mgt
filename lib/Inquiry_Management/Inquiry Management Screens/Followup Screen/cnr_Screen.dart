@@ -1,13 +1,10 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import '../../Model/category_Model.dart';
 import '../../Model/followup_Model.dart';
 import '../../Utils/Custom widgets/custom_buttons.dart';
 import '../../Utils/Custom widgets/custom_dialog.dart';
 import '../../Utils/Custom widgets/pending_Card.dart';
-// import '../../test_Screen.dart';
 import 'list_filter_Screen.dart';
 
 class CnrScreen extends StatefulWidget {

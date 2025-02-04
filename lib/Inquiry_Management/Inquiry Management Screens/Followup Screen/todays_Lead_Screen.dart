@@ -44,21 +44,22 @@ class ShiftCard extends StatelessWidget {
 
 
 
-  List<Color> colorList=[Colors.green.shade100,Colors.orange.shade100,Colors.deepPurple.shade100,Colors.red.shade100,Colors.lightBlue.shade100];
-
-  Color _getrandomcolor(){
-    final _random=Random();
-    return colorList[_random.nextInt(colorList.length)];
-  }
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (context) => TimingScreen(),));
       },
-      child: Card(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(1, 3)),
+          ]
+
+        ),
         margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        color: _getrandomcolor(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(

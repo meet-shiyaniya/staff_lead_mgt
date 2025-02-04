@@ -1,14 +1,10 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import '../social_module/colors/colors.dart';
 import 'Inquiry Management Screens/all_inquiries_Screen.dart';
 import 'Inquiry Management Screens/assign_to_other_Screen.dart';
-import 'Inquiry Management Screens/contact_block_Screen.dart';
 import 'Inquiry Management Screens/dismiss_request_Screen.dart';
 import 'Inquiry Management Screens/followup_and_cnr_Screen.dart';
-import 'Utils/Custom widgets/custom_widgets.dart';
 import 'Utils/category_Card.dart';
 
 class InquiryManagementScreen extends StatefulWidget {
