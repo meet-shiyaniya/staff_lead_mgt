@@ -29,7 +29,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 50,
+        toolbarHeight: 60,
         backgroundColor: _selectedIndex == 2
             ? AppColors.primaryColor.withOpacity(0.7)
             : Colors.white, // Default color
@@ -38,6 +38,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
             icon: Icons.notifications_rounded,
             color: Colors.grey.shade100,
           ),
+          SizedBox(width: 15,),
         ],
         flexibleSpace: Container(color: Colors.white,),
       ),
