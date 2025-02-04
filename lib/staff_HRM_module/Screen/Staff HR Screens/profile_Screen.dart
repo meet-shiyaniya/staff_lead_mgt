@@ -10,9 +10,9 @@ class profileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          SizedBox(height: 25),
+          SizedBox(height: 18),
           _buildProfileCard(context),
-          SizedBox(height: 0),
+          SizedBox(height: 20),
           Expanded(child: _buildSettingsList(context)),
         ],
       ),

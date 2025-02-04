@@ -5,6 +5,7 @@ import 'package:hr_app/social_module/chatting_module/example.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:hr_app/social_module/custom_widget/appbar_button.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/profile_Screen.dart';
 import 'Inquiry_Management/Inquiry_Management_Screen.dart';
 
 
@@ -20,7 +21,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     Dashboard(),
     InquiryManagementScreen(),
     ExampleTabbar(),
-    staffProfileScreen(),
+    profileScreen(),
   ];
 
   @override
@@ -32,7 +33,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
             : Colors.white, // Default color
         actions: [
           CustomAppBarButton(
-            icon: Icons.notifications_none,
+            icon: Icons.notifications_rounded,
             color: Colors.grey.shade100,
           ),
         ],

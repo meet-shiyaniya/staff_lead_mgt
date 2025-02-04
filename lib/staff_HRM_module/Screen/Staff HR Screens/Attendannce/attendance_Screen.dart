@@ -139,7 +139,6 @@ class _attendanceScreenState extends State<attendanceScreen> {
     return Container(
 
       height: 250,
-
       padding: EdgeInsets.all(10),
 
       decoration: BoxDecoration(
