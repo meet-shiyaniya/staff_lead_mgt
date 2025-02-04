@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Attendannce/attendance_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification/notification_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/staff_Leave_Home_Screen.dart';
 
@@ -147,7 +148,7 @@ class profileScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => index == 0 ? attendanceScreen() : staffLeaveHomeScreen(),
+              builder: (context) => index == 0 ? attendanceScreen() : index==1?staffLeaveHomeScreen():NotificationScreen(),
             ),
           );
         },
