@@ -10,7 +10,7 @@ class profileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          SizedBox(height: 80),
+          SizedBox(height: 25),
           _buildProfileCard(context),
           SizedBox(height: 0),
           Expanded(child: _buildSettingsList(context)),
@@ -31,7 +31,7 @@ class profileScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 10),
+          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(1, 3)),
         ],
       ),
 
@@ -107,26 +107,38 @@ class profileScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Text("Account", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
         ),
+        SizedBox(height: 5,),
         _buildListItem(context, Icons.calendar_month_rounded, "Attendance", 0),
         _buildListItem(context, Icons.leave_bags_at_home_rounded, "Leave", 1),
         _buildListItem(context, Icons.location_on, "Location", 2),
-        SizedBox(height: 10,),
+        SizedBox(height: 20,),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Text("Notification", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
         ),
+        SizedBox(height: 5,),
         _buildListItem(context, Icons.notifications_rounded, "Pop-up Notification", 3),
-        SizedBox(height: 5,),
-        Divider(color: Colors.grey.shade500,),
-        SizedBox(height: 5,),
+        SizedBox(height: 15,),
+        Divider(color: Colors.grey.shade400,),
+        SizedBox(height: 15,),
         _buildListItem(context, Icons.logout, "Log Out", 4),
       ],
     );
   }
 
   Widget _buildListItem(BuildContext context, IconData icon, String text, int index) { // Add context here
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    return Container(
+      width: MediaQuery.of(context).size.width.toDouble(),
+      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+      decoration: BoxDecoration(
+
+        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(1, 3)),
+        ],
+
+      ),
       child: ListTile(
         leading: Icon(icon, color: Colors.deepPurple.shade300, size: 24),
         title: Text(text, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.grey.shade800)),

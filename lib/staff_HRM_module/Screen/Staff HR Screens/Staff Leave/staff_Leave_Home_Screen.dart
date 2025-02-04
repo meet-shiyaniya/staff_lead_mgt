@@ -83,7 +83,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
                       child: Container(
 
                         height: 40,
-                        width: 164  ,
+                        width: MediaQuery.of(context).size.width.toDouble() / 2.4,
 
                         decoration: BoxDecoration(
 
@@ -152,7 +152,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
                       child: Container(
 
                         height: 40,
-                        width: 164,
+                        width: MediaQuery.of(context).size.width.toDouble() / 2.4,
 
                         decoration: BoxDecoration(
 
