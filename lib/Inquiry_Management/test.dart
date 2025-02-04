@@ -6,6 +6,7 @@ import 'Inquiry Management Screens/assign_to_other_Screen.dart';
 import 'Inquiry Management Screens/dismiss_request_Screen.dart';
 import 'Inquiry Management Screens/followup_and_cnr_Screen.dart';
 import 'Utils/Custom widgets/custom_widgets.dart';
+import 'Utils/category_Card.dart';
 
 class TestScreen extends StatefulWidget {
   const TestScreen({super.key});
@@ -236,24 +237,44 @@ class _TestScreenState extends State<TestScreen> {
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       children: [
-                        CategoryCard(
-                          icon: Icons.assignment,
-                          title: 'Followup & CNR',
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen(),));
+                          },
+                          child: CategoryCard(
+                            icon: Icons.assignment,
+                            title: 'Followup & CNR',
+                          ),
                         ),
                         SizedBox(height: 12),
-                        CategoryCard(
-                          icon: Icons.list_alt,
-                          title: 'All Inquiries'
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => AllInquiriesScreen(),));
+                          },
+                          child: CategoryCard(
+                            icon: Icons.list_alt,
+                            title: 'All Inquiries'
+                          ),
                         ),
                         SizedBox(height: 12),
-                        CategoryCard(
-                          icon: Icons.cancel,
-                          title: 'Dismiss Request',
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => DismissRequestScreen(),));
+                          },
+                          child: CategoryCard(
+                            icon: Icons.cancel,
+                            title: 'Dismiss Request',
+                          ),
                         ),
                         SizedBox(height: 12),
-                        CategoryCard(
-                          icon: Icons.swap_horiz,
-                          title: 'Assign to Other'
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => AssignToOtherScreen(),));
+                          },
+                          child: CategoryCard(
+                            icon: Icons.swap_horiz,
+                            title: 'Assign to Other'
+                          ),
                         ),
                       ],
                     ),
@@ -438,70 +459,3 @@ class _TestScreenState extends State<TestScreen> {
   }
 }
 
-class CategoryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
-  const CategoryCard({
-    Key? key,
-    required this.icon,
-    required this.title
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: Colors.deepPurple.shade100,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color:  Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.grey.shade200,
-              child: Icon(
-                icon,
-                size: 28,
-                color: Colors.deepPurple,
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: "poppins_thin",
-                      color:  Colors.black,
-                    ),
-                  ),
-
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.white,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
