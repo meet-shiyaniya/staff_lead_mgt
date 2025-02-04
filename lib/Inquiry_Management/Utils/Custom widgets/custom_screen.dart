@@ -1082,7 +1082,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${widget.data.name ?? 'Unknown'}",
+                  widget.data.name,
                   style: const TextStyle(
                     fontFamily: "poppins_thin",
                     fontSize: 20,
@@ -1640,7 +1640,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ],
             onChanged: (value) {
               setState(() {
-                widget.selectedPurpose = value as String?;
+                widget.selectedPurpose = value;
               });
             },
           ),
@@ -1715,7 +1715,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 ],
                 onChanged: (value) {
                   setState(() {
-                    widget.selectedaction = value as String?;
+                    widget.selectedaction = value;
                   });
                 },
               ),
