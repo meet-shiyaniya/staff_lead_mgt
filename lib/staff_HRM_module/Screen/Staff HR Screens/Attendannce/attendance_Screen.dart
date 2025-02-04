@@ -42,29 +42,35 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
       appBar: AppBar(
 
-        title: Text('Attendance Dashboard', style: TextStyle(color: Colors.white, fontSize: 18, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
+        title: Text('Attendance Dashboard', style: TextStyle(color: Colors.black, fontSize: 18, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
 
-        backgroundColor: appColor.primaryColor,
+        backgroundColor: Colors.white,
 
         centerTitle: true,
 
-        foregroundColor: Colors.transparent,
+        leading: Container(
+          margin: EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 3, offset: Offset(1, 3)),],
+          ),
+          child: IconButton(
 
-        leading: IconButton(
+            onPressed: (){
+              Navigator.pop(context);
+            },
 
-          onPressed: (){
-            Navigator.pop(context);
-          },
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20,),
 
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20,),
-
+          ),
         ),
 
         actions: [
 
           PopupMenuButton<String>(
 
-            icon: Icon(Icons.more_vert, color: Colors.white, size: 20,),
+            icon: Icon(Icons.more_vert, color: Colors.black, size: 20,),
 
             onSelected: (String value) {
 
@@ -138,11 +144,11 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
       decoration: BoxDecoration(
 
-        color: appColor.subPrimaryColor,
+        color: Colors.white,
 
         borderRadius: BorderRadius.circular(12),
 
-        boxShadow: [BoxShadow(color: Colors.grey.shade500, blurRadius: 5)],
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(1, 3))],
 
       ),
 
@@ -258,141 +264,137 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
   Widget _attendanceCard({required String date, required String checkIn, required String checkOut, required String status}) {
 
-    return Card(
+    return Container(
 
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-      elevation: 2,
-
-      color: appColor.subPrimaryColor,
-
+      height: 80,
+      width: MediaQuery.of(context).size.width.toDouble(),
       margin: EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
 
-      child: Container(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(1, 3))],
 
-        height: 80,
-        width: MediaQuery.of(context).size.width.toDouble(),
+      ),
 
-        child: Row(
+      child: Row(
 
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
 
-            SizedBox(width: 12,),
+          SizedBox(width: 12,),
 
-            Container(
+          Container(
 
-              height: 46,
-              width: 36,
+            height: 46,
+            width: 36,
 
-              decoration: BoxDecoration(
+            decoration: BoxDecoration(
 
-                // color: appColor.boxColor,
+              // color: appColor.boxColor,
 
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.deepPurple.shade200, width: 1.2),
-
-              ),
-
-              child: Center(
-
-                child: Icon(status == 'Present' ? Icons.check_circle : Icons.cancel, color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900, size: 22,),
-
-              ),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.grey.shade400, width: 1.2),
 
             ),
 
-            SizedBox(width: 16,),
+            child: Center(
 
-            Container(
+              child: Icon(status == 'Present' ? Icons.check_circle : Icons.cancel, color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900, size: 22,),
 
-              height: 80,
-              width: 190,
+            ),
 
-              child: Column(
+          ),
 
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                
-                children: [
-                  
-                  Container(
+          SizedBox(width: 16,),
 
-                    height: 19,
-                    width: 190,
-                    // color: Colors.red.shade200,
+          Container(
 
-                    child: Column(
+            height: 80,
+            width: 190,
 
-                      mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+
+              children: [
+
+                Container(
+
+                  height: 19,
+                  width: 190,
+                  // color: Colors.red.shade200,
+
+                  child: Column(
+
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
+
+                    ],
+
+                  ),
+
+                ),
+
+                Row(
+
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
+
+                  children: [
+
+                    Column(
+
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+
                       children: [
 
-                        Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                        Text("Check In", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                        Text(checkIn, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
                       ],
 
                     ),
 
-                  ),
+                    Spacer(),
 
-                  Row(
+                    Column(
 
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
 
-                    children: [
+                      children: [
 
-                      Column(
+                        Text("Check Out", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                        Text(checkOut, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
+                      ],
 
-                        children: [
+                    ),
 
-                          Text("Check In", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
-                          Text(checkIn, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                  ],
 
-                        ],
+                ),
 
-                      ),
+              ],
 
-                      Spacer(),
-
-                      Column(
-
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-
-                        children: [
-
-                          Text("Check Out", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
-                          Text(checkOut, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                        ],
-
-                      ),
-
-                    ],
-
-                  ),
-                  
-                ],
-                
-              ),
-              
             ),
 
-            Spacer(),
+          ),
 
-            Text(status, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, fontFamily: "poppins_light", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
+          Spacer(),
 
-            SizedBox(width: 12,),
+          Text(status, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, fontFamily: "poppins_light", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
 
-          ],
+          SizedBox(width: 12,),
 
-        ),
+        ],
 
       ),
 

@@ -101,14 +101,14 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
               child: Container(
 
-                height: 620,
+                height: MediaQuery.of(context).size.height.toDouble() / 1.33,
                 width: MediaQuery.of(context).size.width.toDouble(),
 
                 decoration: BoxDecoration(
 
                   borderRadius: BorderRadius.circular(15),
 
-                  boxShadow: [BoxShadow(color: Colors.deepPurple.shade50, blurRadius: 15)],
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(1, 3))],
 
                   color: Colors.white,
 
@@ -153,7 +153,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
                             child: Container(
 
                               height: 35,
-                              width: 148,
+                              width: MediaQuery.of(context).size.width.toDouble() / 2.7,
                               decoration: BoxDecoration(
 
                                 borderRadius: BorderRadius.circular(6),
@@ -197,7 +197,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
                             child: Container(
 
                               height: 35,
-                              width: 148,
+                              width: MediaQuery.of(context).size.width.toDouble() / 2.7,
                               decoration: BoxDecoration(
 
                                 borderRadius: BorderRadius.circular(6),
