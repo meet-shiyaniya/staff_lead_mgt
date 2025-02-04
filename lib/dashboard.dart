@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/all_inquiries_Screen.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/dismiss_request_Screen.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/followup_and_cnr_Screen.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
@@ -383,7 +386,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
                           //   ),
                           //   textAlign: TextAlign.center,
                           // ),
-                          center:Lottie.asset('asset/Inquiry_module/no_result.json', fit: BoxFit.contain, width: 50, height: 50),
+                          center:Lottie.asset('asset/working_hours.json', fit: BoxFit.contain, width: 50, height: 50),
                           progressColor: AppColors.primaryColor,
                           backgroundColor: Colors.grey.shade200,
                           circularStrokeCap: CircularStrokeCap.round,
@@ -584,65 +587,70 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
                     physics: NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index){
 
-                  return Container(
-                    margin: EdgeInsets.only(left: 10,right: 10),
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.deepPurple.shade50,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.grey.shade300,
-                              offset: Offset(1,3),
-                              blurRadius: 1,
-                              spreadRadius: 1
+                  return GestureDetector(
+                    onTap: () {
+                      index==0?Navigator.push(context, MaterialPageRoute(builder: (context) => AllInquiriesScreen(),)):index==1?Navigator.push(context, MaterialPageRoute(builder: (context) => DismissRequestScreen(),)):index==2?Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen(),)):Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen(),));
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(left: 10,right: 10),
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.deepPurple.shade50,
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.grey.shade300,
+                                offset: Offset(1,3),
+                                blurRadius: 1,
+                                spreadRadius: 1
+                            )
+                          ]
+                      ),
+                      child: Column(
+
+                        crossAxisAlignment:CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  leads[index]["name"],
+                                  style: TextStyle(fontFamily: "poppins_thin",fontSize: 16),
+                                ),
+                                Container(
+                                    height: 60,
+                                    width: 40,
+                                    margin: EdgeInsets.only(right: 10),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      // shape: BoxShape.circle,
+                                      gradient: leads[index]['bgColor'],
+                                      // color:Colors.deepOrangeAccent.shade400
+                                    ),
+                                    child: Icon(leads[index]["icon"],color: Colors.white,weight: 35,)
+                                ),
+
+
+
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding:  EdgeInsets.only(left: 10,right: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(leads[index]["leadCount"],style: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold,fontSize: 23),),
+                                Text(leads[index]["detail"],style: TextStyle(fontFamily: "poppins",fontWeight: FontWeight.bold,),)
+                              ],
+                            ),
                           )
-                        ]
+                        ],
+                      ),
+
                     ),
-                    child: Column(
-
-                      crossAxisAlignment:CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                leads[index]["name"],
-                                style: TextStyle(fontFamily: "poppins_thin",fontSize: 16),
-                              ),
-                              Container(
-                                  height: 60,
-                                  width: 40,
-                                  margin: EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    // shape: BoxShape.circle,
-                                    gradient: leads[index]['bgColor'],
-                                    // color:Colors.deepOrangeAccent.shade400
-                                  ),
-                                  child: Icon(leads[index]["icon"],color: Colors.white,weight: 35,)
-                              ),
-
-
-
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding:  EdgeInsets.only(left: 10,right: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(leads[index]["leadCount"],style: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold,fontSize: 23),),
-                              Text(leads[index]["detail"],style: TextStyle(fontFamily: "poppins",fontWeight: FontWeight.bold,),)
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-
                   );
                 }),
               )
