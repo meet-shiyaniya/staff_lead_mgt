@@ -18,13 +18,13 @@ class _TestScreenState extends State<TestScreen> {
   int _selectedPeriod = 0;  // 0 - Today, 1 - Last 7 Days, 2 - Last Month, 3 - Yearly
   final GlobalKey _iconKey = GlobalKey();
   final List<List<double>> inquiryValuesByPeriod = [
-    [50, 30, 15, 5],  // Today
-    [220, 100, 80, 40], // Last 7 Days
-    [500, 200, 150, 100], // Last Month
-    [2000, 800, 600, 400], // Yearly
+    [50, 30, 15, 5,20,10],  // Today
+    [220, 100, 80, 40,10,20], // Last 7 Days
+    [500, 200, 150, 100,40,30], // Last Month
+    [2000, 800, 600, 400,200,30], // Yearly
   ];
 
-  final List<String> labels = ["All", "Dismissed", "Follow-up", "Assigned"];
+  final List<String> labels = ["All", "Dismiss", "Today's","Pending","Cnr", "Assigned"];
   // int _selectedPeriod = 0; // 0 - Today, 1 - Last 7 Days, 2 - Last Month, 3 - Yearly
   // final GlobalKey _iconKey = GlobalKey();
   //
@@ -162,6 +162,7 @@ class _TestScreenState extends State<TestScreen> {
                                             labels[value.toInt()],
                                             style: TextStyle(
                                               color: Colors.white,
+                                              fontSize: 12,
                                               fontFamily: "poppins_thin",
                                             ),
                                           );
@@ -238,26 +239,21 @@ class _TestScreenState extends State<TestScreen> {
                         CategoryCard(
                           icon: Icons.assignment,
                           title: 'Followup & CNR',
-                          amount: '120',
-                          isActive: true,
                         ),
                         SizedBox(height: 12),
                         CategoryCard(
                           icon: Icons.list_alt,
-                          title: 'All Inquiries',
-                          amount: '85',
+                          title: 'All Inquiries'
                         ),
                         SizedBox(height: 12),
                         CategoryCard(
                           icon: Icons.cancel,
                           title: 'Dismiss Request',
-                          amount: '60',
                         ),
                         SizedBox(height: 12),
                         CategoryCard(
                           icon: Icons.swap_horiz,
-                          title: 'Assign to Other',
-                          amount: '15',
+                          title: 'Assign to Other'
                         ),
                       ],
                     ),
@@ -445,15 +441,11 @@ class _TestScreenState extends State<TestScreen> {
 class CategoryCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String amount;
-  final bool isActive;
 
   const CategoryCard({
     Key? key,
     required this.icon,
-    required this.title,
-    required this.amount,
-    this.isActive = false,
+    required this.title
   }) : super(key: key);
 
   @override
@@ -498,15 +490,7 @@ class CategoryCard extends StatelessWidget {
                       color:  Colors.black,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '$amount Leads',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: "poppins_light",
-                      color:  Colors.black54,
-                    ),
-                  ),
+
                 ],
               ),
             ),
