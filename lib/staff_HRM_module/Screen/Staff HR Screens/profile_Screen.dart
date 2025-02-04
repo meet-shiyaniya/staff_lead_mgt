@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Attendannce/attendance_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification/notification_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/staff_Leave_Home_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Working%20Details/staff_Work_Det_Screen.dart';
@@ -13,7 +14,7 @@ class profileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          SizedBox(height: 18),
+          SizedBox(height: 12),
           _buildProfileCard(context),
           SizedBox(height: 20),
           Expanded(child: _buildSettingsList(context)),
@@ -152,13 +153,11 @@ class profileScreen extends StatelessWidget {
         onTap: () {
           if (index == 4) {
             _showLogoutDialog(context);
-          } else if (index == 3) {
-
           } else {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => index == 0 ? attendanceScreen() : index == 1 ? staffLeaveHomeScreen() : staffWorkDetScreen(),
+                builder: (context) => index == 0 ? attendanceScreen() : index == 1 ? staffLeaveHomeScreen() : index == 2 ? staffWorkDetScreen() : NotificationScreen(),
               ),
             );
           }
