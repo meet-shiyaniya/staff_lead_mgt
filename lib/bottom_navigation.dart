@@ -27,6 +27,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 50,
         backgroundColor: _selectedIndex == 2
             ? AppColors.primaryColor.withOpacity(0.7)
             : Colors.white, // Default color

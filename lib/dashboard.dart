@@ -280,7 +280,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
       body: Column(
         children: [
           Container(
-            height: 155,
+            height: MediaQuery.of(context).size.height/4.6,
             width: double.infinity,
             margin: const EdgeInsets.only(left: 15,right: 15,top: 15),
             decoration: BoxDecoration(
@@ -576,7 +576,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
             child: GridView.builder(
 
                 itemCount: leads.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2,childAspectRatio: 1.10,mainAxisSpacing: 10),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2,childAspectRatio: 1.05,mainAxisSpacing: 10),
                 physics: NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index){
 

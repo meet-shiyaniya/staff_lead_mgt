@@ -31,7 +31,7 @@ class CustomAppBarButton extends StatelessWidget {
           )
         ]
       ),
-      child: Icon(icon),
+      child: Icon(icon,size: 18,),
     );
   }
 }
