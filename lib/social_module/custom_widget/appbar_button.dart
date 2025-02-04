@@ -19,7 +19,7 @@ class CustomAppBarButton extends StatelessWidget {
     return Container(
       height: 40,
       width: 40,
-      margin: EdgeInsets.all(7),
+      margin: EdgeInsets.only(right:10),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,

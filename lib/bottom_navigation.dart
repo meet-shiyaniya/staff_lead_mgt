@@ -9,7 +9,6 @@ import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staf
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/profile_Screen.dart';
 import 'Inquiry_Management/Inquiry_Management_Screen.dart';
 
-
 class BottomNavScreen extends StatefulWidget {
   @override
   _BottomNavScreenState createState() => _BottomNavScreenState();
@@ -29,18 +28,33 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 0, // Remove default leading space
         toolbarHeight: 50,
+        title: Row(
+          children: [
+            if (_selectedIndex == 0)
+              Image.asset("asset/appbarImage.png", height: 25,),
+            if (_selectedIndex == 0)
+              const SizedBox(width: 8), // Optional small spacing
+            if (_selectedIndex == 0)
+              const Text(
+                "Dashboard",
+                style: TextStyle(fontFamily: "poppins_thin", fontSize: 22),
+              ),
+          ],
+        ),
         backgroundColor: _selectedIndex == 2
             ? AppColors.primaryColor.withOpacity(0.7)
-            : Colors.white, // Default color
+            : Colors.white,
         actions: [
           CustomAppBarButton(
             icon: Icons.notifications_rounded,
             color: Colors.grey.shade100,
           ),
         ],
-        flexibleSpace: Container(color: Colors.white,),
+        elevation: 0,
       ),
+
       backgroundColor: Colors.white,
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(

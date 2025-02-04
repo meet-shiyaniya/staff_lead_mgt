@@ -5,9 +5,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:image_picker/image_picker.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
-
 import '../colors/colors.dart';
-
 
 class ChatScreen extends StatefulWidget {
   final Map<String, String> contact;
@@ -81,10 +79,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _pickDocument() async {
-    // You can use a file picker package to select documents
-  }
-
   void _onEmojiSelected(Emoji emoji) {
     _controller.text += emoji.emoji;
   }
@@ -94,11 +88,23 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
+        leadingWidth: 60,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundImage: AssetImage('assets/user_exampletabbar.png'), // Ensure this asset exists
+          ),
+        ),
         title: Text(
           widget.contact['name']!,
-          style: GoogleFonts.poppins(color: Colors.white),
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        backgroundColor: AppColors.primaryColor.withOpacity(0.2),
+        backgroundColor: AppColors.primaryColor.withOpacity(0.7),
+        elevation: 0,
       ),
       body: Column(
         children: [
@@ -109,8 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
               onSendPressed: (message) => _sendMessage(message),
               user: const types.User(id: 'user_1'),
               theme: DefaultChatTheme(
-                attachmentButtonIcon:
-                    const Icon(Icons.add, color: Colors.black),
+                attachmentButtonIcon: const Icon(Icons.add, color: Colors.black),
                 primaryColor: AppColors.primaryColor.withOpacity(0.7),
                 inputBackgroundColor: Colors.white,
                 inputTextColor: Colors.black,
@@ -143,10 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.attach_file),
-                  onPressed: () {
-                    // Open a file picker or image picker
-                    _pickImage();
-                  },
+                  onPressed: _pickImage,
                 ),
                 Expanded(
                   child: TextField(

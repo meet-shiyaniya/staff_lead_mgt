@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/bottom_navigation.dart';
+import 'package:hr_app/dashboard.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -70,6 +72,12 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
         _status = "✅ Attendance marked: Present";
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
+
+      // Navigate to the Dashboard screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => BottomNavScreen()),
+      );
     } else {
       setState(() {
         _status = "❌ Attendance marked: Absent";
@@ -166,3 +174,5 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
     );
   }
 }
+
+

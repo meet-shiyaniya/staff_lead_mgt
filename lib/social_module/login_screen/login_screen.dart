@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../bottom_navigation.dart';
 import '../../dashboard.dart';
+import '../../face_onboarding.dart';
 import '../chatting_module/example.dart';
 import '../colors/colors.dart';
 import '../registration_screen/register_screen.dart';
@@ -158,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>BottomNavScreen()));
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
                                   }
                                 },
                                 child: const Text(
