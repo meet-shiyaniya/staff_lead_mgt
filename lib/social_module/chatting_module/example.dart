@@ -91,12 +91,13 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           Column(
             children: [
               Container(
-                height: MediaQuery.of(context).size.height / 3.5,
+                height: MediaQuery.of(context).size.height / 4.5,
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -111,7 +112,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                     AppBar(
                       backgroundColor: const Color.fromRGBO(193, 133, 232, 0),
                       leading: Padding(
-                        padding: const EdgeInsets.all(5.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: CustomAppBarButton(
                           icon: Icons.arrow_back_ios_rounded,
                           color: Colors.white.withOpacity(0.7),
@@ -127,7 +128,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                                       builder: (context) => LoginScreen()));
                             },
                             child: CustomAppBarButton(
-                                icon: Icons.more_horiz,
+                                icon: Icons.notifications_none,
                                 color: Colors.white.withOpacity(0.7)))
                       ],
                     ),
@@ -185,7 +186,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
             ],
           ),
           Positioned(
-            top: MediaQuery.of(context).size.height / 3.9,
+            top: MediaQuery.of(context).size.height / 5.1,
             left: MediaQuery.of(context).size.width / 17,
             child: Column(
               children: [

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:hr_app/dashboard.dart';
+import 'package:hr_app/social_module/chatting_module/example.dart';
+import 'package:hr_app/social_module/colors/colors.dart';
+import 'package:hr_app/social_module/custom_widget/appbar_button.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/staff_Dash_Screen.dart';
-
 import 'Inquiry_Management/Inquiry_Management_Screen.dart';
-import 'Inquiry_Management/test.dart';
+
 
 class BottomNavScreen extends StatefulWidget {
   @override
@@ -18,16 +19,24 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   final List<Widget> _screens = [
     Dashboard(),
     InquiryManagementScreen(),
-    // TestScreen(),
-    staffDashScreen(),
+    ExampleTabbar(),
     staffProfileScreen(),
   ];
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: _selectedIndex == 2
+            ? AppColors.primaryColor.withOpacity(0.7)
+            : Colors.white, // Default color
+        actions: [
+          CustomAppBarButton(
+            icon: Icons.notifications_none,
+            color: Colors.grey.shade100,
+          ),
+        ],
+      ),
       backgroundColor: Colors.white,
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
@@ -38,7 +47,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
           color: Colors.grey[600],
           activeColor: Colors.white,
           tabBackgroundColor: Colors.black,
-          tabBorderRadius: 15, // Less rounded shape
+          tabBorderRadius: 15,
           gap: 8,
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
           tabs: const [
@@ -58,6 +67,3 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     );
   }
 }
-
-
-
