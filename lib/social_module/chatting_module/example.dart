@@ -97,7 +97,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
           Column(
             children: [
               Container(
-                height: MediaQuery.of(context).size.height / 4.5,
+                height: MediaQuery.of(context).size.height / 5.2,
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -109,30 +109,6 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                 ),
                 child: Column(
                   children: [
-                    AppBar(
-                      backgroundColor: const Color.fromRGBO(193, 133, 232, 0),
-                      leading: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: CustomAppBarButton(
-                          icon: Icons.arrow_back_ios_rounded,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                      elevation: 0,
-                      actions: [
-                        GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => LoginScreen()));
-                            },
-                            child: CustomAppBarButton(
-                                icon: Icons.notifications_none,
-                                color: Colors.white.withOpacity(0.7)))
-                      ],
-                    ),
-                    const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(left: 15.0, right: 15),
                       child: TextFormField(
@@ -186,7 +162,7 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
             ],
           ),
           Positioned(
-            top: MediaQuery.of(context).size.height / 5.1,
+            top: MediaQuery.of(context).size.height / 9.5,
             left: MediaQuery.of(context).size.width / 17,
             child: Column(
               children: [
@@ -205,15 +181,15 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                           borderRadius: BorderRadius.circular(10),
                           color: _selectedIndex == 0
                               ? Colors.grey.shade200
-                              : Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade400,
-                              offset: const Offset(1, 3),
-                              blurRadius: 3,
-                              spreadRadius: 1,
-                            )
-                          ],
+                              : Colors.white.withOpacity(0.6),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.grey.shade400,
+                          //     offset: const Offset(1, 3),
+                          //     blurRadius: 3,
+                          //     spreadRadius: 1,
+                          //   )
+                          // ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -236,15 +212,15 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                           borderRadius: BorderRadius.circular(10),
                           color: _selectedIndex == 1
                               ? Colors.grey.shade200
-                              : Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade400,
-                              offset: const Offset(1, 3),
-                              blurRadius: 3,
-                              spreadRadius: 1,
-                            )
-                          ],
+                              : Colors.white.withOpacity(0.6),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.grey.shade400,
+                          //     offset: const Offset(1, 3),
+                          //     blurRadius: 3,
+                          //     spreadRadius: 1,
+                          //   )
+                          // ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -268,15 +244,15 @@ class _ExampleTabbarState extends State<ExampleTabbar> {
                           borderRadius: BorderRadius.circular(10),
                           color: _selectedIndex == 2
                               ? Colors.grey.shade200
-                              : Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade400,
-                              offset: const Offset(1, 3),
-                              blurRadius: 3,
-                              spreadRadius: 1,
-                            )
-                          ],
+                              : Colors.white.withOpacity(0.6),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.grey.shade400,
+                          //     offset: const Offset(1, 3),
+                          //     blurRadius: 3,
+                          //     spreadRadius: 1,
+                          //   )
+                          // ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
