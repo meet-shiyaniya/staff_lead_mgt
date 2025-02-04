@@ -34,7 +34,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
             : Colors.white, // Default color
         actions: [
           CustomAppBarButton(
-            icon: Icons.notifications_none,
+            icon: Icons.notifications_rounded,
             color: Colors.grey.shade100,
           ),
         ],
