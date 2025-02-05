@@ -105,6 +105,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
           ),
 
         ],
+        flexibleSpace: Container(color: Colors.white,),
 
       ),
 
@@ -167,9 +168,9 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
                 sections: [
 
-                  _chartSection(presentCount, Colors.green.shade900, "Present"),
+                  _chartSection(presentCount, Colors.green.shade800, "Present"),
 
-                  _chartSection(absentCount, Colors.red.shade900, "Absent"),
+                  _chartSection(absentCount, Colors.red.shade800, "Absent"),
 
                   _chartSection(halfDayCount, Colors.orange.shade800, "Half-day"),
 
@@ -389,7 +390,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
           Spacer(),
 
-          Text(status, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, fontFamily: "poppins_light", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
+          Text(status, style: TextStyle(fontSize: 12.5,  fontFamily: "poppins_thin", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
 
           SizedBox(width: 12,),
 

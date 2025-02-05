@@ -65,7 +65,7 @@ class _pendingScreenState extends State<pendingScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
 
-                Icon(Icons.hourglass_top, size: 22, color: Colors.orangeAccent,),
+                Icon(Icons.hourglass_top, size: 22, color: Colors.orangeAccent.shade400,),
 
                 SizedBox(width: 10,),
 

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:hr_app/dashboard.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
@@ -26,8 +29,8 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // Request necessary permissions
-  }
 
+  }
   Future<void> _checkPermissions() async {
     PermissionStatus locationStatus = await Permission.location.request();
     if (locationStatus != PermissionStatus.granted) {
@@ -57,7 +60,6 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
       });
     }
   }
-
   Future<void> _checkAttendance() async {
     Position position = await _getCurrentLocation();
     double distanceInMeters = Geolocator.distanceBetween(
@@ -73,19 +75,41 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
-      // ✅ Navigate with the animation trigger
-      Navigator.pushReplacement(
+
+      Navigator.pushReplacement( // Navigate after animation
         context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
+        MaterialPageRoute(builder: (context) => BottomNavScreen()),
       );
     } else {
       setState(() {
         _status = "❌ Attendance marked: Absent";
       });
       Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
+
+      await showAbsentAnimation(); // Show animation
+      Navigator.pushReplacement( // Navigate after animation
+        context,
+        MaterialPageRoute(builder: (context) => staffAttendanceScreen()),
+      );
     }
   }
 
+// ✅ Function to show absent animation
+  Future<void> showAbsentAnimation() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Lottie.asset("asset/absent.json", repeat: false),
+        );
+      },
+    );
+
+    await Future.delayed(Duration(seconds: 3)); // Wait for 3 seconds
+    Navigator.of(context, rootNavigator: true).pop(); // Close the dialog
+  }
 
   @override
   Widget build(BuildContext context) {
