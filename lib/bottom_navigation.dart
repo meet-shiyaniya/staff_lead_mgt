@@ -41,7 +41,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
       _showAnimation = true;
     });
 
-    await Future.delayed(Duration(seconds: 5)); // ⏱ Animation duration
+    await Future.delayed(Duration(seconds: 3)); // ⏱ Animation duration
 
     setState(() {
       _showAnimation = false; // Hide animation after 5 seconds

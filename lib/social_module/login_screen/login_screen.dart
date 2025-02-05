@@ -107,6 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
+                                }if(!value!.endsWith("@gmail.com")){
+                                  return "Please enter valid email";
+
                                 }
                                 return null;
                               },
@@ -143,6 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
+                                }if(value.length<8){
+                                  return "Please enter 8 digits valid password";
                                 }
                                 return null;
                               },
