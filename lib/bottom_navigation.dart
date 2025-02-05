@@ -28,16 +28,14 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 0, // Remove default leading space
+
         toolbarHeight: 50,
         title: Row(
           children: [
             if (_selectedIndex == 0)
               Image.asset("asset/appbarImage.png", height: 25,),
-            if (_selectedIndex == 0)
-              const SizedBox(width: 8), // Optional small spacing
-            if (_selectedIndex == 0)
-              const Text(
+               SizedBox(width: 8), // Optional small spacing
+               Text(
                 "Dashboard",
                 style: TextStyle(fontFamily: "poppins_thin", fontSize: 22),
               ),

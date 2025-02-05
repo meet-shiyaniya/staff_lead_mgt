@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../bottom_navigation.dart';
 import '../../dashboard.dart';
@@ -22,6 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
+
+    void _markAttendanceAndNavigate(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    await prefs.setString('attendanceDate', today);
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
+                                    _markAttendanceAndNavigate(context);
                                   }
                                 },
                                 child: const Text(
