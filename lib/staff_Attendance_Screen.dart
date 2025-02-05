@@ -74,7 +74,7 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
       // Navigate to the Dashboard screen
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => BottomNavScreen()),
       );

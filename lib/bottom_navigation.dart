@@ -28,8 +28,8 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 0, // Remove default leading space
-        toolbarHeight: 50,
+        automaticallyImplyLeading: false,
+        toolbarHeight: 60,
         title: Row(
           children: [
             if (_selectedIndex == 0)
