@@ -49,10 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Container(),
           Positioned(
-            top: MediaQuery.of(context).size.height/8,
+            top: MediaQuery.of(context).size.height/5,
             left: MediaQuery.of(context).size.width/21,
             child:Container(
-                height:MediaQuery.of(context).size.height/1.2,
+                height:MediaQuery.of(context).size.height/1.5,
                 width:MediaQuery.of(context).size.width/1.1,
                  // margin:EdgeInsets.all(10),
                 padding:EdgeInsets.only(left: 20,right: 20,top: 15),
@@ -70,20 +70,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child:Column(
                     children:[
-                      Text("Login Here",style: GoogleFonts.dancingScript(color: Colors.grey,fontSize: 20),),
+                      Text("Login Here",style:TextStyle(color: AppColors.primaryColor,fontSize: 24,fontFamily: "poppins_thin"),),
                       Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
                       Text(
                         'Welcome Back! Lets get started.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontFamily: 'Poppins',
+                            fontFamily: 'poppins_thin',
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryColor.withOpacity(0.8)
                           // color: Colors.black54,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                       Form(
                         key: _formKey,
                         child: Column(
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Email',
                                 hintText: 'Enter your email',
-                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
+                                labelStyle: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold),
                                 hintStyle:TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.email, color: AppColors.primaryColor),
                                 border: OutlineInputBorder(
@@ -107,6 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
+                                }if(!value!.endsWith("@gmail.com")){
+                                  return "Please enter valid email";
+
                                 }
                                 return null;
                               },
@@ -121,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
-                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
+                                labelStyle: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold),
                                 hintStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.lock, color: AppColors.primaryColor),
                                 suffixIcon: IconButton(
@@ -143,6 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
+                                }if(value.length<8){
+                                  return "Please enter 8 digits valid password";
                                 }
                                 return null;
                               },
@@ -159,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
                                   }
                                 },
                                 child: const Text(
@@ -169,37 +174,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            // Forgot Password
-                            TextButton(
-                              onPressed: () {
-                                // Forgot Password Logic
-                              },
-                              child: Text(
-                                'Forgot Password?',
-                                style: TextStyle(fontFamily:font, color: AppColors.primaryColor,fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
+                            // const SizedBox(height: 10),
+                            // // Forgot Password
+                            // TextButton(
+                            //   onPressed: () {
+                            //     // Forgot Password Logic
+                            //   },
+                            //   child: Text(
+                            //     'Forgot Password?',
+                            //     style: TextStyle(fontFamily:font, color: AppColors.primaryColor,fontWeight: FontWeight.bold),
+                            //   ),
+                            // ),
+                            // const SizedBox(height: 10),
                             // New User Option
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                 Text('New User? ',
-                                    style: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold)),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => RegisterScreen()));
-                                  },
-                                  child:  Text('Create an Account',
-                                      style: TextStyle(
-                                          fontFamily: AppColors.font, color: Colors.blue,fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
+                            // Row(
+                            //   mainAxisAlignment: MainAxisAlignment.center,
+                            //   children: [
+                            //      Text('New User? ',
+                            //         style: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold)),
+                            //     TextButton(
+                            //       onPressed: () {
+                            //         Navigator.push(
+                            //             context,
+                            //             MaterialPageRoute(
+                            //                 builder: (context) => RegisterScreen()));
+                            //       },
+                            //       child:  Text('Create an Account',
+                            //           style: TextStyle(
+                            //               fontFamily: AppColors.font, color: Colors.blue,fontWeight: FontWeight.bold)),
+                            //     ),
+                            //   ],
+                            // ),
                           ],
                         ),
                       ),
