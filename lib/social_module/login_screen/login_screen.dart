@@ -159,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
+                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
                                   }
                                 },
                                 child: const Text(

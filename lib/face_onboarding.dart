@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:hr_app/staff_Attendance_Screen.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:lottie/lottie.dart';
 
 class FaceOnboarding extends StatefulWidget {
@@ -22,16 +22,15 @@ class _FaceOnboardingState extends State<FaceOnboarding> {
           Column(
             children: [
               Lottie.asset('asset/faceScanner.json', fit: BoxFit.contain, width: 200, height: 200),
-              SizedBox(height:20),
-              Text("Verify your Identity",style:TextStyle(fontFamily:"poppins_thin",fontWeight: FontWeight.bold)),
-              Align(
-                  alignment: Alignment.center,
-                  child: Text("We've sent a password recover\ninstruction to your emails",style:TextStyle(fontFamily:"poppins",fontWeight: FontWeight.bold,color: Colors.grey.shade600)))
+              SizedBox(height:25),
+              Text("Face Recognition & Location Check",style:TextStyle(fontFamily:"poppins_thin", fontSize: 17, color: Colors.black)),
+              SizedBox(height: 5,),
+              Text("Enable location services and make sure\nyou are within the office premises.",style:TextStyle(fontFamily:"poppins_thin",fontWeight: FontWeight.w100,color: Colors.grey.shade500, fontSize: 13), textAlign: TextAlign.center,)
             ],
           ),
           GestureDetector(
             onTap: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>staffAttendanceScreen()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => staffAttendanceScreen()));
             },
             child: Container(
               height:50,
@@ -39,7 +38,7 @@ class _FaceOnboardingState extends State<FaceOnboarding> {
               margin: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: AppColors.primaryColor.withOpacity(0.6)
+                color: appColor.primaryColor,
               ),
               child: Center(
                 child:Text("Make Your Attendance ",style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
