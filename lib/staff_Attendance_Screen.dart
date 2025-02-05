@@ -73,10 +73,10 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
-      // Navigate to the Dashboard screen
-      Navigator.push(
+      // ✅ Navigate with the animation trigger
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen()),
+        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
       );
     } else {
       setState(() {
@@ -85,6 +85,8 @@ class _staffAttendanceScreenState extends State<staffAttendanceScreen> {
       Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
