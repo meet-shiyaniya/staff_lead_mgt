@@ -93,7 +93,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen()),
+        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true,)),
       );
     } else {
       setState(() {

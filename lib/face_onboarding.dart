@@ -31,7 +31,7 @@ class _FaceOnboardingState extends State<FaceOnboarding> {
           ),
           GestureDetector(
             onTap: (){
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>staffAttendanceScreen()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>StaffAttendanceScreen()));
             },
             child: Container(
               height:50,

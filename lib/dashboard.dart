@@ -434,7 +434,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                   ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     SizedBox(),
                     Image.asset("asset/intime.png", height: 30, width: 30),
@@ -492,7 +492,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                   ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     SizedBox(),
                     Column(
