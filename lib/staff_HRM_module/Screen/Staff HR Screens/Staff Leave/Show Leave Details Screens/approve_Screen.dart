@@ -297,7 +297,7 @@ class _approveScreenState extends State<approveScreen> {
 
                                       ),
 
-                                      backgroundColor: Colors.green.shade900,
+                                      backgroundColor: Colors.green.shade600,
 
                                       fixedSize: Size(150, 40),
 
