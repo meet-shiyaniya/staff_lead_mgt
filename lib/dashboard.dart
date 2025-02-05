@@ -212,7 +212,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver{
       appBar: AppBar(
         backgroundColor: Colors.white,
         toolbarHeight: 100,
-
+        automaticallyImplyLeading: false,
         surfaceTintColor: Colors.white,
         flexibleSpace: Container(
           height: 70,

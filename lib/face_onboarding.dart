@@ -10,10 +10,7 @@ class FaceOnboarding extends StatefulWidget {
   State<FaceOnboarding> createState() => _FaceOnboardingState();
 }
 
-
-
 class _FaceOnboardingState extends State<FaceOnboarding> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +31,7 @@ class _FaceOnboardingState extends State<FaceOnboarding> {
           ),
           GestureDetector(
             onTap: (){
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>staffAttendanceScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>staffAttendanceScreen()));
             },
             child: Container(
               height:50,

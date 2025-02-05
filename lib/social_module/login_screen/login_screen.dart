@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -47,13 +46,13 @@ class _LoginScreenState extends State<LoginScreen> {
               // ]
             ),
           ),
-      
+
           Container(),
           Positioned(
-            top: MediaQuery.of(context).size.height/6,
+            top: MediaQuery.of(context).size.height/8,
             left: MediaQuery.of(context).size.width/21,
             child:Container(
-                height:MediaQuery.of(context).size.height/1.5,
+                height:MediaQuery.of(context).size.height/1.2,
                 width:MediaQuery.of(context).size.width/1.1,
                  // margin:EdgeInsets.all(10),
                 padding:EdgeInsets.only(left: 20,right: 20,top: 15),
@@ -71,24 +70,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child:Column(
                     children:[
-                      Text("Login Here",style: TextStyle(color: AppColors.primaryColor.withOpacity(0.8),fontSize: 24,fontFamily: "poppins_thin"),),
+                      Text("Login Here",style: GoogleFonts.dancingScript(color: Colors.grey,fontSize: 20),),
                       Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
                       Text(
                         'Welcome Back! Lets get started.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontFamily: 'poppins_thin',
+                            fontFamily: 'Poppins',
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryColor.withOpacity(0.8)
                           // color: Colors.black54,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                       Form(
                         key: _formKey,
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // Email TextField
                             TextFormField(
@@ -98,16 +96,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Email',
                                 hintText: 'Enter your email',
-                                labelStyle: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold),
+                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 hintStyle:TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.email, color: AppColors.primaryColor),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
-                                // focusedBorder: OutlineInputBorder(
-                                //   borderRadius: BorderRadius.circular(16)
-                                // )
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -126,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fillColor: Colors.grey[200],
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
-                                labelStyle: TextStyle(fontFamily: "poppins_thin",fontWeight: FontWeight.bold),
+                                labelStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 hintStyle: TextStyle(fontFamily: font,fontWeight: FontWeight.bold),
                                 prefixIcon: Icon(Icons.lock, color: AppColors.primaryColor),
                                 suffixIcon: IconButton(
@@ -144,9 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
-                                  // focusedBorder: OutlineInputBorder(
-                                  //     borderRadius: BorderRadius.circular(16)
-                                  // )
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -167,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
-                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
                                   }
                                 },
                                 child: const Text(
@@ -177,37 +169,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            // const SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             // Forgot Password
-                            // CupertinoButton(
-                            //   onPressed: () {
-                            //     // Forgot Password Logic
-                            //   },
-                            //   child: Text(
-                            //     'Forgot Password?',
-                            //     style: TextStyle(fontFamily:"poppins_light", color: AppColors.primaryColor,fontWeight: FontWeight.bold),
-                            //   ),
-                            // ),
-                            // const SizedBox(height: 10),
-                            // // New User Option
-                            // Row(
-                            //   mainAxisAlignment: MainAxisAlignment.center,
-                            //   children: [
-                            //      Text('New User? ',
-                            //         style: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold)),
-                            //     CupertinoButton(
-                            //       onPressed: () {
-                            //         Navigator.push(
-                            //             context,
-                            //             MaterialPageRoute(
-                            //                 builder: (context) => RegisterScreen()));
-                            //       },
-                            //       child:  Text('Create an Account',
-                            //           style: TextStyle(
-                            //               fontFamily: AppColors.font, color: Colors.blue,fontWeight: FontWeight.bold)),
-                            //     ),
-                            //   ],
-                            // ),
+                            TextButton(
+                              onPressed: () {
+                                // Forgot Password Logic
+                              },
+                              child: Text(
+                                'Forgot Password?',
+                                style: TextStyle(fontFamily:font, color: AppColors.primaryColor,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            // New User Option
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                 Text('New User? ',
+                                    style: TextStyle(fontFamily: AppColors.font,fontWeight: FontWeight.bold)),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => RegisterScreen()));
+                                  },
+                                  child:  Text('Create an Account',
+                                      style: TextStyle(
+                                          fontFamily: AppColors.font, color: Colors.blue,fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -217,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             )
           )
-      
+
         ],
       )
     );
