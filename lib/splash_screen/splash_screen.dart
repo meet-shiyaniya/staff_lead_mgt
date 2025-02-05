@@ -46,15 +46,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset(
-              'asset/working_hours.json', // Add your Lottie animation
-              width: 200,
-              height: 200,
-            ),
+            Image.asset("asset/logo.png",height: 150,width: 150,),
             SizedBox(height: 20),
-            CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ),
+            // CircularProgressIndicator(
+            //   color: AppColors.primaryColor,
+            // ),
           ],
         ),
       ),
