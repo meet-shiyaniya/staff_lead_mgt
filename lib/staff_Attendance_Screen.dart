@@ -10,6 +10,7 @@ import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 
 class StaffAttendanceScreen extends StatefulWidget {
   @override
@@ -18,7 +19,7 @@ class StaffAttendanceScreen extends StatefulWidget {
 
 class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   XFile? _imageFile;
-  double recognitionPercentage=0.0;
+  double recognitionPercentage= 0.0;
   String _status = "Upload your selfie to mark attendance";
 
   // Office location (example, use your office location coordinates here)
@@ -55,12 +56,47 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   }
 
   Future<void> _pickSelfie() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera, preferredCameraDevice: CameraDevice.front);
     if (pickedFile != null) {
+      bool isFaceDetected = await _detectFace(File(pickedFile.path));
       setState(() {
         _imageFile = pickedFile;
+        recognitionPercentage = isFaceDetected ? 100.0 : 0.0;
+        _status = isFaceDetected ? "Selfie Verified! Now mark attendance." : "Invalid Image! Only Face Selfie is allowed.";
       });
     }
+  }
+
+  Future<bool> _detectFace(File imageFile) async {
+    final InputImage inputImage = InputImage.fromFile(imageFile);
+    final FaceDetector faceDetector = GoogleMlKit.vision.faceDetector();
+    final List<Face> faces = await faceDetector.processImage(inputImage);
+    await faceDetector.close();
+
+    if (faces.isEmpty) return false; // No face detected
+
+    if (faces.length > 1) {
+      Fluttertoast.showToast(msg: "Multiple faces detected! Upload a single face selfie.");
+      return false;
+    }
+
+    final Face face = faces.first;
+    final image = await decodeImageFromList(imageFile.readAsBytesSync());
+
+    final double faceWidth = face.boundingBox.width;
+    final double faceHeight = face.boundingBox.height;
+    final double imageWidth = image.width.toDouble();
+    final double imageHeight = image.height.toDouble();
+
+    // Ensure face covers at least 70-80% of the image
+    bool isFaceBigEnough = (faceWidth / imageWidth >= 0.3) && (faceHeight / imageHeight >= 0.3);
+
+    if (!isFaceBigEnough) {
+      Fluttertoast.showToast(msg: "Capture a closer selfie.");
+      return false;
+    }
+
+    return true; // Face properly captured
   }
 
   Future<void> _checkAttendance() async {
@@ -70,6 +106,14 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
     if (lastEntryDate == todayDate) {
       Fluttertoast.showToast(msg: "Attendance already marked for today!");
+      return;
+    }
+
+    if (recognitionPercentage < 100) {
+      setState(() {
+        _status = "Attendance marked: Absent ❌";
+      });
+      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
       return;
     }
 
@@ -83,7 +127,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
     if (distanceInMeters <= 100) {
       setState(() {
-        _status = "✅ Attendance marked: Present";
+        _status = "Attendance marked: Present ✅";
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
@@ -93,11 +137,11 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen()),
+        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true,)),
       );
     } else {
       setState(() {
-        _status = "❌ Attendance marked: Absent";
+        _status = "Attendance marked: Absent ❌";
       });
       Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
       await showAbsentAnimation(); // Show animation
