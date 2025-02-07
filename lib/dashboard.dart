@@ -43,7 +43,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     final lastEndDateStr = prefs.getString('lastEndDate');
     if (lastEndDateStr != null && lastEndDateStr == currentDate) {
       setState(() {
-        isDayEndedToday = true;
+        isDayEndedToday = false;
         isDayStarted = false;
         // Load previous day's data
         exitTime = prefs.getString('exitTime') ?? "";
