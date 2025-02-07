@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../Provider/UserProvider.dart';
 import '../../bottom_navigation.dart';
 import '../../dashboard.dart';
 import '../../face_onboarding.dart';
@@ -26,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
-  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
 
 
@@ -38,28 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
-  void signIn() async{
-    final username=emailController.text;
-    final password=passwordController.text;
-
-    bool isSuccess =await Provider.of<UserProvider>(context,listen: false).login(username, password);
-
-    if(isSuccess){
-      String? token=await _secureStorage.read(key:'token');
-      if(token != null){
-        print("Login Succesfull");
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
-      }
-      else{
-        print("Login failed");
-      }
-    }
-
-
-  }
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
         body: Stack(
           children: [
             Container(
-              height: MediaQuery.of(context).size.height/2.9,
+              height: MediaQuery.of(context).size.height/3,
               width: double.infinity,
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -86,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             Container(),
             Positioned(
-                top: MediaQuery.of(context).size.height/5,
+                top: MediaQuery.of(context).size.height/5.6,
                 left: MediaQuery.of(context).size.width/21,
                 child:Container(
                     height:MediaQuery.of(context).size.height/1.5,
@@ -108,7 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child:Column(
                         children:[
                           Text("Login Here",style:TextStyle(color: AppColors.primaryColor,fontSize: 24,fontFamily: "poppins_thin"),),
-                          Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
+                          SizedBox(height: 15,),
+                          Image.asset('asset/rtosmart.png', height: 100, width: 100),
+                          SizedBox(height: 15,),
                           Text(
                             'Welcome Back! Lets get started.',
                             textAlign: TextAlign.center,
@@ -120,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               // color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 30),
                           Form(
                             key: _formKey,
                             child: Column(
@@ -189,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 30),
                                 // Login Button
                                 Container(
                                   width: double.infinity,
@@ -201,7 +177,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: TextButton(
                                     onPressed: () {
                                       if (_formKey.currentState!.validate()) {
-
                                         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
                                       }
                                     },

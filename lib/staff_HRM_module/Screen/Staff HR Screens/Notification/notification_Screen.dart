@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 
 class NotificationScreen extends StatefulWidget {
   @override
@@ -36,10 +37,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
         backgroundColor: Colors.deepPurple.shade300,
         centerTitle: true,
         elevation: 0,
-        leading: IconButton(onPressed: () {
-          Navigator.pop(context);
-        }, icon: Icon(Icons.arrow_back_ios,color: Colors.white,)),
-        title: Text('Notification', style: TextStyle(color: Colors.white,fontFamily: "poppins_thin")),
+        foregroundColor: Colors.transparent,
+        leading: IconButton(
+
+          onPressed: (){
+            Navigator.pop(context);
+          },
+
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20,),
+
+        ),
+        title: Text('Notifications', style: TextStyle(color: Colors.white,fontFamily: "poppins_thin", fontSize: 18)),
       ),
       backgroundColor: Colors.white,
       body: Padding(
@@ -99,43 +107,49 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildNotificationCard(Map<String, dynamic> notification) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
+    return Container(
+      height: 100,
       margin: EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.deepPurple.shade50,
-              child: Icon(notification['icon'], color: Colors.deepPurple),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    notification['title'],
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: "poppins_thin",
-                      color: Colors.black87,
-                    ),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+
+        color: appColor.subFavColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 3, offset: Offset(1, 3))],
+
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.deepPurple.shade50,
+            child: Icon(notification['icon'], color: Colors.deepPurple),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification['title'],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontFamily: "poppins_thin",
+                    color: Colors.black87,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    notification['description'],
-                    style: TextStyle(fontSize: 14, color: Colors.black54,fontFamily: "poppins_light"),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  notification['description'],
+                  style: TextStyle(fontSize: 13.5, color: Colors.grey.shade600,fontFamily: "poppins_light"),
+                ),
+              ],
             ),
-            if (notification['isUnread'])
-              Icon(Icons.circle, size: 10, color: Colors.deepPurple),
-          ],
-        ),
+          ),
+          if (notification['isUnread'])
+            Icon(Icons.circle, size: 10, color: Colors.deepPurple),
+        ],
       ),
     );
   }
