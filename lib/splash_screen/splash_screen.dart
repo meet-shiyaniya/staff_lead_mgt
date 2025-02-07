@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-
+import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import '../social_module/colors/colors.dart';
-
-
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,28 +13,40 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+
+  bool _isExpanded = false;
+
   @override
   void initState() {
     super.initState();
     _navigateToNextScreen();
+
+
+    Future.delayed(const Duration(milliseconds: 80), () {
+      setState(() {
+        _isExpanded = true;
+      });
+    });
   }
 
   Future<void> _navigateToNextScreen() async {
     // Add 4-second delay
-    await Future.delayed(Duration(seconds: 4));
+    await Future.delayed(Duration(seconds: 3));
 
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final attendanceDate = prefs.getString('attendanceDate');
 
+    // Check if attendance has been marked for today
     if (attendanceDate == today) {
       // Attendance already marked today, go to dashboard
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      Navigator.pushReplacementNamed(context, '/login');
     } else {
       // No attendance marked today, go to login
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -46,15 +56,29 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset(
-              'asset/working_hours.json', // Add your Lottie animation
-              width: 200,
-              height: 200,
+            Expanded(
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(seconds: 3),
+                  width: _isExpanded ? 180.0 : 130.0,
+                  height: _isExpanded ? 180.0 : 130.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24),
+                    color: Colors.transparent,
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Center(child: Image.asset("asset/logo.png")),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ),
+            Image.asset("asset/RealtoSmart Logo.png",height: 50,width: 150,),
+            SizedBox(height:20),
+
           ],
         ),
       ),
@@ -62,31 +86,3 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-
-
-// // Sample Login Screen (replace with your actual login screen)
-// class LoginScreen extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text('Login')),
-//       body: Center(
-//         child: ElevatedButton(
-//           onPressed: () {
-//             // After successful login, mark attendance
-//             _markAttendanceAndNavigate(context);
-//           },
-//           child: Text('Login'),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   void _markAttendanceAndNavigate(BuildContext context) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-//
-//     await prefs.setString('attendanceDate', today);
-//     Navigator.pushReplacementNamed(context, '/dashboard');
-//   }
-// }

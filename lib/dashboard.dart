@@ -54,18 +54,21 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     }
 
     // Load attendance time if exists for current day
+    // In _loadState() method
     final attendanceTimeStr = prefs.getString('attendanceTime');
     if (attendanceTimeStr != null && attendanceTimeStr.isNotEmpty) {
       final attendanceTime = DateFormat('hh:mm:ss a').parse(attendanceTimeStr);
       final now = DateTime.now();
-      final attendanceDateTime = DateTime(now.year, now.month, now.day,
-          attendanceTime.hour, attendanceTime.minute, attendanceTime.second);
+      final attendanceDateTime = DateTime(
+          now.year, now.month, now.day,
+          attendanceTime.hour, attendanceTime.minute, attendanceTime.second
+      );
 
       setState(() {
         isDayStarted = true;
         entryTime = DateFormat('hh:mm:ss a').format(attendanceDateTime);
         elapsedSeconds = now.difference(attendanceDateTime).inSeconds;
-        progressValue = elapsedSeconds / totalDuration;
+        progressValue = (elapsedSeconds / totalDuration).clamp(0.0, 1.0);
       });
 
       _resumeTimer();
@@ -190,16 +193,26 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     }
   }
 
+
+  // Update _checkAttendanceMarked()
   Future<void> _checkAttendanceMarked() async {
     final prefs = await SharedPreferences.getInstance();
     bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
 
     if (attendanceMarked) {
-      startDay(); // Start the day if attendance was marked
-      entryTime = prefs.getString('entryTime') ?? ""; // Set entry time
-      await prefs.setBool('attendanceMarked', false); // Reset the flag
+      await prefs.setBool('attendanceMarked', false); // Just reset the flag
     }
   }
+  // Future<void> _checkAttendanceMarked() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
+  //
+  //   if (attendanceMarked) {
+  //     startDay(); // Start the day if attendance was marked
+  //     entryTime = prefs.getString('entryTime') ?? ""; // Set entry time
+  //     await prefs.setBool('attendanceMarked', false); // Reset the flag
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -393,24 +406,22 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 15),
-                    child: ZoomIn(
-                      child: CircularPercentIndicator(
-                        radius: 45,
-                        lineWidth: 14,
-                        backgroundWidth: 8,
-                        percent: progressValue,
-                        animation: true,
-                        animateFromLastPercent: true,
-                        center: Lottie.asset(
-                          'asset/working_hours.json',
-                          fit: BoxFit.contain,
-                          width: 50,
-                          height: 50,
-                        ),
-                        progressColor: AppColors.primaryColor,
-                        backgroundColor: Colors.grey.shade200,
-                        circularStrokeCap: CircularStrokeCap.round,
+                    child: CircularPercentIndicator(
+                      radius: 45,
+                      lineWidth: 14,
+                      backgroundWidth: 8,
+                      percent: progressValue,
+                      animation: true,
+                      animateFromLastPercent: true,
+                      center: Lottie.asset(
+                        'asset/working_hours.json',
+                        fit: BoxFit.contain,
+                        width: 50,
+                        height: 50,
                       ),
+                      progressColor: AppColors.primaryColor,
+                      backgroundColor: Colors.grey.shade200,
+                      circularStrokeCap: CircularStrokeCap.round,
                     ),
                   ),
                 ],
@@ -564,7 +575,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                 itemCount: leads.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 1.10,
+                  childAspectRatio: 1.05,
                   mainAxisSpacing: 10,
                 ),
                 physics: NeverScrollableScrollPhysics(),
@@ -608,8 +619,8 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                                 ),
                                 Container(
                                   height: 60,
-                                  width: 40,
-                                  margin: EdgeInsets.only(right: 10),
+                                  width: MediaQuery.of(context).size.width/10,
+                                  // margin: EdgeInsets.only(right: 10),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
                                     gradient: leads[index]['bgColor'],
