@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
         body: Stack(
           children: [
             Container(
-              height: MediaQuery.of(context).size.height/2.9,
+              height: MediaQuery.of(context).size.height/3,
               width: double.infinity,
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             Container(),
             Positioned(
-                top: MediaQuery.of(context).size.height/5,
+                top: MediaQuery.of(context).size.height/5.6,
                 left: MediaQuery.of(context).size.width/21,
                 child:Container(
                     height:MediaQuery.of(context).size.height/1.5,
@@ -82,7 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child:Column(
                         children:[
                           Text("Login Here",style:TextStyle(color: AppColors.primaryColor,fontSize: 24,fontFamily: "poppins_thin"),),
-                          Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
+                          SizedBox(height: 15,),
+                          Image.asset('asset/rtosmart.png', height: 100, width: 100),
+                          SizedBox(height: 15,),
                           Text(
                             'Welcome Back! Lets get started.',
                             textAlign: TextAlign.center,
@@ -94,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               // color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 30),
                           Form(
                             key: _formKey,
                             child: Column(
@@ -163,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 30),
                                 // Login Button
                                 Container(
                                   width: double.infinity,
@@ -175,8 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: TextButton(
                                     onPressed: () {
                                       if (_formKey.currentState!.validate()) {
-                                        _markAttendanceAndNavigate(context);
-                                        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
+                                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
                                       }
                                     },
                                     child: const Text(

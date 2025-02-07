@@ -389,7 +389,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                   Container(
 
                     height: 36,
-                    width: 134,
+                    width: MediaQuery.of(context).size.width.toDouble() / 3,
 
                     decoration: BoxDecoration(
 
@@ -403,7 +403,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                     child: Center(
 
-                        child: Text("Paid Leave", style: TextStyle(color: isPaidType ? Colors.black : Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
+                        child: Text("Paid Leave", style: TextStyle(color: isPaidType ? Colors.black : Colors.white, fontSize: 13.2, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
 
                     ),
 
@@ -436,7 +436,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                   Container(
 
                     height: 36,
-                    width: 136,
+                    width: MediaQuery.of(context).size.width.toDouble() / 3,
 
                     decoration: BoxDecoration(
 
@@ -450,7 +450,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                     child: Center(
 
-                        child: Text("Unpaid Leave", style: TextStyle(color: isPaidType ? Colors.white : Colors.black, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
+                        child: Text("Unpaid Leave", style: TextStyle(color: isPaidType ? Colors.white : Colors.black, fontSize: 13.2, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
 
                     ),
 
