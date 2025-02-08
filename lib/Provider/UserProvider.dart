@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart';
 
@@ -11,6 +13,9 @@ class UserProvider with ChangeNotifier{
 
   final ApiService _apiService=ApiService();
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
+
+  Realtostaffprofilemodel? _profileData;
+  Realtostaffprofilemodel? get profileData => _profileData;
 
   Future<bool> login(String username,String password) async{
     bool success=await _apiService.login(username, password);
@@ -27,6 +32,12 @@ class UserProvider with ChangeNotifier{
 
   }
 
+  Future<void> fetchProfileData () async {
 
+    _profileData = await _apiService.fetchProfileData();
+
+    notifyListeners();
+
+  }
 
 }

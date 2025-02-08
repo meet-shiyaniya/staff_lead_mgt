@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'bottom_navigation.dart';
 import "package:http/http.dart" as https;
 import 'package:path_provider/path_provider.dart';
+import 'dashboard.dart';
 import 'face_onboarding.dart';
 
 
@@ -15,24 +16,34 @@ import 'face_onboarding.dart';
 void main() {
 
   runApp(
+
+
     ChangeNotifierProvider(
         create: (_)=>UserProvider(),
       child:MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: SplashScreen(),
         title: "RealtoSmart",
         initialRoute: "/",
         routes: {
-          "/":(context)=>SplashScreen(),
+          "/":(context)=> BottomNavScreen(),
           '/login': (context) => LoginScreen(),
-          '/dashboard': (context) => FaceOnboarding(),
+          '/dashboard': (context) => Dashboard(),
         },
       ),
 
     )
 
-
-
   );
+
+  // MaterialApp(
+  //
+  //   debugShowCheckedModeBanner: false,
+  //   home: SplashScreen(),
+  //   routes: {
+  //     '/login': (context) => LoginScreen(),
+  //     '/dashboard': (context) => Dashboard(),
+  //   },
+  //
+  // ),
 
 }
