@@ -113,7 +113,7 @@ class ApiService{
 
   Future<Realtoofficelocationmodel?> fetchOfficeLocationData () async {
 
-    final url = Uri.parse("$baseUrl/SelfiPunchAttendance");
+    final url = Uri.parse('$baseUrl/SelfiPunch_lati_logi');
 
     try {
 
@@ -129,9 +129,7 @@ class ApiService{
 
         url,
         headers: {
-
-          'Content-Type': 'application/json'
-
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({'token': token}),
 
