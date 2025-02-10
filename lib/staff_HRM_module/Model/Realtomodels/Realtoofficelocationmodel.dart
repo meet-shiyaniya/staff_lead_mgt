@@ -29,22 +29,22 @@ class Realtoofficelocationmodel {
 
 class Data {
   String? id;
-  String? longitude;
   String? latitude;
+  String? logitude;
 
-  Data({this.id, this.longitude, this.latitude});
+  Data({this.id, this.latitude, this.logitude});
 
   Data.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    longitude = json['longitude'];
     latitude = json['latitude'];
+    logitude = json['logitude'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['id'] = this.id;
-    data['longitude'] = this.longitude;
     data['latitude'] = this.latitude;
+    data['logitude'] = this.logitude;
     return data;
   }
 }

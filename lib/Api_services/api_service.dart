@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as https;
@@ -88,7 +89,7 @@ class ApiService{
 
   Future<Realtoofficelocationmodel?> fetchOfficeLocationData () async {
 
-    final url = Uri.parse("$baseUrl/SelfiPunchAttendance");
+    final url = Uri.parse('$baseUrl/SelfiPunch_lati_logi');
 
     try {
 
@@ -104,9 +105,7 @@ class ApiService{
 
         url,
         headers: {
-
-          'Content-Type': 'application/json'
-
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({'token': token}),
 

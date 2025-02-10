@@ -1,6 +1,8 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/bottom_navigation.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,6 +10,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
@@ -22,9 +25,6 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   double recognitionPercentage= 0.0;
   String _status = "Upload your selfie to mark attendance";
 
-  // Office location (example, use your office location coordinates here)
-  final double officeLatitude = 21.26404;
-  final double officeLongitude = 72.82958;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -32,6 +32,11 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // Request necessary permissions
+
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchOfficeLocationData();
+    });
+
   }
 
   Future<void> _checkPermissions() async {
@@ -48,13 +53,6 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
     }
   }
 
-  Future<Position> _getCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    return position;
-  }
-
   Future<void> _pickSelfie() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera, preferredCameraDevice: CameraDevice.front);
     if (pickedFile != null) {
@@ -64,6 +62,86 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
         recognitionPercentage = isFaceDetected ? 100.0 : 0.0;
         _status = isFaceDetected ? "Selfie Verified! Now mark attendance." : "Invalid Image! Only Face Selfie is allowed.";
       });
+    }
+  }
+
+  void _getCurrentLocation() async {
+    Position staffPosition = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    List<Data>? officeLocations = userProvider.officeLocationData?.data;
+
+    checkAttendance(staffPosition, officeLocations);
+
+  }
+
+  Future<void> checkAttendance(Position staffPosition, List<Data>? officeLocations) async {
+
+    final prefs = await SharedPreferences.getInstance();
+    String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    String? lastEntryDate = prefs.getString('entryDate');
+
+    if (lastEntryDate == todayDate) {
+      Fluttertoast.showToast(msg: "Attendance already marked for today!");
+      return;
+    }
+
+    if (recognitionPercentage < 100) {
+      setState(() {
+        _status = "Attendance marked: Absent ❌";
+      });
+      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
+      return;
+    }
+
+    if (officeLocations == null || officeLocations.isEmpty) {
+      Fluttertoast.showToast(msg: "No office locations found!");
+      return;
+    }
+
+    bool isWithinOffice = false;
+
+    for (var office in officeLocations) {
+      double officeLatitude = double.tryParse(office.latitude ?? '') ?? 0.0;
+      double officeLongitude = double.tryParse(office.logitude ?? '') ?? 0.0;
+
+      double distanceInMeters = Geolocator.distanceBetween(
+        staffPosition.latitude,
+        staffPosition.longitude,
+        officeLatitude,
+        officeLongitude,
+      );
+
+      if (distanceInMeters <= 100) {
+        isWithinOffice = true;
+        break; // Stop checking once a valid location is found
+      }
+    }
+
+    if (isWithinOffice) {
+      setState(() {
+        _status = "Attendance marked: Present ✅";
+      });
+      Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
+
+      // Store Attendance Data
+      await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
+      await prefs.setBool('attendanceMarked', true);
+      await prefs.setString('entryDate', todayDate);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
+      );
+
+    } else {
+      setState(() {
+        _status = "Attendance marked: Absent ❌";
+      });
+      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
+      await showAbsentAnimation(); // Show animation
     }
   }
 
@@ -99,57 +177,6 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
     return true; // Face properly captured
   }
 
-  Future<void> _checkAttendance() async {
-    final prefs = await SharedPreferences.getInstance();
-    String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    String? lastEntryDate = prefs.getString('entryDate');
-
-    if (lastEntryDate == todayDate) {
-      Fluttertoast.showToast(msg: "Attendance already marked for today!");
-      return;
-    }
-
-    if (recognitionPercentage < 100) {
-      setState(() {
-        _status = "Attendance marked: Absent ❌";
-      });
-      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
-      return;
-    }
-
-    Position position = await _getCurrentLocation();
-    double distanceInMeters = Geolocator.distanceBetween(
-      position.latitude,
-      position.longitude,
-      officeLatitude,
-      officeLongitude,
-    );
-
-    if (distanceInMeters <= 100) {
-      setState(() {
-        _status = "Attendance marked: Present ✅";
-      });
-      Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
-
-      // Store attendance data
-      await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
-      await prefs.setBool('attendanceMarked', true);
-      await prefs.setString('entryDate', todayDate);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
-      );
-    } else {
-      setState(() {
-        _status = "Attendance marked: Absent ❌";
-      });
-      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
-      await showAbsentAnimation(); // Show animation
-    }
-  }
-
-
   // ✅ Function to show absent animation
   Future<void> showAbsentAnimation() async {
     showDialog(
@@ -170,6 +197,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
 
       backgroundColor: Colors.white,
@@ -210,7 +238,9 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
                 child: GestureDetector(
 
-                  onTap: _pickSelfie, // Trigger selfie function on tap
+                  onTap: () {
+                    _pickSelfie();
+                  }, // Trigger selfie function on tap
 
                   child: AnimatedContainer(
 
@@ -294,7 +324,9 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
               child: ElevatedButton(
 
-                onPressed: _checkAttendance,
+                onPressed: () {
+                  _getCurrentLocation();
+                },
 
                 child: Text("Mark Attendance", style: TextStyle(fontSize: 15, fontFamily: "poppins_thin", color: Colors.white,),),
 
