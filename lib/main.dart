@@ -17,7 +17,6 @@ void main() {
 
   runApp(
 
-
     ChangeNotifierProvider(
         create: (_)=>UserProvider(),
       child:MaterialApp(
@@ -25,9 +24,9 @@ void main() {
         title: "RealtoSmart",
         initialRoute: "/",
         routes: {
-          "/":(context)=> BottomNavScreen(),
+          "/":(context)=> SplashScreen(),
           '/login': (context) => LoginScreen(),
-          '/dashboard': (context) => Dashboard(),
+          '/dashboard': (context) => BottomNavScreen(),
         },
       ),
 

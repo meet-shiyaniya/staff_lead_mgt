@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../Provider/UserProvider.dart';
+import '../../bottom_navigation.dart';
+import '../../dashboard.dart';
 import '../../face_onboarding.dart';
+import '../chatting_module/example.dart';
 import '../colors/colors.dart';
+import '../registration_screen/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +27,14 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
+
+
+
+
+
+
+
   void _markAttendanceAndNavigate(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -28,6 +45,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    void signIn() async{
+      final username=emailController.text;
+      final password=passwordController.text;
+
+      bool isSuccess =await Provider.of<UserProvider>(context,listen: false).login(username, password);
+
+      if(isSuccess){
+        String? token=await _secureStorage.read(key:'token');
+        if(token != null){
+          print("Login Succesfull");
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
+        }
+        else{
+          print("Login failed");
+        }
+      }
+
+
+    }
+
     return Scaffold(
         backgroundColor: AppColors.whiteColor,
         body: Stack(
@@ -109,15 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }if(!value!.endsWith("@gmail.com")){
-                                      return "Please enter valid email";
 
-                                    }
-                                    return null;
-                                  },
                                 ),
                                 const SizedBox(height: 20),
                                 // Password TextField
@@ -167,10 +197,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: TextButton(
-                                    onPressed: () {
-                                      if (_formKey.currentState!.validate()) {
-                                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
-                                      }
+                                    onPressed: (){
+                                      signIn();
+                                      print("successfully fetched");
+
                                     },
                                     child: const Text(
                                       'Login',
