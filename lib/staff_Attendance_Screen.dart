@@ -131,14 +131,14 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
-      // In _checkAttendance() method
+      // Store attendance data
       await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
-      await prefs.setBool('attendanceMarked', true); // Keep this flag
+      await prefs.setBool('attendanceMarked', true);
       await prefs.setString('entryDate', todayDate);
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true,)),
+        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
       );
     } else {
       setState(() {
@@ -148,6 +148,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
       await showAbsentAnimation(); // Show animation
     }
   }
+
 
   // ✅ Function to show absent animation
   Future<void> showAbsentAnimation() async {

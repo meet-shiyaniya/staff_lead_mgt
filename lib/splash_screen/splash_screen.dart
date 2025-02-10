@@ -19,7 +19,6 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     _navigateToNextScreen();
 
-
     Future.delayed(const Duration(milliseconds: 80), () {
       setState(() {
         _isExpanded = true;
@@ -28,20 +27,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Add 4-second delay
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 3));
 
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final attendanceDate = prefs.getString('attendanceDate');
-    final isAttendance = prefs.getBool('attendanceMarked');
+    final entryDate = prefs.getString('entryDate');
+    final isAttendance = prefs.getBool('attendanceMarked') ?? false;
 
-    // Check if attendance has been marked for today
-    if (isAttendance == true) {
-      // Attendance already marked today, go to dashboard
+    if (isAttendance && entryDate == today) {
+      // Attendance already marked for today, navigate to dashboard
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BottomNavScreen()));
     } else {
-      // No attendance marked today, go to login
+      // No attendance marked or date changed, navigate to login
+      prefs.setBool('attendanceMarked', false); // Reset attendance flag for the new day
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
@@ -75,13 +73,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
             ),
-            Image.asset("asset/RealtoSmart Logo.png",height: 50,width: 150,),
-            SizedBox(height:20),
-
+            Image.asset("asset/RealtoSmart Logo.png", height: 50, width: 150),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 }
-

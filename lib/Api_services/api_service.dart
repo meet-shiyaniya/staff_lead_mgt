@@ -8,7 +8,7 @@ class ApiService{
   static const String baseUrl="https://admin.dev.ajasys.com/api";
 
   Future<bool> login(String username,String password) async{
-    final url=Uri.parse("$baseUrl/login");
+    final url=Uri.parse("$baseUrl/stafflogin");
     try{
       final response=await https.post(
         url,headers: {
@@ -18,7 +18,7 @@ class ApiService{
             'username':username,
             'password':password,
             'product_id':'1',
-            'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ",
+            'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
           }),
       );
       if(response.statusCode==200){
