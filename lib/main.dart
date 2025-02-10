@@ -19,7 +19,7 @@ void main() {
         create: (_)=>UserProvider(),
       child:MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: SplashScreen(),
+        // home: SplashScreen(),
         title: "RealtoSmart",
         initialRoute: "/",
         routes: {

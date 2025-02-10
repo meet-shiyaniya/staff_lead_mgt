@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:hr_app/bottom_navigation.dart';
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import '../social_module/colors/colors.dart';
 
@@ -40,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Check if attendance has been marked for today
     if (attendanceDate == today) {
       // Attendance already marked today, go to dashboard
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BottomNavScreen()));
     } else {
       // No attendance marked today, go to login
       Navigator.pushReplacementNamed(context, '/login');

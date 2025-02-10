@@ -12,20 +12,25 @@ class UserProvider with ChangeNotifier{
   final ApiService _apiService=ApiService();
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
-  Future<bool> login(String username,String password) async{
-    bool success=await _apiService.login(username, password);
+  Future<bool> login(String username, String password) async {
+    try {
+      bool success = await _apiService.login(username, password);
 
-    if(success){
-      _isLoggedIn=true;
-      notifyListeners();
-      return true;
-    }else{
-      _isLoggedIn=false;
-      notifyListeners();
+      if (success) {
+        _isLoggedIn = true;
+        notifyListeners();
+        return true;
+      } else {
+        _isLoggedIn = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      print("Error during login: $e");
       return false;
     }
-
   }
+
 
 
 
