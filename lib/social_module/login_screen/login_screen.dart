@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:fluttertoast/fluttertoast.dart';
 import '../../Provider/UserProvider.dart';
 import '../../bottom_navigation.dart';
 import '../../dashboard.dart';
@@ -46,25 +46,51 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
 
-    void signIn() async{
-      final username=emailController.text;
-      final password=passwordController.text;
 
-      bool isSuccess =await Provider.of<UserProvider>(context,listen: false).login(username, password);
 
-      if(isSuccess){
-        String? token=await _secureStorage.read(key:'token');
-        if(token != null){
-          print("Login Succesfull");
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
-        }
-        else{
-          print("Login failed");
-        }
+    void signIn() async {
+      final username = emailController.text.trim();
+      final password = passwordController.text.trim();
+
+      if (username.isEmpty || password.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Please enter both email and password❌",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+        );
+        return;
       }
 
+      bool isSuccess = await Provider.of<UserProvider>(context, listen: false).login(username, password);
 
+      if (isSuccess) {
+        String? token = await _secureStorage.read(key: 'token');
+        if (token != null) {
+          print("Login Successful");
+          Fluttertoast.showToast(
+            msg: "Login Successful ✅",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: AppColors.primaryColor,
+            textColor: Colors.white,
+          );
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+        } else {
+          print("Login failed");
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: "Invalid username or password. Please try again ❌.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+        );
+      }
     }
+
 
     return Scaffold(
         backgroundColor: AppColors.whiteColor,

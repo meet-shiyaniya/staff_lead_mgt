@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:hr_app/social_module/login_screen/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
