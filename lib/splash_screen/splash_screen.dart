@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:hr_app/bottom_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:hr_app/bottom_navigation.dart';
-import 'package:hr_app/social_module/login_screen/login_screen.dart';
-import '../social_module/colors/colors.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,9 +34,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final attendanceDate = prefs.getString('attendanceDate');
+    final isAttendance = prefs.getBool('attendanceMarked');
 
     // Check if attendance has been marked for today
-    if (attendanceDate == today) {
+    if (isAttendance == true) {
       // Attendance already marked today, go to dashboard
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BottomNavScreen()));
     } else {

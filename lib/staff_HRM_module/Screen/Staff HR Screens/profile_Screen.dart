@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
@@ -6,10 +7,30 @@ import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/staff_Leave_Home_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Working%20Details/staff_Work_Det_Screen.dart';
+import 'package:provider/provider.dart';
 
-class profileScreen extends StatelessWidget {
+import '../../../Provider/UserProvider.dart';
+import '../../Model/Realtomodels/Realtostaffprofilemodel.dart';
+
+class profileScreen extends StatefulWidget {
+  @override
+  State<profileScreen> createState() => _profileScreenState();
+}
+
+class _profileScreenState extends State<profileScreen> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchProfileData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -24,6 +45,15 @@ class profileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileCard(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Show loading indicator while data is being fetched
+    // if (userProvider.profileData == null) {
+    //   return const Center(child: CircularProgressIndicator());
+    // }
+
+    Realtostaffprofilemodel? profile = userProvider.profileData;
 
     return Container(
 
@@ -48,7 +78,9 @@ class profileScreen extends StatelessWidget {
 
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage("https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg"),
+            backgroundImage: (profile?.staffProfile?.profileImg?.isNotEmpty == true)
+                ? CachedNetworkImageProvider(profile!.staffProfile!.profileImg!)
+                : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),
           ),
 
           SizedBox(width: 30,),
@@ -61,8 +93,14 @@ class profileScreen extends StatelessWidget {
             children: [
 
               // SizedBox(height: 10),
-              Text("Jhonson King", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black)),
-              Text("jhonking@gmail.com", style: TextStyle(color: Colors.grey.shade500, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13)),
+              Text(
+                profile?.staffProfile?.name?.isNotEmpty == true ? profile!.staffProfile!.name! : "N/A",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black),
+              ),
+              Text(
+                profile?.staffProfile?.email?.isNotEmpty == true ? profile!.staffProfile!.email! : "N/A",
+                style: TextStyle(color: Colors.grey.shade500, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13),
+              ),
               SizedBox(height: 10),
               GestureDetector(
 
@@ -201,6 +239,4 @@ class profileScreen extends StatelessWidget {
       },
     );
   }
-
-
 }

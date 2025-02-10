@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/all_inquiries_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/dismiss_request_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/followup_and_cnr_Screen.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:animate_do/animate_do.dart'; // For animation effects
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Dashboard extends StatefulWidget {

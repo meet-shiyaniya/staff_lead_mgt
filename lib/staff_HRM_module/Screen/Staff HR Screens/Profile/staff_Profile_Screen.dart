@@ -1,5 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
+import '../../../../Provider/UserProvider.dart';
+import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../../../Model/Staff HR Screen Model/profile_Model.dart';
 import '../../Color/app_Color.dart';
 
@@ -12,35 +16,50 @@ class staffProfileScreen extends StatefulWidget {
 
 class _staffProfileScreenState extends State<staffProfileScreen> {
 
-  List<profileModel> profileDataList = [
-
-    profileModel(FontAwesomeIcons.solidIdCard, "Employee ID", "122"),
-    profileModel(FontAwesomeIcons.user, "User Name", "admin_Meet"),
-    profileModel(FontAwesomeIcons.birthdayCake, "Date Of Birth", "16/08/2004"),
-    profileModel(FontAwesomeIcons.person, "Gender", "Male"),
-    profileModel(FontAwesomeIcons.solidHeart, "Marital Status", "Unmarried"),
-    profileModel(FontAwesomeIcons.house, "Address", "102, Vrundavan Society, Dabholi Char Rasta, Katargam, Surat - 395004"),
-    profileModel(FontAwesomeIcons.city, "City", "Surat"),
-    profileModel(FontAwesomeIcons.mapPin, "Pin Code", "395004"),
-    profileModel(FontAwesomeIcons.tint, "Blood Group", "A+"),
-
-  ];
-
-  List<profileModel> contactDataList = [
-
-    profileModel(FontAwesomeIcons.phone, "Phone Number", "9828756476"),
-    profileModel(FontAwesomeIcons.simCard, "Sim allocation number", "+91"),
-    profileModel(FontAwesomeIcons.phone, "Alt Number", "9268969245"),
-    profileModel(FontAwesomeIcons.solidEnvelope, "Email", "meetpatel579@gmail.com"),
-    profileModel(FontAwesomeIcons.solidEnvelope, "Work Email", "admin179@gmail.com"),
-    profileModel(FontAwesomeIcons.skype, "Skype", "live:.cid.mk0l8spdb2e7jh7y"),
-
-  ];
-
   bool isSelected = false;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchProfileData();
+    });
+
+  }
+
+  @override
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Show loading indicator while data is being fetched
+    // if (userProvider.profileData == null) {
+    //   return const Center(child: CircularProgressIndicator(color: Colors.white,));
+    // }
+
+    Realtostaffprofilemodel? profile = userProvider.profileData;
+
+    List<profileModel> profileDataList = [
+      profileModel(FontAwesomeIcons.solidIdCard, "Employee ID", profile?.staffProfile?.employeeId ?? "N/A"),
+      profileModel(FontAwesomeIcons.solidUser, "Name", profile?.staffProfile?.name ?? "N/A"),
+      profileModel(FontAwesomeIcons.user, "User Name", profile?.staffProfile?.userName ?? "N/A"),
+      profileModel(FontAwesomeIcons.solidEnvelope, "Email", profile?.staffProfile?.email ?? "N/A"),
+      profileModel(FontAwesomeIcons.house, "Address", profile?.staffProfile?.address ?? "N/A"),
+      profileModel(FontAwesomeIcons.person, "Gender", profile?.staffProfile?.gender ?? "N/A"),
+      profileModel(FontAwesomeIcons.solidHeart, "Marital Status", profile?.staffProfile?.maritalStatus ?? "N/A"),
+      profileModel(FontAwesomeIcons.tint, "Blood Group", profile?.staffProfile?.bloodgroup ?? "N/A"),
+    ];
+
+    List<profileModel> contactDataList = [
+      profileModel(FontAwesomeIcons.solidIdCard, "Employee ID", profile?.staffProfile?.employeeId ?? "N/A"),
+      profileModel(FontAwesomeIcons.phone, "Phone Number", profile?.staffProfile?.phoneNumberPersonal ?? "N/A"),
+      profileModel(FontAwesomeIcons.simCard, "Sim Allocation Number", profile?.staffProfile?.phoneNumberAllocation ?? "N/A"),
+      profileModel(FontAwesomeIcons.phone, "Alt Number", profile?.staffProfile?.altmobileno ?? "N/A"),
+      profileModel(FontAwesomeIcons.solidEnvelope, "Email", profile?.staffProfile?.email ?? "N/A"),
+      profileModel(FontAwesomeIcons.solidEnvelope, "Work Email", profile?.staffProfile?.workEmail ?? "N/A"),
+    ];
 
     return Scaffold(
 
@@ -121,8 +140,8 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
                     SizedBox(height: 55,),
 
-                    Center(child: Text("Meet Patel", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)),
-                    Center(child: Text("meetpatel579@gmail.com", style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: "poppins_light"),)),
+                    Center(child: Text(profile?.staffProfile?.name?.isNotEmpty == true ? profile!.staffProfile!.name! : "N/A", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)),
+                    Center(child: Text(profile?.staffProfile?.email?.isNotEmpty == true ? profile!.staffProfile!.email! : "N/A", style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: "poppins_light"),)),
 
                     SizedBox(height: 8,),
 
@@ -349,7 +368,11 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
                   border: Border.all(color: Colors.deepPurple.shade900, width: 2),
 
-                  image: DecorationImage(image: NetworkImage("https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg")),
+                  image: DecorationImage(
+                    image: (profile?.staffProfile?.profileImg?.isNotEmpty == true)
+                        ? CachedNetworkImageProvider(profile!.staffProfile!.profileImg!)
+                        : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),
+                  ),
 
                 ),
 
