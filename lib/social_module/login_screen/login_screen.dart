@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../bottom_navigation.dart';
-import '../../dashboard.dart';
 import '../../face_onboarding.dart';
-import '../chatting_module/example.dart';
 import '../colors/colors.dart';
-import '../registration_screen/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,8 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
-
-
 
   void _markAttendanceAndNavigate(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();

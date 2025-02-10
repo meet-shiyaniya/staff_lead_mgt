@@ -128,7 +128,7 @@ class staffWorkDetScreen extends StatelessWidget {
                 height: title == "Location" ? 37 : 18,
                 width: MediaQuery.of(context).size.width.toDouble() / 1.6,
                 // color: Colors.red.shade100,
-                child: Text(data, style: TextStyle(fontWeight: FontWeight.w100, fontFamily: "poppins_thin", fontSize: 13, color: Colors.grey.shade600,), maxLines: title == "Location" ? 2 : 1, overflow: TextOverflow.ellipsis,),
+                child: Text(data == "" ? "-" : data, style: TextStyle(fontWeight: FontWeight.w100, fontFamily: "poppins_thin", fontSize: 13, color: Colors.grey.shade600,), maxLines: title == "Location" ? 2 : 1, overflow: TextOverflow.ellipsis,),
 
               ),
 

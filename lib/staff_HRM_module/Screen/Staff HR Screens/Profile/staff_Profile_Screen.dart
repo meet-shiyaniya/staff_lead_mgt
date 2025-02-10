@@ -318,7 +318,7 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
                                           width: MediaQuery.of(context).size.width.toDouble() - 132,
                                           // color: Colors.green,
 
-                                          child: Text(profile.value, style: TextStyle(fontFamily: "poppins_thin",color: Colors.grey.shade800, fontSize: 13, fontWeight: FontWeight.bold,), maxLines: profile.title == "Address" ? 2 : 1, overflow: TextOverflow.ellipsis,),
+                                          child: Text(profile.value == "" ? "-" : profile.value, style: TextStyle(fontFamily: "poppins_thin",color: Colors.grey.shade800, fontSize: 13, fontWeight: FontWeight.bold,), maxLines: profile.title == "Address" ? 2 : 1, overflow: TextOverflow.ellipsis,),
 
                                         ),
                                       ),
