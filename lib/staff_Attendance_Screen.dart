@@ -15,6 +15,8 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 
+import 'Api_services/api_service.dart';
+
 class StaffAttendanceScreen extends StatefulWidget {
   @override
   _StaffAttendanceScreenState createState() => _StaffAttendanceScreenState();
@@ -24,6 +26,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   XFile? _imageFile;
   double recognitionPercentage= 0.0;
   String _status = "Upload your selfie to mark attendance";
+  final ApiService _apiService = ApiService();
 
 
   final ImagePicker _picker = ImagePicker();
@@ -62,6 +65,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
         recognitionPercentage = isFaceDetected ? 100.0 : 0.0;
         _status = isFaceDetected ? "Selfie Verified! Now mark attendance." : "Invalid Image! Only Face Selfie is allowed.";
       });
+      _apiService.uploadSelfie(File(pickedFile.path));
     }
   }
 

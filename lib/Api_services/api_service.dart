@@ -2,13 +2,60 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
+  final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
+  final String token =
+      'ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=';
+
+
+  Future<void> uploadSelfie(File imageFile) async {
+    try {
+
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      String latitude = position.latitude.toString();
+      String longitude = position.longitude.toString();
+
+      // Get current date and time
+      String currentDateTime =
+      DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
+
+      var request = http.MultipartRequest("POST", Uri.parse(apiUrl));
+
+
+      request.files.add(
+          await http.MultipartFile.fromPath('photoData', imageFile.path));
+
+      request.fields['location'] = '$latitude, $longitude';
+      request.fields['date'] = currentDateTime;
+      request.fields['token'] = token;
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        print("Response Data: $responseData");
+
+        print(response.stream);
+        Fluttertoast.showToast(msg: "✅ Selfie uploaded successfully");
+      } else {
+        var errorData = await response.stream.bytesToString();
+        print("Error Data: $errorData");
+        Fluttertoast.showToast(msg: "❌ Failed to upload selfie ($errorData)");
+      }
+
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Error: $e");
+    }
+  }
 
   Future<bool> login(String username,String password) async{
     final url=Uri.parse("$baseUrl/stafflogin");
@@ -43,6 +90,8 @@ class ApiService{
       return false;
     }
   }
+
+
 
   Future<Realtostaffprofilemodel?> fetchProfileData() async {
 
@@ -89,24 +138,7 @@ class ApiService{
   }
 
 
-  Future<void> uploadSelfie(File imageFile) async {
-    try {
-      final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
-      var request = http.MultipartRequest("POST", Uri.parse(apiUrl));
-      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-      var response = await request.send();
 
-      if (response.statusCode == 200) {
-        var responseData = await response.stream.bytesToString();
-        Fluttertoast.showToast(msg: "✅ Selfie uploaded successfully");
-        print(responseData);
-      } else {
-        Fluttertoast.showToast(msg: "❌ Failed to upload selfie");
-      }
-    } catch (e) {
-      Fluttertoast.showToast(msg: "Error: $e");
-    }
-  }
 
 
 
