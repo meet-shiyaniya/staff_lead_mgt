@@ -37,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (isAttendance && entryDate == today) {
       // Attendance already marked for today, navigate to dashboard
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BottomNavScreen()));
+      Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
       // No attendance marked or date changed, navigate to login
       prefs.setBool('attendanceMarked', false); // Reset attendance flag for the new day
