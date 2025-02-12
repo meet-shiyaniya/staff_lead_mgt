@@ -516,7 +516,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                           children: [
                             Image.asset("asset/intime.png", height: 20, width: 20),
                             SizedBox(width: 3),
-                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green)),
+                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green,fontSize:15)),
                           ],
                         ),
                         Text("$entryTime", style: TextStyle(fontFamily: "poppins_thin")),

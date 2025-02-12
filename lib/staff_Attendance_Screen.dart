@@ -144,6 +144,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
       setState(() {
         _status = "Your current location doesn't match as office location!: Absent ❌";
       });
+      print(_status);
       Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
       await showAbsentAnimation(); // Show animation
     }

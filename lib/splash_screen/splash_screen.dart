@@ -39,11 +39,13 @@ class _SplashScreenState extends State<SplashScreen> {
       // Attendance already marked for today, navigate to dashboard
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
-      // No attendance marked or date changed, navigate to login
-      prefs.setBool('attendanceMarked', false); // Reset attendance flag for the new day
+      // No attendance marked or date changed, reset and navigate to login
+      prefs.setBool('attendanceMarked', false); // Reset attendance only for the new day
+      // prefs.setString('entryDate', today); // Update the entry date
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
+
 
 
   @override

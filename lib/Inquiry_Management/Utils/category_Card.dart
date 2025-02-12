@@ -18,7 +18,7 @@ class CategoryCard extends StatelessWidget {
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: Colors.deepPurple.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
