@@ -99,15 +99,15 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                         height: MediaQuery.of(context).size.height / 3.45,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Colors.deepPurple.shade200,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black12,
-                                offset: Offset(1,3),
-                                blurRadius: 2,
-                                spreadRadius: 2),
-                          ],
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //       color: Colors.black12,
+                          //       offset: Offset(1,3),
+                          //       blurRadius: 2,
+                          //       spreadRadius: 2),
+                          // ],
                         ),
                         padding: EdgeInsets.all(16),
                         child: Column(
@@ -120,7 +120,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                   Text(
                                     "Inquiry Status - ${_getPeriodName()}",
                                     style: TextStyle(
-                                      color: Colors.deepPurple,
+                                      color: Colors.white,
                                       fontSize: 18,
                                       fontFamily: "poppins_thin",
                                       fontWeight: FontWeight.bold,
@@ -129,7 +129,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                   Spacer(),
                                   IconButton(
                                     key: _iconKey,
-                                    icon: Icon(Icons.more_vert, color: Colors.deepPurple),
+                                    icon: Icon(Icons.more_vert, color: Colors.white),
                                     onPressed: () {
                                       _showPeriodMenu(_iconKey);
                                     },
@@ -148,7 +148,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                         (index) => _barData(
                                       index,
                                       inquiryValuesByPeriod[_selectedPeriod][index],
-                                      Colors.deepPurple,
+                                      Colors.white,
                                     ),
                                   ),
                                   titlesData: FlTitlesData(
@@ -159,7 +159,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                           return Text(
                                             labels[value.toInt()],
                                             style: TextStyle(
-                                              color: Colors.deepPurple,
+                                              color: Colors.white,
                                               fontSize: 12,
                                               fontFamily: "poppins_thin",
                                             ),
@@ -176,7 +176,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                             return Text(
                                               value.toInt().toString(),
                                               style: TextStyle(
-                                                color: Colors.deepPurple,
+                                                color: Colors.white,
                                                 fontFamily: "poppins_thin",
                                                 fontSize: 12,
                                               ),
@@ -216,74 +216,77 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.all(10.0),
+                      padding: const EdgeInsets.all(8.0),
                       child: AutoSizeText(
                         "All Leads",
                         style: TextStyle(
                           fontFamily: "poppins_thin",
-                          fontSize: isLargeScreen ? 25 : 22,
+                          fontSize: isLargeScreen ? 22 : 20,
                           color: Colors.black,
                         ),
                         maxLines: 1,
                         minFontSize: 22,
                       ),
                     ),
-                    ListView(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()),
-                            );
-                          },
-                          child: CategoryCard(
-                            icon: Icons.assignment,
-                            title: 'Followup & CNR',
+                    Padding(
+                      padding: const EdgeInsets.only(left:10,right: 10),
+                      child: ListView(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()),
+                              );
+                            },
+                            child: CategoryCard(
+                              icon: Icons.assignment,
+                              title: 'Followup & CNR',
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => AllInquiriesScreen()),
-                            );
-                          },
-                          child: CategoryCard(
-                            icon: Icons.list_alt,
-                            title: 'All Inquiries',
+                          SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AllInquiriesScreen()),
+                              );
+                            },
+                            child: CategoryCard(
+                              icon: Icons.list_alt,
+                              title: 'All Inquiries',
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => DismissRequestScreen()),
-                            );
-                          },
-                          child: CategoryCard(
-                            icon: Icons.cancel,
-                            title: 'Dismiss Request',
+                          SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => DismissRequestScreen()),
+                              );
+                            },
+                            child: CategoryCard(
+                              icon: Icons.cancel,
+                              title: 'Dismiss Request',
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => AssignToOtherScreen()),
-                            );
-                          },
-                          child: CategoryCard(
-                            icon: Icons.swap_horiz,
-                            title: 'Assign to Other',
+                          SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AssignToOtherScreen()),
+                              );
+                            },
+                            child: CategoryCard(
+                              icon: Icons.swap_horiz,
+                              title: 'Assign to Other',
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     SizedBox(height: 10),
                   ],
