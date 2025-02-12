@@ -101,7 +101,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
     }
 
     if (officeLocations == null || officeLocations.isEmpty) {
-      Fluttertoast.showToast(msg: "No office locations found!");
+      Fluttertoast.showToast(msg: "No office locations data found!");
       return;
     }
 
@@ -142,7 +142,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
     } else {
       setState(() {
-        _status = "Attendance marked: Absent ❌";
+        _status = "Your current location doesn't match as office location!: Absent ❌";
       });
       Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
       await showAbsentAnimation(); // Show animation
