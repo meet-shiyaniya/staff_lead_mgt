@@ -12,13 +12,12 @@ class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
-  final String token =
-      'ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=';
+  final String token = 'ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=';
 
 
   Future<void> uploadSelfie(File imageFile) async {
     try {
-
+      String? token = await _secureStorage.read(key: 'token');
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
       String latitude = position.latitude.toString();
@@ -36,7 +35,7 @@ class ApiService{
 
       request.fields['location'] = '$latitude, $longitude';
       request.fields['date'] = currentDateTime;
-      request.fields['token'] = token;
+      request.fields['token'] = token!;
 
       var response = await request.send();
 
@@ -99,7 +98,7 @@ class ApiService{
 
     try {
 
-      String token = await "ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=";
+      String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
 
@@ -137,19 +136,13 @@ class ApiService{
 
   }
 
-
-
-
-
-
-
   Future<Realtoofficelocationmodel?> fetchOfficeLocationData () async {
 
-    final url = Uri.parse('$baseUrl/SelfiPunch_lati_logi');
+    final url = Uri.parse("$baseUrl/SelfiPunch_lati_logi");
 
     try {
 
-      String token = await "ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=";
+      String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
 
@@ -161,9 +154,11 @@ class ApiService{
 
         url,
         headers: {
-          'Content-Type': 'application/json',
+
+          'Content-Type': "application/json"
+
         },
-        body: jsonEncode({'token': token}),
+        body: jsonEncode({'token': token})
 
       );
 
@@ -186,6 +181,5 @@ class ApiService{
     }
 
   }
-
 
 }
