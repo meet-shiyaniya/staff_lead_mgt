@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
@@ -21,6 +23,9 @@ class UserProvider with ChangeNotifier{
 
   Realtostaffleavesmodel? _staffLeavesData;
   Realtostaffleavesmodel? get staffLeavesData => _staffLeavesData;
+
+  Realtoleavetypesmodel? _leaveTypesData;
+  Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
 
   Future<bool> login(String username,String password) async{
     bool success=await _apiService.login(username, password);
@@ -56,6 +61,14 @@ class UserProvider with ChangeNotifier{
   Future<void> fetchStaffLeavesData () async {
 
     _staffLeavesData = await _apiService.fetchStaffLeavesData();
+
+    notifyListeners();
+
+  }
+
+  Future<void> fetchLeaveTypesData () async {
+
+    _leaveTypesData = await _apiService.fetchLeaveTypesData();
 
     notifyListeners();
 

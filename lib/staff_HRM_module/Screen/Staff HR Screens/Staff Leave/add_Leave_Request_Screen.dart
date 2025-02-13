@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
+import 'package:provider/provider.dart';
 import 'package:switcher_button/switcher_button.dart';
 
 import '../../Color/app_Color.dart';
@@ -25,7 +28,21 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
   bool isPaidType = false;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchLeaveTypesData();
+    });
+
+  }
+
+  @override
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+    Realtoleavetypesmodel? leaveTypesData = userProvider.leaveTypesData;
 
     return Scaffold(
 

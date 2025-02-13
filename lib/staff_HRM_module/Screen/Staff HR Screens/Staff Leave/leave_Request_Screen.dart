@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
+import '../../../../Provider/UserProvider.dart';
+import '../../../Model/Realtomodels/Realtostaffleavesmodel.dart';
 import '../../../Model/Staff HR Screen Model/leave_Req_Model.dart';
 import '../../Color/app_Color.dart';
 import 'add_Leave_Request_Screen.dart';
@@ -13,24 +16,23 @@ class leaveRequestScreen extends StatefulWidget {
 
 class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
-  List<leaveReqModel> employeeLeaveList = [
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
 
-    leaveReqModel(1, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '01-02-2025', '02-02-2025', 'Sick Leave', 'Feeling unwell and not so good at the time that is reason.', 2, 'Paid', "Pending"),
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchStaffLeavesData();
+    });
 
-    leaveReqModel(2, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '03-02-2025', '05-02-2025', 'Casual Leave', 'Personal work with some notice work and give report', 3, 'Paid', "Approved"),
-
-    leaveReqModel(3, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '10-02-2025', '12-02-2025', 'Vacation Leave', 'Family vacation to went to a goa with some days', 3, 'Unpaid', "Approved"),
-
-    leaveReqModel(4, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '15-02-2025', '16-02-2025', 'Emergency Leave', 'Medical emergency, sick emergency and blood', 2, 'Paid', "Rejected"),
-
-    leaveReqModel(5, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer', '20-02-2025', '22-02-2025', 'Maternity Leave', 'new member comes with a new happiness in home', 3, 'Paid', "Pending"),
-
-    leaveReqModel(6, 'admin_Meet', 'https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg', 'Flutter Developer','25-02-2025','26-02-2025','Sick Leave','Flu symptoms and accident with car so very effect',2,'Unpaid', "Rejected"),
-
-  ];
+  }
 
   @override
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+    Realtostaffleavesmodel? staffLeaves = userProvider.staffLeavesData;
+    List<Data> leavesStaff = staffLeaves?.data ?? [];
 
     return Scaffold(
 
@@ -61,226 +63,245 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
             SizedBox(height: 25,),
 
+            leavesStaff.isEmpty ?
+
+                Center(
+                  child: CircularProgressIndicator(color: Colors.deepPurple.shade600,),
+                ) :
+
             Expanded(
 
               child: ListView.builder(
 
-                itemCount: employeeLeaveList.length,
+                itemCount: leavesStaff.length,
 
                 itemBuilder: (context, index) {
 
-                  final leave = employeeLeaveList[index];
+                  final leave = leavesStaff[index];
 
                   return Padding(
 
                     padding: const EdgeInsets.only(bottom: 20.0),
 
-                    child: Container(
+                    child: GestureDetector(
 
-                      height: 250,
-                      width: MediaQuery.of(context).size.width.toDouble(),
+                      onTap: () {
+                        Fluttertoast.showToast(msg: leavesStaff.length.toString());
+                      },
 
-                      decoration: BoxDecoration(
+                      child: Container(
 
-                        color: appColor.subPrimaryColor,
+                        height: 250,
+                        width: MediaQuery.of(context).size.width.toDouble(),
 
-                        borderRadius: BorderRadius.circular(12),
+                        decoration: BoxDecoration(
 
-                      ),
+                          color: appColor.subPrimaryColor,
 
-                      child: Column(
+                          borderRadius: BorderRadius.circular(12),
 
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
+                          ],
 
-                        children: [
+                        ),
 
-                          SizedBox(height: 8,),
+                        child: Column(
 
-                          ListTile(
+                          crossAxisAlignment: CrossAxisAlignment.start,
 
-                            leading: Container(
+                          children: [
 
-                              height: 46,
-                              width: 46,
+                            SizedBox(height: 8,),
 
-                              decoration: BoxDecoration(
+                            ListTile(
 
-                                shape: BoxShape.circle,
+                              leading: Container(
 
-                                color: appColor.primaryColor,
+                                height: 46,
+                                width: 46,
 
-                                image: DecorationImage(image: NetworkImage(leave.imageUrl), fit: BoxFit.cover),
+                                decoration: BoxDecoration(
+
+                                  shape: BoxShape.circle,
+
+                                  color: appColor.primaryColor,
+
+                                  image: DecorationImage(image: NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),),
+
+                                ),
 
                               ),
+
+                              title: Text("${leave.fullName}", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
+
+                              subtitle: Text("Team: ${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
+
+                              // trailing: Container(
+                              //
+                              //   height: 28,
+                              //   width: 80,
+                              //
+                              //   decoration: BoxDecoration(
+                              //
+                              //     color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
+                              //
+                              //     borderRadius: BorderRadius.circular(20),
+                              //
+                              //     border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
+                              //
+                              //   ),
+                              //
+                              //   child: Center(
+                              //
+                              //       child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
+                              //
+                              //   ),
+                              //
+                              // ),
 
                             ),
 
-                            title: Text(leave.name, style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
-
-                            subtitle: Text(leave.developerType, style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
-
-                            trailing: Container(
-
-                              height: 28,
-                              width: 80,
-
-                              decoration: BoxDecoration(
-
-                                color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
-
-                                borderRadius: BorderRadius.circular(20),
-
-                                border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
-
-                              ),
-
-                              child: Center(
-
-                                  child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-
-                              ),
-
-                            ),
-
-                          ),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-
-                              Text("${leave.startLeaveDate} - ${leave.endLeaveDate}", style: TextStyle(color: Colors.green.shade900, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
-
-                            ],
-                          ),
-
-                          SizedBox(height: 5,),
-
-                          Padding(
-
-                            padding: const EdgeInsets.symmetric(horizontal: 18.0),
-
-                            child: Divider(color: Colors.grey.shade400, thickness: 1.2,),
-
-                          ),
-
-                          SizedBox(height: 10,),
-
-                          Padding(
-
-                            padding: const EdgeInsets.symmetric(horizontal: 18.0),
-
-                            child: Row(
-
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
 
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-
-                                    Text("Status", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
-
-                                    SizedBox(height: 2,),
-
-                                    Container(
-
-                                        height: 17,
-                                        width: 70,
-                                        // color: Colors.blue,
-
-                                        child: Text(leave.status, style: TextStyle(color: leave.status == "Pending" ? Colors.orange.shade700 : leave.status == "Rejected" ? Colors.red.shade900 : Colors.green.shade900, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                                    ),
-
-                                  ],
-
-                                ),
-
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-
-                                    Text("Leave Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
-
-                                    SizedBox(height: 2,),
-
-                                    Container(
-
-                                        height: 17,
-                                        width: 130,
-                                        // color: Colors.blue,
-
-                                        child: Center(
-                                          child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
-                                        ),
-
-                                    ),
-
-                                  ],
-                                ),
-
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-
-                                    Text("Apply Days", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
-
-                                    SizedBox(height: 2,),
-
-                                    Container(
-
-                                        height: 17,
-                                        width: 70,
-                                        // color: Colors.blue,
-
-                                        child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,)
-
-                                    ),
-
-                                  ],
-                                ),
+                                Text("${leave.leaveFromDate} - ${leave.leaveToDate}", style: TextStyle(color: Colors.deepPurple.shade600, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
 
                               ],
+                            ),
+
+                            SizedBox(height: 5,),
+
+                            Padding(
+
+                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+
+                              child: Divider(color: Colors.grey.shade400, thickness: 1.2,),
 
                             ),
 
-                          ),
+                            SizedBox(height: 10,),
 
-                          SizedBox(height: 8,),
+                            Padding(
 
-                          Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
 
-                            padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                              child: Row(
 
-                            child: Container(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
-                              height: 36,
-                              width: MediaQuery.of(context).size.width.toDouble(),
-                              // color: Colors.green,
+                                children: [
 
-                              child: Text("Leave Reason : ${leave.leaveReason}", style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+
+                                      Text("Status", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+
+                                      SizedBox(height: 2,),
+
+                                      Container(
+
+                                          height: 17,
+                                          width: 70,
+                                          // color: Colors.blue,
+
+                                          child: Text("leave.status", style: TextStyle(color: leave.status == "Pending" ? Colors.orange.shade700 : leave.status == "Rejected" ? Colors.red.shade900 : Colors.green.shade900, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,),
+
+                                      ),
+
+                                    ],
+
+                                  ),
+
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+
+                                      Text("Leave Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+
+                                      SizedBox(height: 2,),
+
+                                      Container(
+
+                                          height: 17,
+                                          width: 130,
+                                          // color: Colors.blue,
+
+                                          child: Center(
+                                            child: Text("${leave.typeOfLeave}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                          ),
+
+                                      ),
+
+                                    ],
+                                  ),
+
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+
+                                      Text("Apply Days", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+
+                                      SizedBox(height: 2,),
+
+                                      Container(
+
+                                          height: 17,
+                                          width: 70,
+                                          // color: Colors.blue,
+
+                                          child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,)
+
+                                      ),
+
+                                    ],
+                                  ),
+
+                                ],
+
+                              ),
 
                             ),
 
-                          ),
+                            SizedBox(height: 8,),
 
-                          SizedBox(height: 6,),
+                            Padding(
 
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text("Approver : Dishant Dhameliya", style: TextStyle(color: Colors.grey.shade800, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
-                              ],
+                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+
+                              child: Container(
+
+                                height: 36,
+                                width: MediaQuery.of(context).size.width.toDouble(),
+                                // color: Colors.green,
+
+                                child: Text("Leave Reason : ${leave.leaveReason}", style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
+
+                              ),
+
                             ),
-                          ),
 
-                        ],
+                            SizedBox(height: 6,),
+
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text("Approver : ${leave.reportingTo}", style: TextStyle(color: Colors.grey.shade800, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
+
+                          ],
+
+                        ),
 
                       ),
-
                     ),
 
                   );

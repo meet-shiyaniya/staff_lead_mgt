@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
@@ -214,6 +215,52 @@ class ApiService{
         final data = jsonDecode(response.body);
 
         return Realtostaffleavesmodel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<Realtoleavetypesmodel?> fetchLeaveTypesData () async {
+    
+    final url = Uri.parse("$baseUrl/Leave_add_list");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+        url,
+        headers: {
+
+          'Content-Type': 'application/json'
+
+        },
+        body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return Realtoleavetypesmodel.fromJson(data);
 
       } else {
 

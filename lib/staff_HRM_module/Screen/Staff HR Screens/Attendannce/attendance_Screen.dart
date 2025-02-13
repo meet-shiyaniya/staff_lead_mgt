@@ -164,6 +164,9 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
             child: PieChart(
 
+              curve: Curves.linearToEaseOut,
+              duration: Duration(seconds: 2),
+
               PieChartData(
 
                 sections: [
