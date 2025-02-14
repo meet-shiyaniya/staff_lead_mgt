@@ -1,10 +1,8 @@
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:provider/provider.dart';
-import 'package:switcher_button/switcher_button.dart';
-
 import '../../Color/app_Color.dart';
 
 class addLeaveRequestScreen extends StatefulWidget {
@@ -16,24 +14,42 @@ class addLeaveRequestScreen extends StatefulWidget {
 
 class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
-  var nameController = TextEditingController(text: "Gym_smart");
-  var approverController = TextEditingController(text: "Rudrram Group");
+  var nameController = TextEditingController();
+  var approverController = TextEditingController();
 
   var startingDateController = TextEditingController();
 
   DateTime? _startDate;
+  DateTime? _endDate;
+
+  var selectedAnnualLeave;
 
   var endingDateController = TextEditingController();
 
-  bool isPaidType = false;
+  var applyDaysController = TextEditingController();
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
-    Future.microtask(() {
-      Provider.of<UserProvider>(context, listen: false).fetchLeaveTypesData();
+    Future.microtask(() async {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      // Fetch leave types data
+      await userProvider.fetchLeaveTypesData();
+
+      // Safely access the fetched data
+      final userName = userProvider.leaveTypesData?.data?.username ?? '';
+      final approverName = userProvider.leaveTypesData?.data?.headName ?? '';
+
+      // Set controller values
+      nameController.text = userName;
+      approverController.text = approverName;
+
+      // Trigger UI update if necessary
+      if (mounted) {
+        setState(() {});
+      }
     });
 
   }
@@ -41,8 +57,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
   @override
   Widget build(BuildContext context) {
 
-    final userProvider = Provider.of<UserProvider>(context);
-    Realtoleavetypesmodel? leaveTypesData = userProvider.leaveTypesData;
+    final userProvider = Provider.of<UserProvider>(context).leaveTypesData;
+    final leaveTypesList = userProvider?.data?.typeOfLeave ?? [];
 
     return Scaffold(
 
@@ -104,7 +120,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                   readOnly: true,
 
-                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   decoration: InputDecoration(
 
@@ -112,7 +128,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                     fillColor: appColor.subPrimaryColor,
 
-                    hintText: "Short Name",
+                    hintText: "User Name",
 
                     hintStyle: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
 
@@ -164,7 +180,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                   readOnly: true,
 
-                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   decoration: InputDecoration(
 
@@ -208,7 +224,84 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
               SizedBox(height: 15,),
 
-              Text("Start Leave Date :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
+              Text("Type Of Leave :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
+
+              SizedBox(height: 10,),
+
+              Card(
+                elevation: 2,
+                color: Colors.transparent,
+                shadowColor: appColor.boxColor,
+                child: DropdownButton2(
+
+                  isExpanded: true,
+
+                  hint: Text('Select leave type', style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),),
+
+                  value: selectedAnnualLeave,
+
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
+
+                  iconStyleData: IconStyleData(
+
+                    icon: Icon(Icons.arrow_drop_down_rounded, color: appColor.primaryColor, size: 34,),
+
+                  ),
+
+                  buttonStyleData: ButtonStyleData(
+
+                    decoration: BoxDecoration(
+
+                      borderRadius: BorderRadius.circular(10),
+
+                      color: appColor.subPrimaryColor,
+
+                    ),
+
+                    height: 51,
+
+                  ),
+
+                  underline: Center(),
+
+                  dropdownStyleData: DropdownStyleData(
+
+                    decoration: BoxDecoration(
+
+                      color: appColor.subFavColor,
+
+                      borderRadius: BorderRadius.circular(14),
+
+                    ),
+
+                    elevation: 2,
+
+                  ),
+
+                  items: leaveTypesList.map((leave) {
+                    String displayText = "${leave.leaveType}";
+                    return DropdownMenuItem<String>(
+                      value: leave.id,
+                      child: Text(displayText, style: TextStyle( color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5,),),
+                    );
+                  }).toList(),
+
+                  onChanged: (value) {
+
+                    setState(() {
+
+                      selectedAnnualLeave = value;
+
+                    });
+
+                  },
+
+                ),
+              ),
+
+              SizedBox(height: 15,),
+
+              Text("Leave Date From :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
 
               SizedBox(height: 10,),
 
@@ -221,6 +314,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                 child: TextFormField(
 
                   controller: startingDateController,
+
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   readOnly: true,
 
@@ -286,6 +381,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                         startingDateController.text = formattedDate;
 
+                        // _calculateApplyDays();
+
                       });
 
                     }
@@ -298,7 +395,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
               SizedBox(height: 15,),
 
-              Text("End Leave Date :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
+              Text("Leave Date To :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
 
               SizedBox(height: 10,),
 
@@ -311,6 +408,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                 child: TextFormField(
 
                   controller: endingDateController,
+
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   readOnly: true,
 
@@ -371,8 +470,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                     DateTime? pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: _startDate!.add(Duration(days: 1)),
-                      firstDate: _startDate!.add(Duration(days: 1)),
+                      initialDate: _startDate!.add(Duration(days: 0)),
+                      firstDate: _startDate!.add(Duration(days: 0)),
                       lastDate: DateTime(2100),
                     );
 
@@ -380,6 +479,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                       String formattedDate =
                           "${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}";
                       setState(() {
+                        _endDate = pickedDate;
                         endingDateController.text = formattedDate;
                       });
                     }
@@ -391,96 +491,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
               SizedBox(height: 15,),
 
-              Text("Select Paid Type :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
-
-              SizedBox(height: 18,),
-
-              Row(
-
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-
-                children: [
-
-                  SizedBox(width: 0,),
-
-                  Container(
-
-                    height: 36,
-                    width: MediaQuery.of(context).size.width.toDouble() / 3,
-
-                    decoration: BoxDecoration(
-
-                      color: isPaidType ? Colors.transparent : appColor.primaryColor,
-
-                      border: Border.all(color: isPaidType ? appColor.primaryColor : Colors.transparent, width: 1.2),
-
-                      borderRadius: BorderRadius.circular(8),
-
-                    ),
-
-                    child: Center(
-
-                        child: Text("Paid Leave", style: TextStyle(color: isPaidType ? Colors.black : Colors.white, fontSize: 13.2, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-
-                    ),
-
-                  ),
-
-                  // Spacer(),
-
-                  SwitcherButton(
-
-                    value: isPaidType,
-
-                    onColor: Colors.deepPurple,
-
-                    offColor: Colors.deepPurple.shade100,
-
-                    onChange: (value) {
-
-                      setState(() {
-
-                        isPaidType = value;
-
-                      });
-
-                    },
-
-                  ),
-
-                  // Spacer(),
-
-                  Container(
-
-                    height: 36,
-                    width: MediaQuery.of(context).size.width.toDouble() / 3,
-
-                    decoration: BoxDecoration(
-
-                      color: isPaidType ? appColor.primaryColor : Colors.transparent,
-
-                      border: Border.all(color: isPaidType ? Colors.transparent : appColor.primaryColor, width: 1.2),
-
-                      borderRadius: BorderRadius.circular(8),
-
-                    ),
-
-                    child: Center(
-
-                        child: Text("Unpaid Leave", style: TextStyle(color: isPaidType ? Colors.white : Colors.black, fontSize: 13.2, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-
-                    ),
-
-                  ),
-
-                  SizedBox(width: 0,),
-
-                ],
-              ),
-
-              SizedBox(height: 18,),
-
-              Text("Leave Name :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
+              Text("Apply Days :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
 
               SizedBox(height: 10,),
 
@@ -492,13 +503,35 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                 child: TextFormField(
 
+                  controller: applyDaysController,
+
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
+
+                  onTap: () {
+
+                    setState(() {
+
+                        if (_startDate != null && _endDate != null) {
+                          int days = _endDate!.difference(_startDate!).inDays + 1;
+                            applyDaysController.text = "${days} Days";
+                        } else {
+                          applyDaysController.text = "";
+                          Fluttertoast.showToast(msg: "Enter Leave Date From and To!");
+                        }
+
+                    });
+
+                  },
+
+                  readOnly: true,
+
                   decoration: InputDecoration(
 
                     filled: true,
 
                     fillColor: appColor.subPrimaryColor,
 
-                    hintText: "Short Name",
+                    hintText: "Number Of Days",
 
                     hintStyle: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
 
@@ -546,7 +579,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                 child: TextFormField(
 
-                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   decoration: InputDecoration(
 
@@ -555,114 +588,6 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                     fillColor: appColor.subPrimaryColor,
 
                     hintText: "Write your leave reason here",
-
-                    hintStyle: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
-
-                    border: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(10), // Adjust the radius as needed
-
-                      borderSide: BorderSide.none, // No visible border
-
-                    ),
-
-                    enabledBorder: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(8),
-
-                      borderSide: BorderSide.none,
-
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(10),
-
-                      borderSide: BorderSide.none,
-
-                    ),
-
-                  ),
-
-                ),
-
-              ),
-
-              SizedBox(height: 15,),
-
-              Text("Leave Type :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
-
-              SizedBox(height: 10,),
-
-              Card(
-
-                elevation: 2,
-                color: Colors.transparent,
-                shadowColor: appColor.boxColor,
-
-                child: TextFormField(
-
-                  decoration: InputDecoration(
-
-                    filled: true,
-
-                    fillColor: appColor.subPrimaryColor,
-
-                    hintText: "Leave Type",
-
-                    hintStyle: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
-
-                    border: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(10), // Adjust the radius as needed
-
-                      borderSide: BorderSide.none, // No visible border
-
-                    ),
-
-                    enabledBorder: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(8),
-
-                      borderSide: BorderSide.none,
-
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-
-                      borderRadius: BorderRadius.circular(10),
-
-                      borderSide: BorderSide.none,
-
-                    ),
-
-                  ),
-
-                ),
-
-              ),
-
-              SizedBox(height: 15,),
-
-              Text("Apply Days :", style: TextStyle(color: appColor.bodymainTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
-
-              SizedBox(height: 10,),
-
-              Card(
-
-                elevation: 2,
-                color: Colors.transparent,
-                shadowColor: appColor.boxColor,
-
-                child: TextFormField(
-
-                  decoration: InputDecoration(
-
-                    filled: true,
-
-                    fillColor: appColor.subPrimaryColor,
-
-                    hintText: "Number Of Days",
 
                     hintStyle: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13),
 
