@@ -135,6 +135,46 @@ class UserProvider with ChangeNotifier{
 
   }
 
+  Future<bool> sendLeaveRequest ({
+
+    required String head_name,
+    required String full_name,
+    required String under_team,
+    required String date,
+    required String reporting_to,
+    required String apply_days,
+    required String from_date,
+    required String to_date,
+    required String leave_reason,
+    required String leave_type,
+
+  }) async {
+
+    try {
+
+      bool success = await _apiService.sendLeaveRequest(
+        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type
+      );
+
+      if (success) {
+
+        notifyListeners();
+        return true;
+
+      } else {
+
+        return false;
+
+      }
+
+    } catch (e) {
+
+      return false;
+
+    }
+
+  }
+
 
 
 
