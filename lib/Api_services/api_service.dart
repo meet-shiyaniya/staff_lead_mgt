@@ -10,11 +10,14 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemod
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
+import '../Inquiry_Management/Inquiry Management Screens/all_inquiries_Screen.dart';
+import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
+  static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
-  final String token = 'ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGMWMyZ2lMQ0p3WVhOemQyOXlaQ0k2SWtvNWVpTk5TVEJQTmxkTWNEQlZjbUZ6Y0RCM0lpd2lhV1FpT2lJeU1qUWlMQ0p3Y205a2RXTjBYMmxrSWpvaU1TSjk=';
 
 
   Future<void> uploadSelfie(File imageFile) async {
@@ -276,4 +279,55 @@ class ApiService{
 
   }
 
+
+  Future<PaginatedInquiries?> fetchInquiries(int limit, {required int page}) async {
+    final url = Uri.parse("$childUrl?limit=$limit&page=$page");
+
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+      if (token == null) {
+        print("Error: No token found");
+        return null;
+      }
+      final response = await http.post(
+          url,
+          headers: {
+
+            'Content-Type': "application/json",
+
+          },
+        body: jsonEncode({'token': token})
+
+
+
+
+      );
+
+      if (response.statusCode == 200) {
+        print("Response Status Code: ${response.statusCode}");
+        // Ensure response is valid JSON before parsing
+        if (response.body.startsWith('{') || response.body.startsWith('[')) {
+          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+          return PaginatedInquiries.fromJson(jsonData);
+        } else {
+          print(response.body);
+          print("Error: Received non-JSON response");
+          return null;
+        }
+      } else {
+        print("Error fetching data: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("API error: $e");
+      return null;
+    }
+  }
+
+
+}
+
+class $token {
 }

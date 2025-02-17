@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../social_module/colors/colors.dart';
 import 'Inquiry Management Screens/all_inquiries_Screen.dart';
 import 'Inquiry Management Screens/assign_to_other_Screen.dart';
 import 'Inquiry Management Screens/dismiss_request_Screen.dart';
@@ -121,7 +122,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                                     "Inquiry Status - ${_getPeriodName()}",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontFamily: "poppins_thin",
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -326,7 +327,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: getMaxY(),
-            color: Colors.deepPurple.withOpacity(0.1),
+            color: Colors.deepPurple.withOpacity(0.8),
           ),
         ),
       ],

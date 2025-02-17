@@ -2,6 +2,7 @@
 
 import 'dart:math';
 
+import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -55,13 +56,13 @@ class ShiftCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           color: Colors.white,
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(1, 3)),
+            BoxShadow(color: Colors.black12, blurRadius: 1, offset: Offset(1, 3)),
           ]
 
         ),
         margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
               Column(
@@ -70,7 +71,7 @@ class ShiftCard extends StatelessWidget {
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: Colors.black),
+                      Icon(Icons.access_time, size: 22, color: Colors.red),
                       SizedBox(width: 8),
                       Text(time,style: TextStyle(fontFamily: "poppins_thin",fontSize: 14),),
                     ],
@@ -78,9 +79,14 @@ class ShiftCard extends StatelessWidget {
                 ],
               ),
               Spacer(),
-              CircleAvatar(
-                // backgroundColor: Colors.deepPurple.shade200,
-                child: Text(inquiry,style: TextStyle(fontSize: 12,fontFamily: "poppins_thin",color: Colors.black),),
+              DottedBorder(
+                strokeWidth: 1,
+                dashPattern: [10,1],
+                borderType: BorderType.Circle,
+                child: CircleAvatar(
+                  // backgroundColor: Colors.deepPurple.shade200,
+                  child: Text(inquiry,style: TextStyle(fontSize: 12,fontFamily: "poppins_thin",color: Colors.black),),
+                ),
               ),
               SizedBox(width: 10,),
               // Spacer(),
