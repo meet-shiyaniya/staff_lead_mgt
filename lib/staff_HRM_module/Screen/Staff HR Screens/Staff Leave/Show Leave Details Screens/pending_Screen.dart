@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../Model/HR Screen Models/Leave/Leave Menu/approve_Model.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+import 'package:provider/provider.dart';
+import '../../../../../Provider/UserProvider.dart';
 import '../../../Color/app_Color.dart';
 
 class pendingScreen extends StatefulWidget {
@@ -11,16 +13,38 @@ class pendingScreen extends StatefulWidget {
 
 class _pendingScreenState extends State<pendingScreen> {
 
-  final List<approveModel> approveList = [
+  final List<Data> approveList = [];
 
-    approveModel(1, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-10", "2025-01-15", "Sick Leave", "High fever", 5, "Paid", "Approve",),
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
 
-    approveModel(2, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-08", "2025-01-12", "Casual Leave", "Family function", 4, "Unpaid", "Approve",),
+    Future.microtask(() async{
 
-    approveModel(3, "admin_Meet", "https://funylife.in/wp-content/uploads/2022/11/20221118_172834.jpg", "Flutter Developer", "2025-01-20", "2025-01-22", "Maternity Leave", "Wife's support", 3, "Paid", "Approve",),
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-  ];
+      await userProvider.fetchStaffLeavesData();
 
+      List<Data> staffAllLeaves = userProvider.staffLeavesData?.data ?? [];
+
+      approveList.clear();
+
+      for (int i = 0; i < staffAllLeaves.length; i++) {
+
+        if (staffAllLeaves[i].status == "0") {
+
+          setState(() {
+            approveList.add(staffAllLeaves[i]);
+          });
+
+        }
+
+      }
+
+    });
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +99,12 @@ class _pendingScreenState extends State<pendingScreen> {
             ),
 
             SizedBox(height: 25,),
+
+            approveList.isEmpty ?
+
+            Center(
+              child: CircularProgressIndicator(color: Colors.deepPurple.shade600,),
+            ) :
 
             Expanded(
 
@@ -132,38 +162,38 @@ class _pendingScreenState extends State<pendingScreen> {
 
                                   color: appColor.primaryColor,
 
-                                  image: DecorationImage(image: NetworkImage(leave.imageUrl), fit: BoxFit.cover),
+                                  image: DecorationImage(image: NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),),
 
                                 ),
 
                               ),
 
-                              title: Text(leave.name, style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
+                              title: Text("${leave.fullName}", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
 
-                              subtitle: Text(leave.developerType, style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
+                              subtitle: Text("${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
 
-                              trailing: Container(
-
-                                height: 28,
-                                width: 80,
-
-                                decoration: BoxDecoration(
-
-                                  color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
-
-                                  borderRadius: BorderRadius.circular(20),
-
-                                  border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
-
-                                ),
-
-                                child: Center(
-
-                                    child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-
-                                ),
-
-                              ),
+                              // trailing: Container(
+                              //
+                              //   height: 28,
+                              //   width: 80,
+                              //
+                              //   decoration: BoxDecoration(
+                              //
+                              //     color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
+                              //
+                              //     borderRadius: BorderRadius.circular(20),
+                              //
+                              //     border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
+                              //
+                              //   ),
+                              //
+                              //   child: Center(
+                              //
+                              //       child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
+                              //
+                              //   ),
+                              //
+                              // ),
 
                             ),
 
@@ -171,7 +201,7 @@ class _pendingScreenState extends State<pendingScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
 
-                                Text("${leave.startLeaveDate} - ${leave.endLeaveDate}", style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
+                                Text("${leave.leaveFromDate} - ${leave.leaveToDate}", style: TextStyle(color: Colors.green.shade900, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
 
                               ],
                             ),
@@ -210,8 +240,9 @@ class _pendingScreenState extends State<pendingScreen> {
 
                                           height: 17,
                                           width: 110,
+                                          // color: Colors.blue,
 
-                                          child: Text(leave.leaveReason, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                          child: Text("${leave.leaveReason}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
                                       ),
 
@@ -230,8 +261,9 @@ class _pendingScreenState extends State<pendingScreen> {
 
                                           height: 17,
                                           width: 100,
+                                          // color: Colors.blue,
 
-                                          child: Text(leave.leaveType, style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
+                                          child: Text("${leave.typeOfLeave}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
                                       ),
 
@@ -250,6 +282,7 @@ class _pendingScreenState extends State<pendingScreen> {
 
                                           height: 17,
                                           width: 70,
+                                          // color: Colors.blue,
 
                                           child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 

@@ -338,6 +338,7 @@ class ApiService{
     required String to_date,
     required String leave_reason,
     required String leave_type,
+    required String leave_type_id,
 
   }) async {
 
@@ -365,7 +366,8 @@ class ApiService{
         "leave_from_date": from_date,
         "leave_to_date": to_date,
         "leave_reason": leave_reason,
-        "type_of_leave": leave_type
+        "type_of_leave": leave_type,
+        "type_of_leave_id": leave_type_id
 
       };
 

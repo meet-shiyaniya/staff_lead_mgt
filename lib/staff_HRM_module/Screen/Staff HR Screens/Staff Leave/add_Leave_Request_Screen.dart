@@ -23,7 +23,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  var selectedAnnualLeave;
+  var selectedLeaveType;
+  var selectedLeaveTypeId;
 
   var endingDateController = TextEditingController();
 
@@ -240,70 +241,65 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                 elevation: 2,
                 color: Colors.transparent,
                 shadowColor: appColor.boxColor,
-                child: DropdownButton2(
-
+                child: DropdownButton2<Map<String, dynamic>>(
                   isExpanded: true,
-
-                  hint: Text('Select leave type', style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),),
-
-                  value: selectedAnnualLeave,
-
-                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
-
+                  hint: Text(
+                    'Select leave type',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontFamily: "poppins_thin",
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  value: selectedLeaveTypeId != null && selectedLeaveType != null
+                      ? {'id': selectedLeaveTypeId, 'type': selectedLeaveType}
+                      : null, // Ensure value is of correct type
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontFamily: "poppins_thin",
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                  ),
                   iconStyleData: IconStyleData(
-
-                    icon: Icon(Icons.arrow_drop_down_rounded, color: appColor.primaryColor, size: 34,),
-
+                    icon: Icon(Icons.arrow_drop_down_rounded, color: appColor.primaryColor, size: 34),
                   ),
-
                   buttonStyleData: ButtonStyleData(
-
                     decoration: BoxDecoration(
-
                       borderRadius: BorderRadius.circular(10),
-
                       color: appColor.subPrimaryColor,
-
                     ),
-
                     height: 51,
-
                   ),
-
-                  underline: Center(),
-
+                  underline: SizedBox(),
                   dropdownStyleData: DropdownStyleData(
-
                     decoration: BoxDecoration(
-
                       color: appColor.subFavColor,
-
                       borderRadius: BorderRadius.circular(14),
-
                     ),
-
                     elevation: 2,
-
                   ),
-
                   items: leaveTypesList.map((leave) {
-                    String displayText = "${leave.leaveType}";
-                    return DropdownMenuItem<String>(
-                      value: leave.id,
-                      child: Text(displayText, style: TextStyle( color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5,),),
+                    return DropdownMenuItem<Map<String, dynamic>>(
+                      value: {'id': leave.id, 'type': leave.leaveType},
+                      child: Text(
+                        "${leave.leaveType}",
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontFamily: "poppins_thin",
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
                     );
                   }).toList(),
-
                   onChanged: (value) {
-
                     setState(() {
-
-                      selectedAnnualLeave = value;
-
+                      Map<String, dynamic> selectedValue = value as Map<String, dynamic>;
+                      selectedLeaveTypeId = selectedValue['id'];
+                      selectedLeaveType = selectedValue['type'];
                     });
-
                   },
-
                 ),
               ),
 
@@ -643,7 +639,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                   onPressed: () {
 
-                    Provider.of<UserProvider>(context, listen: false).sendLeaveRequest(head_name: headID, full_name: nameController.text, under_team: underTeam, date: DateFormat('yyyy-MM-dd').format(DateTime.now()), reporting_to: approverController.text, apply_days: applyDaysController.text, from_date: startingDateController.text, to_date: endingDateController.text, leave_reason: leaveReasonController.text, leave_type: selectedAnnualLeave);
+                    Provider.of<UserProvider>(context, listen: false).sendLeaveRequest(head_name: headID, full_name: nameController.text, under_team: underTeam, date: DateFormat('yyyy-MM-dd').format(DateTime.now()), reporting_to: approverController.text, apply_days: applyDaysController.text, from_date: startingDateController.text, to_date: endingDateController.text, leave_reason: leaveReasonController.text, leave_type: selectedLeaveType, leave_type_id: selectedLeaveTypeId);
 
                     Navigator.pop(context);
 

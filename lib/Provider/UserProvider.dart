@@ -147,13 +147,14 @@ class UserProvider with ChangeNotifier{
     required String to_date,
     required String leave_reason,
     required String leave_type,
+    required String leave_type_id,
 
   }) async {
 
     try {
 
       bool success = await _apiService.sendLeaveRequest(
-        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type
+        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id
       );
 
       if (success) {
