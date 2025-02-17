@@ -2,6 +2,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../Color/app_Color.dart';
 
@@ -27,6 +28,10 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
   var endingDateController = TextEditingController();
 
   var applyDaysController = TextEditingController();
+  var leaveReasonController = TextEditingController();
+
+  var headID;
+  var underTeam;
 
   @override
   void initState() {
@@ -37,10 +42,13 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
       // Fetch leave types data
       await userProvider.fetchLeaveTypesData();
+      await userProvider.fetchStaffLeavesData();
 
       // Safely access the fetched data
       final userName = userProvider.leaveTypesData?.data?.username ?? '';
       final approverName = userProvider.leaveTypesData?.data?.headName ?? '';
+      headID = userProvider.leaveTypesData?.data?.head ?? '';
+      underTeam  = userProvider.staffLeavesData?.data?[0].underTeam ?? '';
 
       // Set controller values
       nameController.text = userName;
@@ -579,6 +587,8 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                 child: TextFormField(
 
+                  controller: leaveReasonController,
+
                   style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
 
                   decoration: InputDecoration(
@@ -633,7 +643,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                   onPressed: () {
 
-                    Fluttertoast.showToast(msg: "New Leave Added");
+                    Provider.of<UserProvider>(context, listen: false).sendLeaveRequest(head_name: headID, full_name: nameController.text, under_team: underTeam, date: DateFormat('yyyy-MM-dd').format(DateTime.now()), reporting_to: approverController.text, apply_days: applyDaysController.text, from_date: startingDateController.text, to_date: endingDateController.text, leave_reason: leaveReasonController.text, leave_type: selectedAnnualLeave);
 
                     Navigator.pop(context);
 

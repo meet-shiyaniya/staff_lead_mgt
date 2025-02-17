@@ -326,8 +326,79 @@ class ApiService{
     }
   }
 
+  Future<bool> sendLeaveRequest ({
 
-}
+    required String head_name,
+    required String full_name,
+    required String under_team,
+    required String date,
+    required String reporting_to,
+    required String apply_days,
+    required String from_date,
+    required String to_date,
+    required String leave_reason,
+    required String leave_type,
 
-class $token {
+  }) async {
+
+    final url = Uri.parse("$baseUrl/Leave_Add");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return false;
+
+      }
+
+      Map<String, String> bodyData = {
+
+        "token": token,
+        "head": head_name,
+        "full_name": full_name,
+        "under_team": under_team,
+        "date": date,
+        "reporting_to": reporting_to,
+        "leave_apply_days": apply_days,
+        "leave_from_date": from_date,
+        "leave_to_date": to_date,
+        "leave_reason": leave_reason,
+        "type_of_leave": leave_type
+
+      };
+
+      final response = await http.post(
+
+        url,
+        headers: {
+
+          'Content-Type': 'application/json'
+
+        },
+        body: jsonEncode(bodyData)
+
+      );
+
+      if (response.statusCode == 200) {
+
+        Fluttertoast.showToast(msg: "Leave Request Successfully Send");
+        return true;
+
+      } else {
+
+        return false;
+
+      }
+
+    } catch (e) {
+
+      return false;
+
+    }
+
+  }
+
+
 }
