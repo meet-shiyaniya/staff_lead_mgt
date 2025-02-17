@@ -2,7 +2,10 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 // import 'package:inquiry_management_ui/Utils/Custom%20widgets/add_lead_Screen.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
+import '../../Provider/UserProvider.dart';
+import '../Model/Api Model/allInquiryModel.dart';
 import '../Model/category_Model.dart';
 import '../Model/followup_Model.dart';
 import '../Utils/Custom widgets/add_lead_Screen.dart';
@@ -23,25 +26,26 @@ class AllInquiriesScreen extends StatefulWidget {
 
 class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
+
   String selectedList = "All Leads";
   String selectedValue = "15";
   int? selectedIndex;
   List<LeadModel> LeadList = [
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"jaisdjshadkanadabcbcamnmnsaasddadsdsSS"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NASDNAXNSXMN"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJASHNDJNASN"),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NANDNASMD"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DUIQOJSZ"),
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJIJSAJKJ"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"UWIDHNXN"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IDUEIWYDJANXM"),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"JEIOJDNMKS"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIOWJFDMKX"),
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"E9UWJIODKSMX"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIJMFKDASJIED"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"OIUJDISKAMX "),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEUWIOEJDSKMX"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEDJSKMX"),
+    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"jaisdjshadkanadabcbcamnmnsaasddadsdsSS"),
+    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NASDNAXNSXMN"),
+    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJASHNDJNASN"),
+    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NANDNASMD"),
+    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DUIQOJSZ"),
+    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJIJSAJKJ"),
+    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"UWIDHNXN"),
+    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IDUEIWYDJANXM"),
+    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"JEIOJDNMKS"),
+    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIOWJFDMKX"),
+    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"E9UWJIODKSMX"),
+    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIJMFKDASJIED"),
+    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"OIUJDISKAMX "),
+    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEUWIOEJDSKMX"),
+    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "mailto:jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEDJSKMX"),
   ];
 
   List<CategoryModel> categoryList = [];
@@ -49,7 +53,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   List<bool> selectedCards = [];
   bool anySelected = false;
 
-
+  late ScrollController _scrollController;
   String? selectedAction = null; // Set to null initially
   String? selectedEmployee = null; // Set to null initially
   final List<String> actions = ['markAsComplete','assignToUser','delete'];
@@ -58,6 +62,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+    });
+
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
+
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
       CategoryModel("Feedback", LeadList.where((lead) => lead.label == "Feedback").toList()),
@@ -68,6 +80,18 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       CategoryModel("All Lead", LeadList),
     ];
     filteredLeads = List.from(LeadList);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void filterLeads(String category) {
@@ -174,6 +198,8 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inquiryProvider = Provider.of<UserProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
           title: Text("All Inquiries",style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
@@ -470,46 +496,77 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                 ),
               ],
             )
-                : ListView.builder(
-              itemCount: filteredLeads.length,
-              itemBuilder: (context, index) {
-                return StatefulBuilder(
-                  builder: (context,setState){
-                    return GestureDetector(
-                      onLongPress: () {
-                        toggleSelection(index);
-                      },
 
-                      child: TestCard(
-                        id: filteredLeads[index].id,
-                        name: filteredLeads[index].name,
-                        username: filteredLeads[index].username,
-                        label: filteredLeads[index].label,
-                        followUpDate: filteredLeads[index].followUpDate,
-                        nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                        inquiryType: filteredLeads[index].inquiryType,
-                        phone: filteredLeads[index].phone,
-                        email: filteredLeads[index].email,
-                        source: filteredLeads[index].source,
-                        isSelected: selectedCards[index],
-                        onSelect: () {
-                          toggleSelection(index);
-                        }, callList: ["Followup","Dismissed","Appointment","Negotiation","Feedback","Cnr"],
-                        // selectedTime: selectedTime,
-                        // selectedPurpose: selectedPurpose,
-                        // selectedApx: selectedApx,
-                        // selectedAction: selectedAction,
-                        selectedcallFilter: selectedcallFilter,
-                        // selectedEmployee: selectedEmployee,
-                        data: filteredLeads[index],
-                        isTiming:true,
-                        nextFollowupcontroller: nextFollowupcontroller,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+    // body: RefreshIndicator(
+    // onRefresh: () => inquiryProvider.refreshInquiries(),
+    // child: ListView.builder(
+    // controller: _scrollController,
+    // itemCount: inquiryProvider.inquiries.length + (inquiryProvider.hasMore ? 1 : 0),
+    // itemBuilder: (context, index) {
+    // if (index < inquiryProvider.inquiries.length) {
+    // Inquiry inquiry = inquiryProvider.inquiries[index];
+    // return Card(
+    // child: ListTile(
+    // title: Text(inquiry.fullName),
+    // subtitle: Text("Mobile: ${inquiry.mobileno}\nRemark: ${inquiry.remark}"),
+    // trailing: Text(inquiry.createdAt),
+    // ),
+    // );
+    // } else {
+    // return Center(child: CircularProgressIndicator());
+    // }
+    // },
+    // ),
+    // ),
+                : RefreshIndicator(
+              onRefresh: () => inquiryProvider.refreshInquiries(),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemCount: inquiryProvider.inquiries.length + (inquiryProvider.hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index < inquiryProvider.inquiries.length) {
+                        Inquiry inquiry = inquiryProvider.inquiries[index];
+                        return StatefulBuilder(
+                          builder: (context,setState){
+                            return GestureDetector(
+                              onLongPress: () {
+                                toggleSelection(index);
+                              },
+
+                              child: TestCard(
+                                id: filteredLeads[index].id,
+                                name: inquiry.fullName,
+                                username: filteredLeads[index].username,
+                                label: filteredLeads[index].label,
+                                followUpDate: inquiry.createdAt,
+                                nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+                                inquiryType: filteredLeads[index].inquiryType,
+                                phone: inquiry.mobileno,
+                                email: filteredLeads[index].email,
+                                source: filteredLeads[index].source,
+                                isSelected: selectedCards[index],
+                                onSelect: () {
+                                  toggleSelection(index);
+                                }, callList: ["Followup","Dismissed","Appointment","Negotiation","Feedback","Cnr"],
+                                // selectedTime: selectedTime,
+                                // selectedPurpose: selectedPurpose,
+                                // selectedApx: selectedApx,
+                                // selectedAction: selectedAction,
+                                selectedcallFilter: selectedcallFilter,
+                                // selectedEmployee: selectedEmployee,
+                                data: filteredLeads[index],
+                                isTiming:true,
+                                nextFollowupcontroller: nextFollowupcontroller,
+                              ),
+                            );
+                          },
+                        );
+
+                      }
+
+                                },
+                              ),
+                ),
           ),
         ],
       ),
@@ -517,12 +574,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: false,),));
-      },child: Icon(Icons.add,color: Colors.white,),
+        },child: Icon(Icons.add,color: Colors.white,),
         backgroundColor: Colors.deepPurple.shade400,
         // backgroundColor: Colors.deepPurple.shade300,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         elevation: 20,
-        
+
       ),
 
     );

@@ -320,13 +320,13 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GestureDetector(
-                          onTap: isDayEndedToday ? null : (isDayStarted ? endDay : startDay),
+                          onTap: isDayEndedToday ? startDay : (isDayStarted ? endDay : startDay),
                           child: Container(
                             height: 30,
                             width: 120,
                             margin: const EdgeInsets.only(left: 30, top: 20),
                             decoration: BoxDecoration(
-                              color: isDayEndedToday ? Colors.grey : Colors.white54,
+                              color: isDayEndedToday ? Colors.white70: Colors.white70,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
@@ -336,7 +336,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                                   fontFamily: "poppins_thin",
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: isDayEndedToday ? Colors.black54 : Colors.black,
+                                  color: isDayEndedToday ? Colors.black45 : Colors.black,
                                 ),
                               ),
                             ),
@@ -379,7 +379,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                             ),
                           ),
                         ),
-                        if (isDayStarted)
+                        // if (isDayStarted)
                           Container(
                             margin: EdgeInsets.only(top: 10, left: 30),
                             child: GestureDetector(
@@ -462,7 +462,11 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                             color: Colors.green,
                           ),
                         ),
-                        Text(entryTime.isNotEmpty ? entryTime : "--:--:--"),
+                        Text(entryTime.isNotEmpty ? entryTime : "--:--:--",style: TextStyle(
+                          fontFamily: "poppins_thin",
+                          fontWeight: FontWeight.bold,
+
+                        ),),
                       ],
                     ),
                     const VerticalDivider(
@@ -492,7 +496,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
               Container(
                 height: MediaQuery.of(context).size.height / 10,
                 width: double.infinity,
-                margin: const EdgeInsets.all(15),
+                margin: const EdgeInsets.all(10),
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
@@ -516,10 +520,10 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                           children: [
                             Image.asset("asset/intime.png", height: 20, width: 20),
                             SizedBox(width: 3),
-                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green,fontSize:15)),
+                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green)),
                           ],
                         ),
-                        Text("$entryTime", style: TextStyle(fontFamily: "poppins_thin")),
+                        Text("$entryTime", style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
                       ],
                     ),
                     VerticalDivider(
@@ -537,7 +541,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                             Text("Out Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.red)),
                           ],
                         ),
-                        Text("$exitTime", style: TextStyle(fontFamily: "poppins_thin")),
+                        Text("$exitTime", style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
                       ],
                     ),
                     SizedBox(),
@@ -553,10 +557,10 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                           children: [
                             Image.asset("asset/workingHour.png", height: 20, width: 20),
                             SizedBox(width: 3),
-                            Text("Work Hour:", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.blue)),
+                            Text("Work Hour:", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.blue,)),
                           ],
                         ),
-                        Text("${getElapsedTime()}"),
+                        Text("${getElapsedTime()}",style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
                       ],
                     ),
                   ],

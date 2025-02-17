@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -6,13 +8,19 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import 'package:http/http.dart' as http;
+import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class UserProvider with ChangeNotifier{
+
+
+
+
 
   bool _isLoggedIn=false;
   bool get isLoggedIn=> _isLoggedIn;
 
-  final ApiService _apiService=ApiService();
+  // final ApiService _apiService=ApiService();
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
   Realtostaffprofilemodel? _profileData;
@@ -26,6 +34,59 @@ class UserProvider with ChangeNotifier{
 
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
+
+
+
+
+
+  final ApiService _apiService = ApiService();
+
+  List<Inquiry> _inquiries = [];
+  int _currentPage = 1;
+  bool _isLoading = false;
+  bool _hasMore = true;
+  final int _limit = 20;  // Number of items per API call
+
+  List<Inquiry> get inquiries => _inquiries;
+  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+
+
+  Future<void> fetchInquiries({bool isLoadMore = false}) async {
+    if (isLoadMore && !_hasMore) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      PaginatedInquiries? newInquiry = await _apiService.fetchInquiries(_limit, page: _currentPage);
+
+      if (newInquiry != null) {
+        if (isLoadMore) {
+          _inquiries.addAll(newInquiry.inquiries); // Append new data
+        } else {
+          _inquiries = newInquiry.inquiries; // Replace existing data
+        }
+
+        // Update pagination state
+        _hasMore = _currentPage < newInquiry.totalPages;
+        if (_hasMore) _currentPage++;
+      }
+    } catch (e) {
+      print("Error fetching inquiries: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Refresh the data
+  Future<void> refreshInquiries() async {
+    _currentPage = 1;
+    _inquiries.clear();
+    _hasMore = true;
+    await fetchInquiries();
+  }
 
   Future<bool> login(String username,String password) async{
     bool success=await _apiService.login(username, password);
@@ -73,5 +134,34 @@ class UserProvider with ChangeNotifier{
     notifyListeners();
 
   }
+
+
+
+
+  // Future<void> fetchInquiries({bool isLoadMore = false}) async {
+  //   if (isLoadMore && _currentPage >= _totalPages) return;
+  //   if (_isLoading) return;
+  //
+  //   _isLoading = true;
+  //   notifyListeners();
+  //
+  //   try {
+  //     PaginatedInquiries response = await _apiService.fetchInquiries(page: _currentPage);
+  //
+  //     if (isLoadMore) {
+  //       _inquiries.addAll(response.inquiries);
+  //     } else {
+  //       _inquiries = response.inquiries;
+  //     }
+  //
+  //     _totalPages = response.totalPages;
+  //     _currentPage++;
+  //   } catch (e) {
+  //     print("Error fetching inquiries: $e");
+  //   }
+  //
+  //   _isLoading = false;
+  //   notifyListeners();
+  // }
 
 }
