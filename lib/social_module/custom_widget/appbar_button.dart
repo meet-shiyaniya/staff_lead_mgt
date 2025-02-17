@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification/notification_Screen.dart';
 
 class CustomAppBarButton extends StatelessWidget {
   final IconData icon;
@@ -16,22 +17,27 @@ class CustomAppBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      width: 44,
-      margin: EdgeInsets.only(right: 15),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        boxShadow: [
-          BoxShadow(
-            offset: Offset(1,3),
-            blurRadius: 3,
-            color: Colors.grey.shade400
-          )
-        ]
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen()));
+      },
+      child: Container(
+        height: 40,
+        width: 40,
+        margin: EdgeInsets.only(right: 15),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(1,3),
+              blurRadius: 2,
+              color: Colors.grey.shade400
+            )
+          ]
+        ),
+        child: Icon(icon,size: 20,),
       ),
-      child: Icon(icon,size: 20,),
     );
   }
 }

@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../Provider/UserProvider.dart';
+import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 
 class staffWorkDetScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Show loading indicator while data is being fetched
+    // if (userProvider.profileData == null) {
+    //   return const Center(child: CircularProgressIndicator(color: Colors.white,));
+    // }
+
+    Realtostaffprofilemodel? profile = userProvider.profileData;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Working Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: "poppins_thin"),),
@@ -43,16 +57,18 @@ class staffWorkDetScreen extends StatelessWidget {
                 children: [
               
                   SizedBox(height: 10),
-              
-                  _buildProfileDetail(context,'Role', 'Software Engineer', Icons.work),
-                  _buildProfileDetail(context,'Department', 'Development', Icons.business),
-                  _buildProfileDetail(context,'Reporting to', 'Jane Smith', Icons.supervisor_account),
-                  _buildProfileDetail(context,'Work Shift', '09:00 AM - 06:30 PM', Icons.access_time),
-                  _buildProfileDetail(context,'Location', 'Main Office, Dabholi Char Rasta, Katargam, Surat', Icons.location_on),
-                  _buildProfileDetail(context,'Session', 'Full Time', Icons.schedule),
-                  _buildProfileDetail(context,'Join Date', '2020-05-14', Icons.calendar_today),
-                  _buildProfileDetail(context,'Week Off', 'Saturday, Sunday', Icons.weekend),
-                  _buildProfileDetail(context,'Active Time', '09:00 AM to 06:30 PM', Icons.timer),
+
+                  _buildProfileDetail(context, 'Role', profile?.staffProfile?.userRole ?? "N/A", Icons.work),
+                  _buildProfileDetail(context, 'Department', profile?.staffProfile?.department ?? "N/A", Icons.business),
+                  _buildProfileDetail(context, 'Reporting to', profile?.staffProfile?.headName ?? "N/A", Icons.supervisor_account),
+                  _buildProfileDetail(context, 'Work Shift', profile?.staffProfile?.workShift ?? "N/A", Icons.access_time),
+                  _buildProfileDetail(context, 'Job Location', profile?.staffProfile?.jobLocation ?? "N/A", Icons.location_on),
+                  _buildProfileDetail(context, 'Session', profile?.staffProfile?.sessionActive ?? "N/A", Icons.schedule),
+                  _buildProfileDetail(context, 'Joining Date', profile?.staffProfile?.joinDate ?? "N/A", Icons.calendar_today),
+                  _buildProfileDetail(context, 'Week Off Day', profile?.staffProfile?.weekofday ?? "N/A", Icons.weekend),
+                  _buildProfileDetail(context, 'Active From Time', profile?.staffProfile?.activeFromTime ?? "N/A", Icons.timer),
+                  _buildProfileDetail(context, 'Active To Time', profile?.staffProfile?.activeToTime ?? "N/A", Icons.timer),
+
                   SizedBox(height: 20,),
 
                 ],
@@ -110,9 +126,9 @@ class staffWorkDetScreen extends StatelessWidget {
               Container(
 
                 height: title == "Location" ? 37 : 18,
-                width: MediaQuery.of(context).size.width.toDouble() * 0.65,
+                width: MediaQuery.of(context).size.width.toDouble() / 1.6,
                 // color: Colors.red.shade100,
-                child: Text(data, style: TextStyle(fontWeight: FontWeight.w100, fontFamily: "poppins_thin", fontSize: 13, color: Colors.grey.shade600,), maxLines: title == "Location" ? 2 : 1, overflow: TextOverflow.ellipsis,),
+                child: Text(data == "" ? "-" : data, style: TextStyle(fontWeight: FontWeight.w100, fontFamily: "poppins_thin", fontSize: 13, color: Colors.grey.shade600,), maxLines: title == "Location" ? 2 : 1, overflow: TextOverflow.ellipsis,),
 
               ),
 

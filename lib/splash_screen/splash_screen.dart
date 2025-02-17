@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:hr_app/bottom_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-
-import '../social_module/colors/colors.dart';
-
-
+import 'package:hr_app/social_module/login_screen/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,28 +12,41 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+
+  bool _isExpanded = false;
+
   @override
   void initState() {
     super.initState();
     _navigateToNextScreen();
+
+    Future.delayed(const Duration(milliseconds: 80), () {
+      setState(() {
+        _isExpanded = true;
+      });
+    });
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Add 4-second delay
-    await Future.delayed(Duration(seconds: 4));
+    await Future.delayed(const Duration(seconds: 3));
 
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final attendanceDate = prefs.getString('attendanceDate');
+    final entryDate = prefs.getString('entryDate');
+    final isAttendance = prefs.getBool('attendanceMarked') ?? false;
 
-    if (attendanceDate == today) {
-      // Attendance already marked today, go to dashboard
+    if (isAttendance && entryDate == today) {
+      // Attendance already marked for today, navigate to dashboard
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
-      // No attendance marked today, go to login
+      // No attendance marked or date changed, reset and navigate to login
+      prefs.setBool('attendanceMarked', false); // Reset attendance only for the new day
+      // prefs.setString('entryDate', today); // Update the entry date
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -46,43 +56,31 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset("asset/logo.png",height: 150,width: 150,),
-            SizedBox(height: 20),
-            // CircularProgressIndicator(
-            //   color: AppColors.primaryColor,
-            // ),
+            Expanded(
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(seconds: 3),
+                  width: _isExpanded ? 180.0 : 130.0,
+                  height: _isExpanded ? 180.0 : 130.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24),
+                    color: Colors.transparent,
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Center(child: Image.asset("asset/logo.png")),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Image.asset("asset/RealtoSmart Logo.png", height: 50, width: 150),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 }
-
-
-
-// // Sample Login Screen (replace with your actual login screen)
-// class LoginScreen extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text('Login')),
-//       body: Center(
-//         child: ElevatedButton(
-//           onPressed: () {
-//             // After successful login, mark attendance
-//             _markAttendanceAndNavigate(context);
-//           },
-//           child: Text('Login'),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   void _markAttendanceAndNavigate(BuildContext context) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-//
-//     await prefs.setString('attendanceDate', today);
-//     Navigator.pushReplacementNamed(context, '/dashboard');
-//   }
-// }

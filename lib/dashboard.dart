@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/all_inquiries_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/dismiss_request_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/followup_and_cnr_Screen.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:animate_do/animate_do.dart'; // For animation effects
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Dashboard extends StatefulWidget {
@@ -43,7 +46,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     final lastEndDateStr = prefs.getString('lastEndDate');
     if (lastEndDateStr != null && lastEndDateStr == currentDate) {
       setState(() {
-        isDayEndedToday = true;
+        isDayEndedToday = false;
         isDayStarted = false;
         // Load previous day's data
         exitTime = prefs.getString('exitTime') ?? "";
@@ -54,18 +57,21 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     }
 
     // Load attendance time if exists for current day
+    // In _loadState() method
     final attendanceTimeStr = prefs.getString('attendanceTime');
     if (attendanceTimeStr != null && attendanceTimeStr.isNotEmpty) {
       final attendanceTime = DateFormat('hh:mm:ss a').parse(attendanceTimeStr);
       final now = DateTime.now();
-      final attendanceDateTime = DateTime(now.year, now.month, now.day,
-          attendanceTime.hour, attendanceTime.minute, attendanceTime.second);
+      final attendanceDateTime = DateTime(
+          now.year, now.month, now.day,
+          attendanceTime.hour, attendanceTime.minute, attendanceTime.second
+      );
 
       setState(() {
         isDayStarted = true;
         entryTime = DateFormat('hh:mm:ss a').format(attendanceDateTime);
         elapsedSeconds = now.difference(attendanceDateTime).inSeconds;
-        progressValue = elapsedSeconds / totalDuration;
+        progressValue = (elapsedSeconds / totalDuration).clamp(0.0, 1.0);
       });
 
       _resumeTimer();
@@ -190,16 +196,26 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     }
   }
 
+
+  // Update _checkAttendanceMarked()
   Future<void> _checkAttendanceMarked() async {
     final prefs = await SharedPreferences.getInstance();
     bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
 
     if (attendanceMarked) {
-      startDay(); // Start the day if attendance was marked
-      entryTime = prefs.getString('entryTime') ?? ""; // Set entry time
-      await prefs.setBool('attendanceMarked', false); // Reset the flag
+      await prefs.setBool('attendanceMarked', false); // Just reset the flag
     }
   }
+  // Future<void> _checkAttendanceMarked() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
+  //
+  //   if (attendanceMarked) {
+  //     startDay(); // Start the day if attendance was marked
+  //     entryTime = prefs.getString('entryTime') ?? ""; // Set entry time
+  //     await prefs.setBool('attendanceMarked', false); // Reset the flag
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -393,24 +409,22 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 15),
-                    child: ZoomIn(
-                      child: CircularPercentIndicator(
-                        radius: 45,
-                        lineWidth: 14,
-                        backgroundWidth: 8,
-                        percent: progressValue,
-                        animation: true,
-                        animateFromLastPercent: true,
-                        center: Lottie.asset(
-                          'asset/working_hours.json',
-                          fit: BoxFit.contain,
-                          width: 50,
-                          height: 50,
-                        ),
-                        progressColor: AppColors.primaryColor,
-                        backgroundColor: Colors.grey.shade200,
-                        circularStrokeCap: CircularStrokeCap.round,
+                    child: CircularPercentIndicator(
+                      radius: 45,
+                      lineWidth: 14,
+                      backgroundWidth: 8,
+                      percent: progressValue,
+                      animation: true,
+                      animateFromLastPercent: true,
+                      center: Lottie.asset(
+                        'asset/working_hours.json',
+                        fit: BoxFit.contain,
+                        width: 50,
+                        height: 50,
                       ),
+                      progressColor: AppColors.primaryColor,
+                      backgroundColor: Colors.grey.shade200,
+                      circularStrokeCap: CircularStrokeCap.round,
                     ),
                   ),
                 ],
@@ -502,7 +516,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                           children: [
                             Image.asset("asset/intime.png", height: 20, width: 20),
                             SizedBox(width: 3),
-                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green)),
+                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green,fontSize:15)),
                           ],
                         ),
                         Text("$entryTime", style: TextStyle(fontFamily: "poppins_thin")),
@@ -564,7 +578,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                 itemCount: leads.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 1.10,
+                  childAspectRatio: 1.05,
                   mainAxisSpacing: 10,
                 ),
                 physics: NeverScrollableScrollPhysics(),
@@ -608,8 +622,8 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                                 ),
                                 Container(
                                   height: 60,
-                                  width: 40,
-                                  margin: EdgeInsets.only(right: 10),
+                                  width: MediaQuery.of(context).size.width/10,
+                                  // margin: EdgeInsets.only(right: 10),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
                                     gradient: leads[index]['bgColor'],

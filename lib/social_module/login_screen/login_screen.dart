@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:fluttertoast/fluttertoast.dart';
+import '../../Provider/UserProvider.dart';
 import '../../bottom_navigation.dart';
 import '../../dashboard.dart';
 import '../../face_onboarding.dart';
@@ -24,6 +27,12 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
+
+
+
+
+
 
 
   void _markAttendanceAndNavigate(BuildContext context) async {
@@ -36,12 +45,59 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+
+
+    void signIn() async {
+      final username = emailController.text.trim();
+      final password = passwordController.text.trim();
+
+      if (username.isEmpty || password.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Please enter both email and password❌",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+        );
+        return;
+      }
+
+      bool isSuccess = await Provider.of<UserProvider>(context, listen: false).login(username, password);
+
+      if (isSuccess) {
+        String? token = await _secureStorage.read(key: 'token');
+        if (token != null) {
+          print("Login Successful");
+          Fluttertoast.showToast(
+            msg: "Login Successful ✅",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: AppColors.primaryColor,
+            textColor: Colors.white,
+          );
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+        } else {
+          print("Login failed");
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: "Invalid username or password. Please try again ❌.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+        );
+      }
+    }
+
+
     return Scaffold(
         backgroundColor: AppColors.whiteColor,
         body: Stack(
           children: [
             Container(
-              height: MediaQuery.of(context).size.height/2.9,
+              height: MediaQuery.of(context).size.height/3,
               width: double.infinity,
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -60,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             Container(),
             Positioned(
-                top: MediaQuery.of(context).size.height/5,
+                top: MediaQuery.of(context).size.height/5.6,
                 left: MediaQuery.of(context).size.width/21,
                 child:Container(
                     height:MediaQuery.of(context).size.height/1.5,
@@ -82,7 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child:Column(
                         children:[
                           Text("Login Here",style:TextStyle(color: AppColors.primaryColor,fontSize: 24,fontFamily: "poppins_thin"),),
-                          Image.asset('asset/social_module/images/login/newlogin.png', height: 160, width: 160),
+                          SizedBox(height: 15,),
+                          Image.asset('asset/rtosmart.png', height: 100, width: 100),
+                          SizedBox(height: 15,),
                           Text(
                             'Welcome Back! Lets get started.',
                             textAlign: TextAlign.center,
@@ -94,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               // color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 30),
                           Form(
                             key: _formKey,
                             child: Column(
@@ -115,15 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }if(!value!.endsWith("@gmail.com")){
-                                      return "Please enter valid email";
 
-                                    }
-                                    return null;
-                                  },
                                 ),
                                 const SizedBox(height: 20),
                                 // Password TextField
@@ -163,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 30),
                                 // Login Button
                                 Container(
                                   width: double.infinity,
@@ -173,11 +223,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: TextButton(
-                                    onPressed: () {
-                                      if (_formKey.currentState!.validate()) {
-                                        _markAttendanceAndNavigate(context);
-                                        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>FaceOnboarding()));
-                                      }
+                                    onPressed: (){
+                                      signIn();
+                                      print("successfully fetched");
+
                                     },
                                     child: const Text(
                                       'Login',

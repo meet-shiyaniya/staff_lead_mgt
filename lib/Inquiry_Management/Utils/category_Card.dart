@@ -14,10 +14,11 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
+      height: 65,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: Colors.deepPurple.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -46,7 +47,7 @@ class CategoryCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontFamily: "poppins_thin",
                     color:  Colors.black,
                   ),
