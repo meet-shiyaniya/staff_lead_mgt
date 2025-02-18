@@ -9,8 +9,6 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmode
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
-import '../Inquiry_Management/Inquiry Management Screens/all_inquiries_Screen.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class ApiService{
@@ -385,7 +383,6 @@ class ApiService{
 
       if (response.statusCode == 200) {
 
-        Fluttertoast.showToast(msg: "Leave Request Successfully Send");
         return true;
 
       } else {

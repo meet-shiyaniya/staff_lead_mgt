@@ -26,7 +26,7 @@ class _pendingScreenState extends State<pendingScreen> {
 
       await userProvider.fetchStaffLeavesData();
 
-      List<Data> staffAllLeaves = userProvider.staffLeavesData?.data ?? [];
+      List<Data> staffAllLeaves = userProvider.staffLeavesData?.data?.reversed.toList() ?? [];
 
       approveList.clear();
 
@@ -102,8 +102,15 @@ class _pendingScreenState extends State<pendingScreen> {
 
             approveList.isEmpty ?
 
-            Center(
-              child: CircularProgressIndicator(color: Colors.deepPurple.shade600,),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+
+                Image.asset("asset/HR Screen Images/Leave/Warning-rafiki.png"),
+
+                Text("Your leave requests is not Pending yet!", style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin",),),
+
+              ],
             ) :
 
             Expanded(
@@ -172,28 +179,28 @@ class _pendingScreenState extends State<pendingScreen> {
 
                               subtitle: Text("${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
 
-                              // trailing: Container(
-                              //
-                              //   height: 28,
-                              //   width: 80,
-                              //
-                              //   decoration: BoxDecoration(
-                              //
-                              //     color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
-                              //
-                              //     borderRadius: BorderRadius.circular(20),
-                              //
-                              //     border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
-                              //
-                              //   ),
-                              //
-                              //   child: Center(
-                              //
-                              //       child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-                              //
-                              //   ),
-                              //
-                              // ),
+                              trailing: Container(
+
+                                height: 28,
+                                width: 80,
+
+                                decoration: BoxDecoration(
+
+                                  color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade100 : Colors.red.shade100,
+
+                                  borderRadius: BorderRadius.circular(20),
+
+                                  border: Border.all(color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade600 : Colors.red.shade600,),
+
+                                ),
+
+                                child: Center(
+
+                                    child: Text("${leave.typeOfLeave}", style: TextStyle(color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 10, fontWeight: FontWeight.w700),)
+
+                                ),
+
+                              ),
 
                             ),
 

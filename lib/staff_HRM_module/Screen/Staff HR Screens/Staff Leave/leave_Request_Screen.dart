@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import '../../../../Provider/UserProvider.dart';
 import '../../../Model/Realtomodels/Realtostaffleavesmodel.dart';
-import '../../../Model/Staff HR Screen Model/leave_Req_Model.dart';
 import '../../Color/app_Color.dart';
 import 'add_Leave_Request_Screen.dart';
 
@@ -16,23 +14,25 @@ class leaveRequestScreen extends StatefulWidget {
 
 class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
+  List<Data> leavesStaff = [];
+
+  Future<void> _fetchLeavesData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.fetchStaffLeavesData();
+    setState(() {
+      leavesStaff = userProvider.staffLeavesData?.data?.reversed.toList() ?? [];
+    });
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-
-    Future.microtask(() {
-      Provider.of<UserProvider>(context, listen: false).fetchStaffLeavesData();
-    });
-
+    _fetchLeavesData();
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final userProvider = Provider.of<UserProvider>(context);
-    Realtostaffleavesmodel? staffLeaves = userProvider.staffLeavesData;
-    List<Data> leavesStaff = staffLeaves?.data ?? [];
 
     return Scaffold(
 
@@ -65,9 +65,16 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
             leavesStaff.isEmpty ?
 
-                Center(
-                  child: CircularProgressIndicator(color: Colors.deepPurple.shade600,),
-                ) :
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+
+                Image.asset("asset/HR Screen Images/Leave/Warning-rafiki.png"),
+
+                Text("No leave requests yet!", style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin",),),
+
+              ],
+            ) :
 
             Expanded(
 
@@ -133,28 +140,28 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
                             subtitle: Text("Team: ${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
 
-                            // trailing: Container(
-                            //
-                            //   height: 28,
-                            //   width: 80,
-                            //
-                            //   decoration: BoxDecoration(
-                            //
-                            //     color: leave.leavePaymentType == "Paid" ? Colors.green.shade100 : Colors.red.shade100,
-                            //
-                            //     borderRadius: BorderRadius.circular(20),
-                            //
-                            //     border: Border.all(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600,),
-                            //
-                            //   ),
-                            //
-                            //   child: Center(
-                            //
-                            //       child: Text(leave.leavePaymentType, style: TextStyle(color: leave.leavePaymentType == "Paid" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),)
-                            //
-                            //   ),
-                            //
-                            // ),
+                            trailing: Container(
+
+                              height: 28,
+                              width: 80,
+
+                              decoration: BoxDecoration(
+
+                                color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade100 : Colors.red.shade100,
+
+                                borderRadius: BorderRadius.circular(20),
+
+                                border: Border.all(color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade600 : Colors.red.shade600,),
+
+                              ),
+
+                              child: Center(
+
+                                  child: Text("${leave.typeOfLeave}", style: TextStyle(color: leave.typeOfLeave == "Paid Leave" ? Colors.green.shade600 : Colors.red.shade600, fontSize: 10, fontWeight: FontWeight.w700),)
+
+                              ),
+
+                            ),
 
                           ),
 
@@ -319,7 +326,14 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
         onPressed: () {
 
-          Navigator.push(context, MaterialPageRoute(builder: (context) => addLeaveRequestScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => addLeaveRequestScreen()),
+          ).then((value) {
+            if (value == true) {
+              _fetchLeavesData();  // Refresh data when returning
+            }
+          });
 
         },
 

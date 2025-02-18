@@ -1,21 +1,13 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
-import 'package:http/http.dart' as http;
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class UserProvider with ChangeNotifier{
-
-
-
-
 
   bool _isLoggedIn=false;
   bool get isLoggedIn=> _isLoggedIn;

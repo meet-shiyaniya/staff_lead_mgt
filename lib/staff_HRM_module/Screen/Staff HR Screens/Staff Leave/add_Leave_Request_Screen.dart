@@ -1,9 +1,9 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../../Provider/UserProvider.dart';
 import '../../Color/app_Color.dart';
 
 class addLeaveRequestScreen extends StatefulWidget {
@@ -241,65 +241,66 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
                 elevation: 2,
                 color: Colors.transparent,
                 shadowColor: appColor.boxColor,
-                child: DropdownButton2<Map<String, dynamic>>(
+                child: DropdownButton2(
+
                   isExpanded: true,
-                  hint: Text(
-                    'Select leave type',
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontFamily: "poppins_thin",
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  value: selectedLeaveTypeId != null && selectedLeaveType != null
-                      ? {'id': selectedLeaveTypeId, 'type': selectedLeaveType}
-                      : null, // Ensure value is of correct type
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontFamily: "poppins_thin",
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
-                  ),
+
+                  hint: Text('Select leave type', style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),),
+
+                  value: selectedLeaveType,
+
+                  style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5),
+
                   iconStyleData: IconStyleData(
-                    icon: Icon(Icons.arrow_drop_down_rounded, color: appColor.primaryColor, size: 34),
+
+                    icon: Icon(Icons.arrow_drop_down_rounded, color: appColor.primaryColor, size: 34,),
+
                   ),
+
                   buttonStyleData: ButtonStyleData(
+
                     decoration: BoxDecoration(
+
                       borderRadius: BorderRadius.circular(10),
+
                       color: appColor.subPrimaryColor,
+
                     ),
+
                     height: 51,
+
                   ),
-                  underline: SizedBox(),
+
+                  underline: Center(),
+
                   dropdownStyleData: DropdownStyleData(
+
                     decoration: BoxDecoration(
+
                       color: appColor.subFavColor,
+
                       borderRadius: BorderRadius.circular(14),
+
                     ),
+
                     elevation: 2,
+
                   ),
+
                   items: leaveTypesList.map((leave) {
-                    return DropdownMenuItem<Map<String, dynamic>>(
-                      value: {'id': leave.id, 'type': leave.leaveType},
-                      child: Text(
-                        "${leave.leaveType}",
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontFamily: "poppins_thin",
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                        ),
-                      ),
+                    String displayText = "${leave.leaveType}";
+                    return DropdownMenuItem<String>(
+                      value: displayText,
+                      child: Text(displayText, style: TextStyle( color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w700, fontSize: 13.5,),),
                     );
                   }).toList(),
+
                   onChanged: (value) {
                     setState(() {
-                      Map<String, dynamic> selectedValue = value as Map<String, dynamic>;
-                      selectedLeaveTypeId = selectedValue['id'];
-                      selectedLeaveType = selectedValue['type'];
+                      selectedLeaveType = value;
                     });
                   },
+
                 ),
               ),
 
@@ -517,7 +518,7 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                         if (_startDate != null && _endDate != null) {
                           int days = _endDate!.difference(_startDate!).inDays + 1;
-                            applyDaysController.text = "${days} Days";
+                            applyDaysController.text = "${days}";
                         } else {
                           applyDaysController.text = "";
                           Fluttertoast.showToast(msg: "Enter Leave Date From and To!");
@@ -637,12 +638,28 @@ class _addLeaveRequestScreenState extends State<addLeaveRequestScreen> {
 
                 child: ElevatedButton(
 
-                  onPressed: () {
+                  onPressed: () async {
 
-                    Provider.of<UserProvider>(context, listen: false).sendLeaveRequest(head_name: headID, full_name: nameController.text, under_team: underTeam, date: DateFormat('yyyy-MM-dd').format(DateTime.now()), reporting_to: approverController.text, apply_days: applyDaysController.text, from_date: startingDateController.text, to_date: endingDateController.text, leave_reason: leaveReasonController.text, leave_type: selectedLeaveType, leave_type_id: selectedLeaveTypeId);
+                    bool isLeaveAdded = await Provider.of<UserProvider>(context, listen: false).sendLeaveRequest(
+                      head_name: headID,
+                      full_name: nameController.text,
+                      under_team: underTeam,
+                      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                      reporting_to: approverController.text,
+                      apply_days: applyDaysController.text,
+                      from_date: startingDateController.text,
+                      to_date: endingDateController.text,
+                      leave_reason: leaveReasonController.text,
+                      leave_type: selectedLeaveType,
+                      leave_type_id: selectedLeaveType,
+                    );
 
-                    Navigator.pop(context);
-
+                    if (isLeaveAdded) {
+                      Fluttertoast.showToast(msg: "Leave request send successfully");
+                      Navigator.pop(context, true);
+                    } else {
+                      Fluttertoast.showToast(msg: "Failed to send leave request");
+                    }
                   },
 
                   child: Text("Add Leave Request", style: TextStyle(color: appColor.appbarTxtColor, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 15),),
