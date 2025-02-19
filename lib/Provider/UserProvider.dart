@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
@@ -27,9 +28,8 @@ class UserProvider with ChangeNotifier{
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
 
-
-
-
+  Realtostaffattendancemodel? _staffAttendanceData;
+  Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
 
   final ApiService _apiService = ApiService();
 
@@ -168,7 +168,13 @@ class UserProvider with ChangeNotifier{
 
   }
 
+  Future<void> fetchStaffAttendanceData () async {
 
+    _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+
+    notifyListeners();
+
+  }
 
 
   // Future<void> fetchInquiries({bool isLoadMore = false}) async {

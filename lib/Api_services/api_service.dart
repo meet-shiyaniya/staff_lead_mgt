@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
@@ -399,5 +400,50 @@ class ApiService{
 
   }
 
+  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
+
+    final url = Uri.parse("$baseUrl/Attendance");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+        url,
+        headers: {
+
+          'Content-Type': 'application/json'
+
+        },
+        body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return Realtostaffattendancemodel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
 
 }
