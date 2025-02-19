@@ -1,5 +1,6 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
@@ -13,7 +14,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
 
 import 'Api_services/api_service.dart';
 
@@ -152,7 +152,14 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
   Future<bool> _detectFace(File imageFile) async {
     final InputImage inputImage = InputImage.fromFile(imageFile);
-    final FaceDetector faceDetector = GoogleMlKit.vision.faceDetector();
+    final FaceDetector faceDetector = FaceDetector(
+      options: FaceDetectorOptions(
+        enableContours: true,
+        enableClassification: true,
+        enableLandmarks: true,
+        performanceMode: FaceDetectorMode.accurate,
+      ),
+    );
     final List<Face> faces = await faceDetector.processImage(inputImage);
     await faceDetector.close();
 

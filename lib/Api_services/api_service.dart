@@ -5,12 +5,11 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
-import '../Inquiry_Management/Inquiry Management Screens/all_inquiries_Screen.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class ApiService{
@@ -338,6 +337,7 @@ class ApiService{
     required String to_date,
     required String leave_reason,
     required String leave_type,
+    required String leave_type_id,
 
   }) async {
 
@@ -365,7 +365,8 @@ class ApiService{
         "leave_from_date": from_date,
         "leave_to_date": to_date,
         "leave_reason": leave_reason,
-        "type_of_leave": leave_type
+        "type_of_leave": leave_type,
+        "type_of_leave_id": leave_type_id
 
       };
 
@@ -383,7 +384,6 @@ class ApiService{
 
       if (response.statusCode == 200) {
 
-        Fluttertoast.showToast(msg: "Leave Request Successfully Send");
         return true;
 
       } else {
@@ -400,5 +400,50 @@ class ApiService{
 
   }
 
+  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
+
+    final url = Uri.parse("$baseUrl/Attendance");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+        url,
+        headers: {
+
+          'Content-Type': 'application/json'
+
+        },
+        body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return Realtostaffattendancemodel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
 
 }

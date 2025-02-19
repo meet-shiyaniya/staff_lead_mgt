@@ -1,21 +1,14 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
-import 'package:http/http.dart' as http;
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class UserProvider with ChangeNotifier{
-
-
-
-
 
   bool _isLoggedIn=false;
   bool get isLoggedIn=> _isLoggedIn;
@@ -35,9 +28,8 @@ class UserProvider with ChangeNotifier{
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
 
-
-
-
+  Realtostaffattendancemodel? _staffAttendanceData;
+  Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
 
   final ApiService _apiService = ApiService();
 
@@ -152,13 +144,14 @@ class UserProvider with ChangeNotifier{
     required String to_date,
     required String leave_reason,
     required String leave_type,
+    required String leave_type_id,
 
   }) async {
 
     try {
 
       bool success = await _apiService.sendLeaveRequest(
-        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type
+        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id
       );
 
       if (success) {
@@ -180,7 +173,13 @@ class UserProvider with ChangeNotifier{
 
   }
 
+  Future<void> fetchStaffAttendanceData () async {
 
+    _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+
+    notifyListeners();
+
+  }
 
 
   // Future<void> fetchInquiries({bool isLoadMore = false}) async {
