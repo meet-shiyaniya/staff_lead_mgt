@@ -244,6 +244,8 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
             position: PopupMenuPosition.under,
 
+            offset: Offset(0, 8),
+
             onSelected: (value) {
 
               setState(() {
@@ -272,7 +274,17 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
       backgroundColor: Colors.white,
 
-      body: SingleChildScrollView(
+      body: staffAttendanceList.isEmpty ? Center(
+
+        child: CircularProgressIndicator(
+
+          color: Colors.deepPurple.shade700,
+
+        ),
+
+      ) :
+
+      SingleChildScrollView(
 
         padding: EdgeInsets.all(16),
 
@@ -475,7 +487,8 @@ class _attendanceScreenState extends State<attendanceScreen> {
           Container(
 
             height: 80,
-            width: 190,
+            width: MediaQuery.of(context).size.width.toDouble()/2,
+            // color: Colors.red,
 
             child: Column(
 
@@ -487,22 +500,14 @@ class _attendanceScreenState extends State<attendanceScreen> {
                 Container(
 
                   height: 19,
-                  width: 190,
+                  width: MediaQuery.of(context).size.width.toDouble()/2,
                   // color: Colors.red.shade200,
 
-                  child: Column(
-
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-
-                      Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                    ],
-
-                  ),
+                  child: Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
                 ),
+
+                SizedBox(height: 6,),
 
                 Row(
 
@@ -511,35 +516,15 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
                   children: [
 
-                    Column(
-
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
-
-                      children: [
-
-                        Text("Check In", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
-                        Text(checkIn, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                      ],
-
-                    ),
+                    Image.asset("asset/HR Screen Images/check-in.png", height: 16,),
+                    SizedBox(width: 5,),
+                    Text(checkIn, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
                     Spacer(),
 
-                    Column(
-
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
-
-                      children: [
-
-                        Text("Check Out", style: TextStyle(color: Colors.grey.shade800, fontFamily: "poppins_thin", fontSize: 12.8), maxLines: 1, overflow: TextOverflow.ellipsis,),
-                        Text(checkOut, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                      ],
-
-                    ),
+                    Image.asset("asset/HR Screen Images/check-out.png", height: 16,),
+                    SizedBox(width: 5,),
+                    Text(checkOut, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
 
                   ],
 
