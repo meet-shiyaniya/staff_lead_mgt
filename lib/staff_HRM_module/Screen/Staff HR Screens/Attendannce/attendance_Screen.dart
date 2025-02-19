@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:intl/intl.dart';
-
-import '../../Color/app_Color.dart';
+import 'package:provider/provider.dart';
+import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 
 class attendanceScreen extends StatefulWidget {
   @override
@@ -14,25 +14,190 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
   String selectedFilter = "Last 7 Days";
 
+  List<Data> staffAttendanceList = [];
+
   List<Map<String, dynamic>> attendanceRecords = [];
 
-  int presentCount = 0;
-  int absentCount = 0;
-  int halfDayCount = 0;
-  int lateCount = 0;
+  final List<String> filters = ["Last 7 Days", "Last 30 Days", "Last Month"];
 
-  final List<String> filters = [
+  Future<void> _fetchStaffAttendanceData() async {
 
-    "Last 7 Days",
-    "Last 30 Days",
-    "Last Month",
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-  ];
+    await userProvider.fetchStaffAttendanceData();
+
+    setState(() {
+
+      staffAttendanceList = userProvider.staffAttendanceData?.data ?? [];
+      _updateAttendanceRecords();
+
+    });
+
+  }
 
   @override
   void initState() {
     super.initState();
-    _fetchAttendanceData();
+    _fetchStaffAttendanceData();
+  }
+
+  void _updateAttendanceRecords() {
+    attendanceRecords = _filterAttendanceByPunchDate();
+  }
+
+  List<Map<String, dynamic>> _filterAttendanceByPunchDate() {
+
+    DateTime now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = now;
+
+    // Determine the start date based on the selected filter
+    switch (selectedFilter) {
+
+      case 'Last 7 Days':
+
+        startDate = now.subtract(Duration(days: 7));
+        break;
+
+      case 'Last 30 Days':
+
+        startDate = now.subtract(Duration(days: 30));
+        break;
+
+      case 'Last Month':
+
+      // Calculate the start date for the previous month
+        startDate = DateTime(now.year, now.month - 1, 0); // First day of the previous month
+        endDate = DateTime(now.year, now.month, 0); // Last day of the previous month
+        break;
+
+      default:
+
+        startDate = now.subtract(Duration(days: 7)); // Fallback to Last 7 Days
+
+    }
+
+    // Generate a set of expected dates within the range, starting from endDate to startDate
+    Set<String> expectedDates = {};
+
+    for (int i = 0; i < endDate.difference(startDate).inDays; i++) {
+
+      expectedDates.add(DateFormat('dd-MM-yyyy').format(endDate.subtract(Duration(days: i))));
+
+    }
+
+    // Convert the set to a list (already in descending order)
+    List<String> sortedDates = expectedDates.toList();
+
+    // Create a map of attendance records with punch dates as keys
+    Map<String, Map<String, dynamic>> attendanceMap = {};
+
+    for (var record in staffAttendanceList) {
+
+      // Check if punchDate is not null and not '0000-00-00'
+      if (record.punchDate != null && record.punchDate != '0000-00-00') {
+
+        // Convert punchDate to the same format as expectedDates (dd-MM-yyyy)
+        String formattedPunchDate;
+
+        try {
+
+          formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.punchDate!));
+
+        } catch (e) {
+
+          // Handle invalid date format
+          formattedPunchDate = 'Invalid Date';
+
+        }
+
+        // Extract time part (HH:mm) from entryDateTime
+        String checkInTime = '00:00'; // Default value
+
+        if (record.entryDateTime != null) {
+
+          try {
+
+            List<String> dateTimeParts = record.entryDateTime!.split(' ');
+
+            if (dateTimeParts.length > 1) {
+
+              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
+
+              checkInTime = timePart.substring(0, 5); // Extract HH:mm
+
+            }
+
+          } catch (e) {
+
+            // Handle invalid time format
+            checkInTime = '00:00';
+
+          }
+
+        }
+
+        // Extract time part (HH:mm) from exitDateTime
+        String checkOutTime = '00:00'; // Default value
+
+        if (record.exitDateTime != null) {
+
+          try {
+
+            List<String> dateTimeParts = record.exitDateTime!.split(' ');
+
+            if (dateTimeParts.length > 1) {
+
+              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
+
+              checkOutTime = timePart.substring(0, 5); // Extract HH:mm
+
+            }
+
+          } catch (e) {
+
+            // Handle invalid time format
+            checkOutTime = '00:00';
+
+          }
+
+        }
+
+        attendanceMap[formattedPunchDate] = {
+
+          'date': formattedPunchDate,
+          'checkIn': checkInTime, // Assign extracted time for check-in
+          'checkOut': checkOutTime, // Assign extracted time for check-out
+          'status': 'Present', // Mark as Present if punch date exists
+
+        };
+
+      }
+
+    }
+
+    // Generate the final list of attendance data in descending order
+    return sortedDates.map((date) {
+
+      if (attendanceMap.containsKey(date)) {
+
+        return attendanceMap[date]!; // Return the present record
+
+      } else {
+
+        return {
+
+          'date': date,
+          'checkIn': '00:00',
+          'checkOut': '00:00',
+          'status': 'Absent', // Mark as Absent if punch date does not exist
+
+        };
+
+      }
+
+    }).toList();
+
   }
 
   @override
@@ -49,12 +214,17 @@ class _attendanceScreenState extends State<attendanceScreen> {
         centerTitle: true,
 
         leading: Container(
+
           margin: EdgeInsets.all(7),
+
           decoration: BoxDecoration(
+
             color: Colors.grey.shade100,
             shape: BoxShape.circle,
             boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 3, offset: Offset(1, 3)),],
+
           ),
+
           child: IconButton(
 
             onPressed: (){
@@ -72,35 +242,26 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
             icon: Icon(Icons.more_vert, color: Colors.black, size: 20,),
 
-            onSelected: (String value) {
+            position: PopupMenuPosition.under,
+
+            onSelected: (value) {
 
               setState(() {
 
                 selectedFilter = value;
-
-                _fetchAttendanceData();
+                _updateAttendanceRecords();
 
               });
 
             },
 
-            itemBuilder: (BuildContext context) {
+            itemBuilder: (context) => filters.map((choice) => PopupMenuItem<String>(
 
-              return filters.map((String choice) {
+              value: choice,
+              height: 40,
+              child: Text(choice, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700),),
 
-                return PopupMenuItem<String>(
-
-                  value: choice,
-
-                  height: 40,
-
-                  child: Text(choice, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700),),
-
-                );
-
-              }).toList();
-
-            },
+            )).toList(),
 
           ),
 
@@ -140,14 +301,13 @@ class _attendanceScreenState extends State<attendanceScreen> {
     return Container(
 
       height: 250,
+
       padding: EdgeInsets.all(10),
 
       decoration: BoxDecoration(
 
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(12),
-
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(1, 3))],
 
       ),
@@ -171,18 +331,12 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
                 sections: [
 
-                  _chartSection(presentCount, Colors.green.shade800, "Present"),
-
-                  _chartSection(absentCount, Colors.red.shade800, "Absent"),
-
-                  _chartSection(halfDayCount, Colors.orange.shade800, "Half-day"),
-
-                  _chartSection(lateCount, Colors.blue.shade800, "Late"),
+                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Present').length, Colors.green.shade700, "Present"),
+                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Absent').length, Colors.red.shade700, "Absent"),
 
                 ],
 
                 sectionsSpace: 2,
-
                 centerSpaceRadius: 40,
 
               ),
@@ -204,13 +358,9 @@ class _attendanceScreenState extends State<attendanceScreen> {
     return PieChartSectionData(
 
       value: value.toDouble(),
-
       color: color,
-
       title: "$title\n$value",
-
       radius: 56,
-
       titleStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
 
     );
@@ -266,6 +416,16 @@ class _attendanceScreenState extends State<attendanceScreen> {
   }
 
   Widget _attendanceCard({required String date, required String checkIn, required String checkOut, required String status}) {
+
+    // return ListTile(
+    //
+    //   title: Text(date),
+    //
+    //   subtitle: Text("Check-In: $checkIn, Check-Out: $checkOut"),
+    //
+    //   trailing: Text(status, style: TextStyle(color: status == 'Present' ? Colors.green : Colors.red),),
+    //
+    // );
 
     return Container(
 
@@ -402,98 +562,6 @@ class _attendanceScreenState extends State<attendanceScreen> {
       ),
 
     );
-
-  }
-
-  void _fetchAttendanceData() {
-
-    DateTime now = DateTime.now();
-
-    DateTime startDate;
-
-    if (selectedFilter == "Last 7 Days") {
-
-      startDate = now.subtract(Duration(days: 6));
-
-    } else if (selectedFilter == "Last 30 Days") {
-
-      startDate = now.subtract(Duration(days: 29));
-
-    } else if (selectedFilter == "Last Month") {
-
-      startDate = DateTime(now.year, now.month - 1, 1);
-
-      now = DateTime(now.year, now.month, 0);
-
-    } else {
-
-      return;
-
-    }
-
-    presentCount = 0;
-
-    absentCount = 0;
-
-    halfDayCount = 0;
-
-    lateCount = 0;
-
-    setState(() {
-
-      attendanceRecords = List.generate(
-
-        now.difference(startDate).inDays + 1,
-
-            (index) {
-
-          DateTime date = startDate.add(Duration(days: index));
-
-          String status;
-
-          if (index % 6 == 0) {
-
-            status = 'Absent';
-
-            absentCount++;
-
-          } else if (index % 5 == 0) {
-
-            status = 'Half-day';
-
-            halfDayCount++;
-
-          } else if (index % 4 == 0) {
-
-            status = 'Late';
-
-            lateCount++;
-
-          } else {
-
-            status = 'Present';
-
-            presentCount++;
-
-          }
-
-          return {
-
-            'date': DateFormat('MMMM d, yyyy').format(date),
-
-            'checkIn': status == 'Absent' ? '00:00' : '09:00 AM',
-
-            'checkOut': status == 'Absent' ? '00:00' : '06:30 PM',
-
-            'status': status,
-
-          };
-
-        },
-
-      );
-
-    });
 
   }
 
