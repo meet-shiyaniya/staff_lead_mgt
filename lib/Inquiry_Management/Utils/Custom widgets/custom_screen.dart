@@ -900,21 +900,20 @@
 //     );
 //   }
 // }
+
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/quotation_Screen.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-// import 'package:inquiry_management_ui/Model/followup_Model.dart';
-// import 'package:inquiry_management_ui/Utils/Custom%20widgets/quotation_Screen.dart';
 import 'package:intl/intl.dart';
 
-import '../../Model/followup_Model.dart';
+import '../../Model/Api Model/allInquiryModel.dart';
 import '../Colors/app_Colors.dart';
 import 'custom_buttons.dart';
 
-class LeadDetailScreen extends StatefulWidget {
-  final LeadModel data;
+class LeaddetailScreen extends StatefulWidget {
+  final Inquiry data;
   String? selectedaction;
   String? selectedApx;
   String? selectedPurpose;
@@ -928,7 +927,7 @@ class LeadDetailScreen extends StatefulWidget {
   final TextEditingController controller;
   bool? isTiming;
 
-  LeadDetailScreen({
+  LeaddetailScreen({
     required this.selectedApx,
     required this.selectedPurpose,
     required this.selectedTime,
@@ -945,12 +944,12 @@ class LeadDetailScreen extends StatefulWidget {
 
 
   @override
-  State<LeadDetailScreen> createState() => _LeadDetailScreenState();
+  State<LeaddetailScreen> createState() => _LeaddetailScreenState();
 }
 
 
 
-class _LeadDetailScreenState extends State<LeadDetailScreen> {
+class _LeaddetailScreenState extends State<LeaddetailScreen> {
   final TextEditingController nextFollowUpController = TextEditingController();
   bool isDismissed = false;
   DateTime? selectedDate;
@@ -970,13 +969,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
 
     widget.selectedPurpose = 'Budget Problem';
 
-      // Initialize the controller
-      // nextFollowUpController = TextEditingController();
+    // Initialize the controller
+    // nextFollowUpController = TextEditingController();
 
-      // Initialize dropdown values to avoid null errors
-      // widget.selectedPurpose = null;
-      // widget.selectedaction = null;
-      // widget.selectedApx = null;// Set the first item
+    // Initialize dropdown values to avoid null errors
+    // widget.selectedPurpose = null;
+    // widget.selectedaction = null;
+    // widget.selectedApx = null;// Set the first item
   }
 
   void showDismissedConfirmationDialog() {
@@ -1048,7 +1047,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
+      appBar: AppBar(
         backgroundColor: AppColor.MainColor,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -1082,7 +1081,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.data.name,
+                  widget.data.fullName,
                   style: const TextStyle(
                     fontFamily: "poppins_thin",
                     fontSize: 20,
@@ -1105,219 +1104,219 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child:
-                      widget.isTiming==true?
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Product*",
-                            style: TextStyle(fontFamily: "poppins_thin"),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          DropdownButton2(
-                            isExpanded: true,
-                            hint: Text('Select Product',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontFamily: "poppins_thin")),
-                            value: selectedProduct,
-                            buttonStyleData: ButtonStyleData(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                color: Colors.grey.shade200,
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: Colors.grey.shade300,
-                                      blurRadius: 4,
-                                      spreadRadius: 2)
-                                ],
-                              ),
+                        padding: const EdgeInsets.all(16.0),
+                        child:
+                        widget.isTiming==true?
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Product*",
+                              style: TextStyle(fontFamily: "poppins_thin"),
                             ),
-                            underline: const Center(),
-                            dropdownStyleData: DropdownStyleData(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black, width: 2),
-                              ),
-                              elevation: 10,
+                            SizedBox(
+                              height: 10,
                             ),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: 'table(wooden)',
-                                  child: Text('Table (Wooden)',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: 'bowl(steel)',
-                                  child: Text('Bowl(Steel)',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: 'sofa(still)',
-                                  child: Text('Sofa(Still)',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                selectedProduct = value;
-                                // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                              });
-                            },
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Text(
-                            "Apx Buying Time *",
-                            style: TextStyle(fontFamily: "poppins_thin"),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          DropdownButton2(
-                            isExpanded: true,
-                            hint: Text('Select Apx Time',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontFamily: "poppins_thin")),
-                            value: selectedBuyingTime,
-                            buttonStyleData: ButtonStyleData(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                color: Colors.grey.shade200,
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: Colors.grey.shade300,
-                                      blurRadius: 4,
-                                      spreadRadius: 2)
-                                ],
-                              ),
-                            ),
-                            underline: const Center(),
-                            dropdownStyleData: DropdownStyleData(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black, width: 2),
-                              ),
-                              elevation: 10,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: '10 15 days',
-                                  child: Text('10-15 days',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: 'week',
-                                  child: Text('Week',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: '2 3 days',
-                                  child: Text('2 3 days',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                selectedBuyingTime = value;
-                                // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                              });
-                            },
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Text(
-                            'Services *',
-                            style: TextStyle(fontFamily: "poppins_thin"),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          DropdownButton2(
-                            isExpanded: true,
-                            hint: Text('Select Services',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontFamily: "poppins_thin")),
-                            value: selectedService,
-                            buttonStyleData: ButtonStyleData(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                color: Colors.grey.shade200,
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: Colors.grey.shade300,
-                                      blurRadius: 4,
-                                      spreadRadius: 2)
-                                ],
-                              ),
-                            ),
-                            underline: const Center(),
-                            dropdownStyleData: DropdownStyleData(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black, width: 2),
-                              ),
-                              elevation: 10,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: 'battry panel',
-                                  child: Text('Battery Panel',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: 'electricity',
-                                  child: Text('Electricity',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                              DropdownMenuItem(
-                                  value: 'IELTS (UK)',
-                                  child: Text('IELTS (UK)',
-                                      style: TextStyle(fontFamily: "poppins_thin"))),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                selectedService = value;
-                                // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                              });
-                            },
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'Service Duration *',
-                            style: TextStyle(fontFamily: "poppins_thin"),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Form(
-                            key: _formKey,
-                            child: TextFormField(
-                              decoration: InputDecoration(
-                                hintText: "Duration",
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                            DropdownButton2(
+                              isExpanded: true,
+                              hint: Text('Select Product',
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontFamily: "poppins_thin")),
+                              value: selectedProduct,
+                              buttonStyleData: ButtonStyleData(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.grey.shade200,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.grey.shade300,
+                                        blurRadius: 4,
+                                        spreadRadius: 2)
+                                  ],
                                 ),
-                                hintStyle: TextStyle(fontFamily: "poppins_thin"),
+                              ),
+                              underline: const Center(),
+                              dropdownStyleData: DropdownStyleData(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black, width: 2),
+                                ),
+                                elevation: 10,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: 'table(wooden)',
+                                    child: Text('Table (Wooden)',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: 'bowl(steel)',
+                                    child: Text('Bowl(Steel)',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: 'sofa(still)',
+                                    child: Text('Sofa(Still)',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedProduct = value;
+                                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
+                                });
+                              },
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            Text(
+                              "Apx Buying Time *",
+                              style: TextStyle(fontFamily: "poppins_thin"),
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            DropdownButton2(
+                              isExpanded: true,
+                              hint: Text('Select Apx Time',
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontFamily: "poppins_thin")),
+                              value: selectedBuyingTime,
+                              buttonStyleData: ButtonStyleData(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.grey.shade200,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.grey.shade300,
+                                        blurRadius: 4,
+                                        spreadRadius: 2)
+                                  ],
+                                ),
+                              ),
+                              underline: const Center(),
+                              dropdownStyleData: DropdownStyleData(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black, width: 2),
+                                ),
+                                elevation: 10,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: '10 15 days',
+                                    child: Text('10-15 days',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: 'week',
+                                    child: Text('Week',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: '2 3 days',
+                                    child: Text('2 3 days',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedBuyingTime = value;
+                                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
+                                });
+                              },
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            Text(
+                              'Services *',
+                              style: TextStyle(fontFamily: "poppins_thin"),
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            DropdownButton2(
+                              isExpanded: true,
+                              hint: Text('Select Services',
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontFamily: "poppins_thin")),
+                              value: selectedService,
+                              buttonStyleData: ButtonStyleData(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.grey.shade200,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.grey.shade300,
+                                        blurRadius: 4,
+                                        spreadRadius: 2)
+                                  ],
+                                ),
+                              ),
+                              underline: const Center(),
+                              dropdownStyleData: DropdownStyleData(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black, width: 2),
+                                ),
+                                elevation: 10,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: 'battry panel',
+                                    child: Text('Battery Panel',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: 'electricity',
+                                    child: Text('Electricity',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                                DropdownMenuItem(
+                                    value: 'IELTS (UK)',
+                                    child: Text('IELTS (UK)',
+                                        style: TextStyle(fontFamily: "poppins_thin"))),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedService = value;
+                                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
+                                });
+                              },
+                            ),
+                            SizedBox(height: 20),
+                            Text(
+                              'Service Duration *',
+                              style: TextStyle(fontFamily: "poppins_thin"),
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Form(
+                              key: _formKey,
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                  hintText: "Duration",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  hintStyle: TextStyle(fontFamily: "poppins_thin"),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ):
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
+                          ],
+                        ):
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
 
-                          _buildDetailItem(
-                              'Product', widget.data.product, Icons.shopping_bag),
-                          _buildDetailItem('Apx Buying', widget.data.apxbuying,
-                              Icons.attach_money),
-                          _buildDetailItem(
-                              'Service Name', widget.data.services, Icons.work),
-                          _buildDetailItem('Service Duration', widget.data.duration,
-                              Icons.timer),
-                        ],
-                      )
+                            _buildDetailItem(
+                                'Product', widget.data.InqType, Icons.shopping_bag),
+                            _buildDetailItem('Apx Buying', widget.data.InqType,
+                                Icons.attach_money),
+                            _buildDetailItem(
+                                'Service Name', widget.data.InqType, Icons.work),
+                            _buildDetailItem('Service Duration', widget.data.InqType,
+                                Icons.timer),
+                          ],
+                        )
 
                     ),
                   ),
@@ -1334,17 +1333,17 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Container(
-                    width: MediaQuery.of(context).size.width,
+                      width: MediaQuery.of(context).size.width,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        color: Colors.grey.shade100,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black38,
-                            blurRadius: 5,
+                          borderRadius: BorderRadius.circular(18),
+                          color: Colors.grey.shade100,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black38,
+                              blurRadius: 5,
 
-                          )
-                        ]
+                            )
+                          ]
                       ),
 
 
@@ -1358,24 +1357,24 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                           ),
                           Row(
                             children: [
-                          Flexible(
-                          child: MainButtonGroup(
-                          buttonTexts: widget.callList,
-                            selectedButton: widget.selectedButton.toString(),
+                              Flexible(
+                                child: MainButtonGroup(
+                                  buttonTexts: widget.callList,
+                                  selectedButton: widget.selectedButton.toString(),
 
 
-                            onButtonPressed: (value) {
-                              setState(() {
-                                widget.selectedButton = value;
-                                if (value == "Dismissed") {
-                                  showDismissedConfirmationDialog();
-                                } else {
-                                  isDismissed = false;
-                                }
-                              });
-                            },
-                          ),
-                ),
+                                  onButtonPressed: (value) {
+                                    setState(() {
+                                      widget.selectedButton = value;
+                                      if (value == "Dismissed") {
+                                        showDismissedConfirmationDialog();
+                                      } else {
+                                        isDismissed = false;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ),
                             ],
                           ),
 

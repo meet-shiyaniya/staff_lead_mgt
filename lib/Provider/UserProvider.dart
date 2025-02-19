@@ -50,25 +50,31 @@ class UserProvider with ChangeNotifier{
   List<Inquiry> get inquiries => _inquiries;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
+  PaginatedInquiries? paginatedInquiries;
 
+  Future<void> fetchInquiries({
+    bool isLoadMore = false,
 
-  Future<void> fetchInquiries({bool isLoadMore = false}) async {
+  }) async {
     if (isLoadMore && !_hasMore) return;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      PaginatedInquiries? newInquiry = await _apiService.fetchInquiries(_limit, page: _currentPage);
+      PaginatedInquiries? newInquiry = await _apiService.fetchInquiries(
+        _limit,
+        page: _currentPage,
+      );
 
       if (newInquiry != null) {
+        paginatedInquiries = newInquiry;
         if (isLoadMore) {
-          _inquiries.addAll(newInquiry.inquiries); // Append new data
+          _inquiries.addAll(newInquiry.inquiries);
         } else {
-          _inquiries = newInquiry.inquiries; // Replace existing data
+          _inquiries = newInquiry.inquiries;
         }
 
-        // Update pagination state
         _hasMore = _currentPage < newInquiry.totalPages;
         if (_hasMore) _currentPage++;
       }
@@ -80,8 +86,7 @@ class UserProvider with ChangeNotifier{
     }
   }
 
-  // Refresh the data
-  Future<void> refreshInquiries() async {
+  Future<void> refreshInquiries({String? inquiryStatus}) async {
     _currentPage = 1;
     _inquiries.clear();
     _hasMore = true;

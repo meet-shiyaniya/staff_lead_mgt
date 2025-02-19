@@ -1,3 +1,5 @@
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart';
+
 import 'followup_Model.dart';
 
 class CategoryModel {
@@ -8,4 +10,13 @@ class CategoryModel {
 
   // Count the number of leads in this category
   int get leadCount => leads.length;
+}
+
+class Categorymodel {
+  final String title;
+  final int leadCount;
+
+  Categorymodel(this.title, this.leadCount);
+
+  int get leads => leadCount;
 }

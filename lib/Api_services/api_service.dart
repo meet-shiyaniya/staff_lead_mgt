@@ -280,7 +280,7 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit, {required int page}) async {
+  Future<PaginatedInquiries?> fetchInquiries(int limit,  {required int page}) async {
     final url = Uri.parse("$childUrl?limit=$limit&page=$page");
 
 
