@@ -1,5 +1,8 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../Provider/UserProvider.dart';
+import '../../Model/Api Model/allInquiryModel.dart';
 import '../../Model/category_Model.dart';
 import '../../Model/followup_Model.dart';
 import '../../Utils/Custom widgets/custom_buttons.dart';
@@ -37,10 +40,31 @@ class _CnrScreenState extends State<CnrScreen> {
   final List<String> actions = ['markAsComplete','assignToUser','delete'];
   final List<String> employees = ['employee 1','employee 2','employee 3'];
 
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+
+      Future.microtask(() {
+        Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+      });
+
+      _scrollController = ScrollController();
+      _scrollController.addListener(_onScroll);
+    }
+
+    void _onScroll() {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+        Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+      }
+    }
+
+    @override
+    void dispose() {
+      _scrollController.dispose();
+      super.dispose();
+
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
       CategoryModel("Qualified", LeadList.where((lead) => lead.label == "Qualified").toList()),
@@ -50,6 +74,7 @@ class _CnrScreenState extends State<CnrScreen> {
 
     filteredLeads = List.from(LeadList);
   }
+
 
   void filterLeads(String category) {
     setState(() {
@@ -90,9 +115,18 @@ class _CnrScreenState extends State<CnrScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inquiryProvider = Provider.of<UserProvider>(context);
+    if (selectedCards.length != inquiryProvider.inquiries.length) {
+      selectedCards = List<bool>.generate(
+        inquiryProvider.inquiries.length,
+            (index) => false,
+      );
+
+  }
     return Column(
       children: [
         if (anySelected)
+
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -250,44 +284,51 @@ class _CnrScreenState extends State<CnrScreen> {
         ),
         Expanded(
           child: ListView.builder(
+
             itemCount: filteredLeads.length,
             itemBuilder: (context, index) {
-              return StatefulBuilder(
-                builder: (context,setState){
-                  return GestureDetector(
-                    onLongPress: () {
-                      toggleSelection(index);
-                    },
-                    child: TestCard(
-                      id: filteredLeads[index].id,
-                      name: filteredLeads[index].name,
-                      username: filteredLeads[index].username,
-                      label: filteredLeads[index].label,
-                      followUpDate: filteredLeads[index].followUpDate,
-                      nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                      inquiryType: filteredLeads[index].inquiryType,
-                      phone: filteredLeads[index].phone,
-                      email: filteredLeads[index].email,
-                      source: filteredLeads[index].source,
-                      isSelected: selectedCards[index],
-                      onSelect: () {
-                        toggleSelection(index);
-                      }, callList: callList,
-                      // selectedTime: selectedTime,
-                      // selectedPurpose: selectedPurpose,
-                      // selectedApx: selectedApx,
-                      // selectedAction: selectedAction,
-                      selectedcallFilter: selectedcallFilter,
-                      // selectedEmployee: selectedEmployee,
-                      data: filteredLeads[index],
-                      isTiming:true,
-                      nextFollowupcontroller: nextFollowupcontroller,
-                    ),
-                  );
-                },
-              );
-
+    if (index < inquiryProvider.inquiries.length) {
+      Inquiry inquiry = inquiryProvider.inquiries[index];
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return GestureDetector(
+            onLongPress: () {
+              toggleSelection(index);
             },
+            child: TestCard(
+              id: filteredLeads[index].id,
+              name: filteredLeads[index].name,
+              username: filteredLeads[index].username,
+              label: filteredLeads[index].label,
+              followUpDate: filteredLeads[index].followUpDate,
+              nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+              inquiryType: filteredLeads[index].inquiryType,
+              intArea: inquiry.InqArea,
+              purposeBuy: inquiry.PurposeBuy,
+              daySkip: inquiry.dayskip,
+              hourSkip: inquiry.hourskip,
+              // phone: filteredLeads[index].phone,
+              // email: filteredLeads[index].email,
+              source: filteredLeads[index].source,
+              isSelected: selectedCards[index],
+              onSelect: () {
+                toggleSelection(index);
+              },
+              callList: callList,
+              // selectedTime: selectedTime,
+              // selectedPurpose: selectedPurpose,
+              // selectedApx: selectedApx,
+              // selectedAction: selectedAction,
+              selectedcallFilter: selectedcallFilter,
+              // selectedEmployee: selectedEmployee,
+              data: inquiry,
+              isTiming: true,
+              nextFollowupcontroller: nextFollowupcontroller,
+            ),
+          );
+        },
+      );
+    }},
           ),
         ),
       ],

@@ -1,6 +1,9 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 // import 'package:inquiry_management_ui/Model/followup_Model.dart';
+import '../../../Provider/UserProvider.dart';
+import '../../Model/Api Model/allInquiryModel.dart';
 import '../../Model/category_Model.dart';
 import '../../Model/followup_Model.dart';
 import '../../Utils/Custom widgets/custom_buttons.dart';
@@ -105,6 +108,15 @@ class _LeadsListState extends State<LeadsList> {
   String? selectedTime;
   @override
   Widget build(BuildContext context) {
+
+    final inquiryProvider = Provider.of<UserProvider>(context);
+    if (selectedCards.length != inquiryProvider.inquiries.length) {
+      selectedCards = List<bool>.generate(
+        inquiryProvider.inquiries.length,
+            (index) => false,
+      );
+
+    }
     return Column(
       children: [
         if (anySelected)
@@ -269,42 +281,56 @@ class _LeadsListState extends State<LeadsList> {
           child: ListView.builder(
             itemCount: filteredLeads.length,
             itemBuilder: (context, index) {
-              return StatefulBuilder(
-                builder: (context,setState){
-                  return GestureDetector(
-                    onLongPress: () {
-                      toggleSelection(index);
-                    },
-
-                    child: TestCard(
-                      id: filteredLeads[index].id,
-                      name: filteredLeads[index].name,
-                      username: filteredLeads[index].username,
-                      label: filteredLeads[index].label,
-                      followUpDate: filteredLeads[index].followUpDate,
-                      nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                      inquiryType: filteredLeads[index].inquiryType,
-                      phone: filteredLeads[index].phone,
-                      email: filteredLeads[index].email,
-                      source: filteredLeads[index].source,
-                      isSelected: selectedCards[index],
-                      onSelect: () {
-                        toggleSelection(index);
-                      }, callList: ["Followup","Dismissed","Appointment","Negotiation","Feedback","Cnr"],
-                      // selectedTime: selectedTime,
-                      // selectedPurpose: selectedPurpose,
-                      // selectedApx: selectedApx,
-                      // selectedAction: selectedAction,
-                      selectedcallFilter: selectedcallFilter,
-                      // selectedEmployee: selectedEmployee,
-                      data: filteredLeads[index],
-                      isTiming:true,
-                      nextFollowupcontroller: nextFollowupcontroller,
-                    ),
-                  );
-                },
-              );
+    if (index < inquiryProvider.inquiries.length) {
+      Inquiry inquiry = inquiryProvider.inquiries[index];
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return GestureDetector(
+            onLongPress: () {
+              toggleSelection(index);
             },
+
+            child: TestCard(
+              id: filteredLeads[index].id,
+              name: filteredLeads[index].name,
+              username: filteredLeads[index].username,
+              label: filteredLeads[index].label,
+              followUpDate: filteredLeads[index].followUpDate,
+              nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+              inquiryType: filteredLeads[index].inquiryType,
+              intArea: inquiry.InqArea,
+              purposeBuy: inquiry.PurposeBuy,
+              daySkip: inquiry.dayskip,
+              hourSkip: inquiry.hourskip,
+              // phone: filteredLeads[index].phone,
+              // email: filteredLeads[index].email,
+              source: filteredLeads[index].source,
+              isSelected: selectedCards[index],
+              onSelect: () {
+                toggleSelection(index);
+              },
+              callList: [
+                "Followup",
+                "Dismissed",
+                "Appointment",
+                "Negotiation",
+                "Feedback",
+                "Cnr"
+              ],
+              // selectedTime: selectedTime,
+              // selectedPurpose: selectedPurpose,
+              // selectedApx: selectedApx,
+              // selectedAction: selectedAction,
+              selectedcallFilter: selectedcallFilter,
+              // selectedEmployee: selectedEmployee,
+              data: inquiry,
+              isTiming: true,
+              nextFollowupcontroller: nextFollowupcontroller,
+            ),
+          );
+        },
+      );
+    }  },
           ),
         ),
       ],

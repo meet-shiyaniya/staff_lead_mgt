@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/test.dart';
 import '../social_module/colors/colors.dart';
 import 'Inquiry Management Screens/all_inquiries_Screen.dart';
 import 'Inquiry Management Screens/assign_to_other_Screen.dart';
@@ -265,7 +266,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => DismissRequestScreen()),
+                                MaterialPageRoute(builder: (context) => AllInquiriesScreen()),
                               );
                             },
                             child: CategoryCard(
@@ -278,7 +279,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => AssignToOtherScreen()),
+                                MaterialPageRoute(builder: (context) => AllInquiriesScreen()),
                               );
                             },
                             child: CategoryCard(

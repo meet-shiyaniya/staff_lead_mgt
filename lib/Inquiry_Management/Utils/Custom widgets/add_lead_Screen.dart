@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../Inquiry Management Screens/all_inquiries_Screen.dart';
+import '../../test.dart';
 import '../Colors/app_Colors.dart';
 import 'custom_buttons.dart';
 
@@ -20,7 +21,6 @@ class AddLeadScreen extends StatefulWidget {
 
 class _AddLeadScreenState extends State<AddLeadScreen> {
   int _currentStep = 0;
-  // Separate variables for different DropdownButton2 widgets
   String? _selectedCountryCode;
   String? _selectedArea;
   String? _selectedCity;
@@ -28,10 +28,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String? _selectedInqSource;
 
   bool _isCSTInterestVisible = false;
-  String? _selectedCSTType; // Initialize here
-  // String? selectedProduct;
+  String? _selectedCSTType = 'Service';
   String? selectedBuyingTime;
-  // String? selectedService;
   String? selectedDuration;
   DateTime? dateOfBirth;
   DateTime? anniversaryDate;
@@ -40,23 +38,132 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   final TextEditingController _anniversaryController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String selectedType = "Service"; // Default selection
+  String selectedType = "Service";
   String? selectedProduct;
   String? selectedService;
   String approxBuying = "";
   String serviceDuration = "";
 
+  // List Options
   final List<String> products = ['Laptop', 'Mobile Phone', 'Tablet'];
   final List<String> services = ['IELTS (UK)', 'IELTS (US)', 'TOEFL'];
-
-  final List<String> _steps = ["Personal Info", "CST & Inquiry"];
-
+  final List<String> areas = ['Area 1', 'Area 2', 'Area 3'];
+  final List<String> cities = ['City A', 'City B', 'City C'];
+  final List<String> countryCodes = ['+1', '+44', '+91'];
+  final List<String> inquiryTypes = ['Type A', 'Type B', 'Type C'];
+  final List<String> inquirySources = ['Source 1', 'Source 2', 'Source 3'];
+  final List<String> buyingTimes = ['Now', 'Soon', 'Later'];
   final List<String> durations = ['1-month', '3-month', '6-month', '12-month'];
 
+  final List<String> _steps = ["Personal Info", "CST & Inquiry", "Follow Up"];
+
   @override
-  void initState() {
-    super.initState();
-    _selectedCSTType = 'Service'; // Initialize to "Service" by default
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.isEdit == true ? "Edit Lead" : "Add Lead",
+          style: const TextStyle(
+              fontFamily: "poppins_thin", color: Colors.white, fontSize: 20),
+        ),
+        backgroundColor: AppColor.MainColor,
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+            )),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildFormContent(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: _currentStep == 0
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentStep > 0)
+                  GradientButton(
+                    buttonText: "",
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    width: 40.0,
+                    onPressed: _goToPreviousStep,
+                  ),
+                GradientButton(
+                  buttonText:
+                  _currentStep == _steps.length - 1 ? "Submit" : "Next",
+                  width: 120.0,
+                  onPressed: _currentStep == _steps.length - 1
+                      ? () {
+                    Navigator.pop(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                        const AllInquiriesScreen(), // Navigate
+                      ),
+                    );
+                  }
+                      : _goToNextStep,
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormContent() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(0.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_currentStep == 0) ...[
+              const Text(
+                "Personal Inquiry",
+                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
+              ),
+              Card(child: _buildPersonalInquirySection()),
+            ],
+            if (_currentStep == 1) ...[
+              const Text(
+                "CST Interest",
+                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
+              ),
+              Card(
+                child: _buildCSTInterestSection(context),
+              ),
+
+            ],
+            if (_currentStep == 2) ...[
+              const SizedBox(height: 16),
+              const Text(
+                "Inquiry Information",
+                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
+              ),
+              Card(child: _buildInquiryInformationSection()),
+              SizedBox(height: 15,),
+              Text(
+                "Follow up",
+                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
+              ),
+              Card(child: _buildFollowUpSection()),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   void _goToNextStep() {
@@ -77,358 +184,178 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-
-
-          widget.isEdit == true ? "Edit Lead" : "Add Lead",
-          style: const TextStyle(fontFamily: "poppins_thin", color: Colors.white,fontSize: 20),
-        ),
-        backgroundColor: AppColor.MainColor,
-        leading: IconButton(onPressed: () {
-          Navigator.pop(context);
-        }, icon: Icon(Icons.arrow_back_ios,color: Colors.white,)),
-      ),
-      body: Column(
-        children: [
-          // const SizedBox(height: 20),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _buildFormContent(), // Single content builder
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: _currentStep == 0
-                  ? MainAxisAlignment.end // Aligns "Next" to the end when no "Back" button
-                  : MainAxisAlignment.spaceBetween, // Distributes "Back" and "Next" when both exist
-              children: [
-                if (_currentStep > 0)
-                  GradientButton(
-                    buttonText: "",
-                    icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-                    width: 40.0, // Adjust the width as needed
-                    onPressed: _goToPreviousStep,
-                  ),
-                GradientButton(
-                  buttonText: _currentStep == _steps.length - 1 ? "Submit" : "Next",
-                  width: 120.0, // Adjust the width as needed
-                  onPressed: _currentStep == _steps.length - 1
-                      ? () {
-                    // Navigate to the next screen when "Submit" is pressed
-                    Navigator.pop(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AllInquiriesScreen(), // Replace with your target screen
-                      ),
-                    );
-                  }
-                      : _goToNextStep, // Otherwise, go to the next step
-                ),
-              ],
-            ),
-          )
-
-
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormContent() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(0.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Personal Info Section
-            if (_currentStep == 0) ...[
-              const Text(
-                "Personal Inquiry",
-                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
-              ),
-              Card(child: _buildPersonalInquirySection()),
-              // )_buildCSTInterestSection(context),
-            ],
-            // CST & Inquiry Section
-            if (_currentStep == 1) ...[
-              Text(
-                "CST Interest",
-                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
-              ),
-              Card(
-                child: _buildCSTInterestSection(context),),
-
-
-              const SizedBox(height: 16),
-              const Text(
-                "Inquiry Information",
-                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
-              ),
-              Card(child: _buildInquiryInformationSection()),
-              SizedBox(height: 10,),
-              Text(
-                "Follow up",
-                style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
-              ),
-              Card(child: _buildFollowUpSection(),)
-            ],
-
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildCSTInterestSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
+    return   Padding(
+      padding: const EdgeInsets.all(14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          Text(
-            'Select Type:',
-            style: TextStyle(fontFamily: "poppins_thin"),
-          ),
-          Row(
+          const SizedBox(height: 16),
+
+          // Int Area and Int Site
+          Column(
             children: [
-              Radio(
-                value: 'Product',
-                groupValue: selectedType,
-                onChanged: (value) {
-                  setState(() {
-                    selectedType = value.toString();
-                    selectedService = null;
-                    selectedDuration = null;
-                    selectedProduct = null;
-                  });
-                },
+              Row( // Use Row as the parent
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Int Area*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
+                        CombinedDropdownTextField(
+                          options: areaOptions,
+                          onSelected: (String selectedArea) {
+                            setState(() {
+                              _selectedArea = selectedArea;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                ],
               ),
-              Text(
-                'Product',
-                style: TextStyle(fontFamily: "poppins_thin"),
-              ),
-              Radio(
-                value: 'Service',
-                groupValue: selectedType,
-                onChanged: (value) {
-                  setState(() {
-                    selectedType = value.toString();
-                    selectedService = null;
-                    selectedDuration = null;
-                    selectedProduct = null;
-                  });
-                },
-              ),
-              Text(
-                'Service',
-                style: TextStyle(fontFamily: "poppins_thin"),
+              SizedBox(height: 16,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Int Site*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
+                  CombinedDropdownTextField(
+                    options: intSiteOptions,
+                    onSelected: (String selectedIntSite) {
+                      setState(() {
+                        _selectedIntSite = selectedIntSite;
+                      });
+                    },
+                  ),
+                ],
               ),
             ],
           ),
-          SizedBox(height: 20),
-          if (selectedType == 'Service') ...[
-            Text(
-              'Services *',
-              style: TextStyle(fontFamily: "poppins_thin"),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            DropdownButton2(
-              isExpanded: true,
-              hint: Text('Select Services',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontFamily: "poppins_thin")),
-              value: selectedService,
-              buttonStyleData: ButtonStyleData(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: Colors.grey.shade200,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.shade300,
-                        blurRadius: 4,
-                        spreadRadius: 2)
+          const SizedBox(height: 16),
+
+          // Budget and Purpose
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Budget(In Lac)*",
+                        style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+                    CombinedDropdownTextField(
+                      options: budgetOptions,
+                      onSelected: (String selectedBudget) {
+                        setState(() {
+                          _selectedBudget = selectedBudget;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
-              underline: const Center(),
-              dropdownStyleData: DropdownStyleData(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                elevation: 10,
+
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Purpose of Buying*",
+                  style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: purposeOptions,
+                onSelected: (String selectedPurpose) {
+                  setState(() {
+                    _selectedPurpose = selectedPurpose;
+                  });
+                },
               ),
-              items: const [
-                DropdownMenuItem(
-                    value: 'battry panel',
-                    child: Text('Battery Panel',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: 'electricity',
-                    child: Text('Electricity',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: 'IELTS (UK)',
-                    child: Text('IELTS (UK)',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedService = value;
-                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Service Duration *',
-              style: TextStyle(fontFamily: "poppins_thin"),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            Form(
-              key: _formKey,
-              child: TextFormField(
-                decoration: InputDecoration(
-                  hintText: "Duration",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  hintStyle: TextStyle(fontFamily: "poppins_thin"),
-                ),
-              ),
-            ),
-          ] else if (selectedType == 'Product') ...[
-            Text(
-              "Product*",
-              style: TextStyle(fontFamily: "poppins_thin"),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            DropdownButton2(
-              isExpanded: true,
-              hint: Text('Select Product',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontFamily: "poppins_thin")),
-              value: selectedProduct,
-              buttonStyleData: ButtonStyleData(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: Colors.grey.shade200,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.shade300,
-                        blurRadius: 4,
-                        spreadRadius: 2)
+            ],
+          ),
+          SizedBox(height: 16,),
+          // Apx Buying Time and Property Configuration
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Apx Buying Time : *",
+                        style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+                    CombinedDropdownTextField(
+                      options: apxTimeOptions,
+                      onSelected: (String selectedApxTime) {
+                        setState(() {
+                          _selectedApxTime = selectedApxTime;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
-              underline: const Center(),
-              dropdownStyleData: DropdownStyleData(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                elevation: 10,
+
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Property Configuration*",
+                  style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: propertyConfigurationOptions,
+                onSelected: (String selectedPropertyConfiguration) {
+                  setState(() {
+                    _selectedPropertyConfiguration =
+                        selectedPropertyConfiguration;
+                  });
+                },
               ),
-              items: const [
-                DropdownMenuItem(
-                    value: 'table(wooden)',
-                    child: Text('Table (Wooden)',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: 'bowl(steel)',
-                    child: Text('Bowl(Steel)',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: 'sofa(still)',
-                    child: Text('Sofa(Still)',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedProduct = value;
-                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                });
-              },
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              "Apx Buying Time *",
-              style: TextStyle(fontFamily: "poppins_thin"),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            DropdownButton2(
-              isExpanded: true,
-              hint: Text('Select Apx Time',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontFamily: "poppins_thin")),
-              value: selectedBuyingTime,
-              buttonStyleData: ButtonStyleData(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: Colors.grey.shade200,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.shade300,
-                        blurRadius: 4,
-                        spreadRadius: 2)
-                  ],
-                ),
+            ],
+          ),
+          SizedBox(height: 15,),
+          // Inq Source
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Inq Source*", style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: inqSourceOptions,
+                onSelected: (String selectedInqSource) {
+                  setState(() {
+                    _selectedInqSource = selectedInqSource;
+                  });
+                },
               ),
-              underline: const Center(),
-              dropdownStyleData: DropdownStyleData(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                elevation: 10,
-              ),
-              items: const [
-                DropdownMenuItem(
-                    value: '10 15 days',
-                    child: Text('10-15 days',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: 'week',
-                    child: Text('Week',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-                DropdownMenuItem(
-                    value: '2 3 days',
-                    child: Text('2 3 days',
-                        style: TextStyle(fontFamily: "poppins_thin"))),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedBuyingTime = value;
-                  // print('Country Code Dropdown changed to: $_selectedCountryCode');
-                });
-              },
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );
   }
+
+
+
+  // String? _selectedArea;
+  String? _selectedIntSite;
+  String? _selectedBudget;
+  String? _selectedPurpose;
+  String? _selectedApxTime;
+  String? _selectedPropertyConfiguration;
+  // String? _selectedInqSource;
+
+  // Define lists of options for each dropdown
+  List<String> areaOptions = ['Area 1', 'Area 2', 'Area 3']; // Replace with your actual data
+  List<String> intSiteOptions = ['Site A', 'Site B', 'Site C']; // Replace with your actual data
+  List<String> budgetOptions = ['50-75 Lac', '75-100 Lac', '100+ Lac']; // Replace with your actual data
+  List<String> purposeOptions = ['Investment', 'Self Use', 'Rental Income']; // Replace with your actual data
+  List<String> apxTimeOptions = ['2-3 Days', 'Week'];
+  List<String> propertyConfigurationOptions = ['Apartment', 'Villa', 'Land']; // Replace with your actual data
+  List<String> inqSourceOptions = ['Website', 'Referral', 'Social Media']; // Replace with your actual data
 
   Widget _buildPersonalInquirySection() {
     return Padding(
@@ -820,138 +747,140 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   Widget _buildInquiryInformationSection() {
     return Padding(
       padding: const EdgeInsets.all(18.0),
-      child: Column(
-        children: [
-          DropdownButton2(
-            isExpanded: true,
-            hint: Text('Inquiry Type',
-                style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontFamily: "poppins_thin")),
-            value: _selectedInquiryType,
-            buttonStyleData: ButtonStyleData(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: Colors.grey.shade200,
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      spreadRadius: 2)
-                ],
+      child: Center(
+        child: Column(
+          children: [
+            DropdownButton2(
+              isExpanded: true,
+              hint: Text('Inquiry Type',
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontFamily: "poppins_thin")),
+              value: _selectedInquiryType,
+              buttonStyleData: ButtonStyleData(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color: Colors.grey.shade200,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2)
+                  ],
+                ),
               ),
-            ),
-            underline: const Center(),
-            dropdownStyleData: DropdownStyleData(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 2),
+              underline: const Center(),
+              dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black, width: 2),
+                ),
+                elevation: 10,
               ),
-              elevation: 10,
-            ),
-            items: const [
-              DropdownMenuItem(
-                  value: 'Telephone',
-                  child: Text('Telephone',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-              DropdownMenuItem(
-                  value: 'Website',
-                  child: Text('Website',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-              DropdownMenuItem(
-                  value: 'Facebook',
-                  child: Text('Facebook',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _selectedInquiryType = value;
-                print('Inquiry Type Dropdown changed to: $_selectedInquiryType');
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          DropdownButton2(
-            isExpanded: true,
-            hint: Text('Inq Source',
-                style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontFamily: "poppins_thin")),
-            value: _selectedInqSource,
-            buttonStyleData: ButtonStyleData(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: Colors.grey.shade200,
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      spreadRadius: 2)
-                ],
-              ),
-            ),
-            underline: const Center(),
-            dropdownStyleData: DropdownStyleData(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 2),
-              ),
-              elevation: 10,
-            ),
-            items: const [
-              DropdownMenuItem(
-                  value: 'Events',
-                  child: Text('Events',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-              DropdownMenuItem(
-                  value: 'Website',
-                  child: Text('Website',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-              DropdownMenuItem(
-                  value: 'Facebook',
-                  child: Text('Facebook',
-                      style: TextStyle(fontFamily: "poppins_thin"))),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _selectedInqSource = value;
-                print('Inq Source Dropdown changed to: $_selectedInqSource');
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          widget.isEdit == false
-              ? TextFormField(
-            controller: _dateController,
-            decoration: InputDecoration(
-              labelText: "Next Follow Up",
-              labelStyle: const TextStyle(fontFamily: "poppins_thin"),
-              border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              suffixIcon: const Icon(Icons.calendar_today),
-            ),
-            readOnly: true,
-            onTap: () async {
-              DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
+              items: const [
+                DropdownMenuItem(
+                    value: 'Telephone',
+                    child: Text('Telephone',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Website',
+                    child: Text('Website',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Facebook',
+                    child: Text('Facebook',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+              ],
+              onChanged: (value) {
                 setState(() {
-                  nextFollowUp = picked;
-                  _dateController.text =
-                      DateFormat('yyyy-MM-dd').format(nextFollowUp!);
-                  print('Next Follow Up changed to: $nextFollowUp');
+                  _selectedInquiryType = value;
+                  print('Inquiry Type Dropdown changed to: $_selectedInquiryType');
                 });
-              }
-            },
-          )
-              : const SizedBox(
-            height: 10,
-          )
-        ],
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButton2(
+              isExpanded: true,
+              hint: Text('Inq Source',
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontFamily: "poppins_thin")),
+              value: _selectedInqSource,
+              buttonStyleData: ButtonStyleData(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color: Colors.grey.shade200,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2)
+                  ],
+                ),
+              ),
+              underline: const Center(),
+              dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black, width: 2),
+                ),
+                elevation: 10,
+              ),
+              items: const [
+                DropdownMenuItem(
+                    value: 'Events',
+                    child: Text('Events',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Website',
+                    child: Text('Website',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Facebook',
+                    child: Text('Facebook',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedInqSource = value;
+                  print('Inq Source Dropdown changed to: $_selectedInqSource');
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            widget.isEdit == false
+                ? TextFormField(
+              controller: _dateController,
+              decoration: InputDecoration(
+                labelText: "Next Follow Up",
+                labelStyle: const TextStyle(fontFamily: "poppins_thin"),
+                border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                suffixIcon: const Icon(Icons.calendar_today),
+              ),
+              readOnly: true,
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() {
+                    nextFollowUp = picked;
+                    _dateController.text =
+                        DateFormat('yyyy-MM-dd').format(nextFollowUp!);
+                    print('Next Follow Up changed to: $nextFollowUp');
+                  });
+                }
+              },
+            )
+                : const SizedBox(
+              height: 0,
+            )
+          ],
+        ),
       ),
     );
   }
@@ -966,6 +895,179 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         maxLines: 3,
+      ),
+    );
+  }
+}
+// import 'package:flutter/material.dart';
+// import 'package:flutter/scheduler.dart';
+// import 'package:flutter/material.dart';
+
+class CombinedDropdownTextField extends StatefulWidget {
+  final List<String> options;
+  final Function(String) onSelected;
+
+  const CombinedDropdownTextField({
+    super.key,
+    required this.options,
+    required this.onSelected,
+  });
+
+  @override
+  State<CombinedDropdownTextField> createState() =>
+      _CombinedDropdownTextFieldState();
+}
+
+class _CombinedDropdownTextFieldState extends State<CombinedDropdownTextField> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isDropdownVisible = false;
+  List<String> _filteredOptions = [];
+  final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink(); // Define LayerLink here
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _hideOverlay();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isDropdownVisible = _focusNode.hasFocus;
+      if (_isDropdownVisible) {
+        _showOverlay(context);
+      } else {
+        _hideOverlay();
+      }
+    });
+  }
+
+  void _filterOptions(String query) {
+    setState(() {
+      _filteredOptions = widget.options
+          .where((option) =>
+          option.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  void _selectOption(String option) {
+    setState(() {
+      _controller.text = option;
+      _filteredOptions = [];
+      _isDropdownVisible = false;
+    });
+    widget.onSelected(option);
+    _focusNode.unfocus();
+    _hideOverlay();
+  }
+
+  void _showOverlay(BuildContext context) {
+    if (_overlayEntry != null) return;
+
+    final overlayState = Overlay.of(context);
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: size.width,
+        child: CompositedTransformFollower(
+          link: _layerLink, // Use defined _layerLink
+          showWhenUnlinked: false,
+          offset: Offset(0.0, size.height + 5.0), // Adjust as needed
+          child: Card(
+            elevation: 4,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: _filteredOptions.length,
+                itemBuilder: (context, index) {
+                  final option = _filteredOptions[index];
+                  return InkWell(
+                    onTap: () => _selectOption(option),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(option),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlayState.insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget( // Wrap TextField with CompositedTransformTarget
+      link: _layerLink,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            controller: _controller,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              // labelText: 'Select or Type',
+              hintText: 'Select or Type',
+              hintStyle: TextStyle(fontFamily: "poppins_light"),
+              border: const OutlineInputBorder(),
+              suffixIcon: _isDropdownVisible
+                  ? IconButton(
+                icon: const Icon(Icons.arrow_drop_up),
+                onPressed: () {
+                  setState(() {
+                    _isDropdownVisible = false;
+                    _focusNode.unfocus();
+                    _hideOverlay();
+                  });
+                },
+              )
+                  : IconButton(
+                icon: const Icon(Icons.arrow_drop_down),
+                onPressed: () {
+                  setState(() {
+                    _isDropdownVisible = true;
+                    _focusNode.requestFocus();
+                    _filterOptions(_controller.text);
+                    _showOverlay(context);
+                  });
+                },
+              ),
+            ),
+            onChanged: _filterOptions,
+            onTap: () {
+              setState(() {
+                _isDropdownVisible = true;
+                _focusNode.requestFocus();
+                _filterOptions(_controller.text);
+                _showOverlay(context);
+              });
+            },
+          ),
+        ],
       ),
     );
   }

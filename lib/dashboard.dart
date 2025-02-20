@@ -13,6 +13,8 @@ import 'package:animate_do/animate_do.dart'; // For animation effects
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'Inquiry_Management/test.dart';
+
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
 
@@ -592,7 +594,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                       index == 0
                           ? Navigator.push(context, MaterialPageRoute(builder: (context) => AllInquiriesScreen()))
                           : index == 1
-                          ? Navigator.push(context, MaterialPageRoute(builder: (context) => DismissRequestScreen()))
+                          ? Navigator.push(context, MaterialPageRoute(builder: (context) => AllInquiriesScreen()))
                           : index == 2
                           ? Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()))
                           : Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()));
