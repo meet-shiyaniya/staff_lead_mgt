@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/Staff%20Attendance%20Options/Selfie%20Punch%20Attendance/staff_Attendance_Screen.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
-import 'package:hr_app/staff_Attendance_Screen.dart';
 import 'package:lottie/lottie.dart';
 
 class FaceOnboarding extends StatefulWidget {
