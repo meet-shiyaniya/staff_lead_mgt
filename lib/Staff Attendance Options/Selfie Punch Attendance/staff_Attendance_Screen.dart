@@ -312,16 +312,6 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
             SizedBox(height: 30),
 
-            // ElevatedButton(
-            //   onPressed: _pickSelfie,
-            //   child: Text("Take Selfie", style: TextStyle(fontSize: 14, fontFamily: "poppins_thin", color: Colors.white)),
-            //   style: ElevatedButton.styleFrom(
-            //     backgroundColor: appColor.primaryColor,
-            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 40),
-            //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            //   ),
-            // ),
-
             SizedBox(height: 20),
 
             Text(_status, style: TextStyle(fontSize: 15, color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w500),),

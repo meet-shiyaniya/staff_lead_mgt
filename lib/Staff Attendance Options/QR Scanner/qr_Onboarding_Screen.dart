@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/Staff%20Attendance%20Options/Selfie%20Punch%20Attendance/staff_Attendance_Screen.dart';
+import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/qr_Attendance_Screen.dart';
 import 'package:lottie/lottie.dart';
 
 class qrOnboardingScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class _qrOnboardingScreenState extends State<qrOnboardingScreen> {
             ),
             GestureDetector(
               onTap: (){
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>StaffAttendanceScreen()));
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>qrAttendanceScreen()));
               },
               child: Container(
                 height:50,

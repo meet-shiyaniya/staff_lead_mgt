@@ -41,18 +41,6 @@ android {
         }
     }
 
-    dependencies {
-        implementation 'com.google.mlkit:text-recognition:16.0.0'  // Use this only if you need Latin text
-        // Remove unnecessary ML Kit dependencies
-    }
-
-}
-dependencies {
-    implementation 'com.google.mlkit:text-recognition:16.0.0' // Base text recognition
-    implementation 'com.google.mlkit:text-recognition-chinese:16.0.0' // Chinese
-    implementation 'com.google.mlkit:text-recognition-devanagari:16.0.0' // Devanagari
-    implementation 'com.google.mlkit:text-recognition-japanese:16.0.0' // Japanese
-    implementation 'com.google.mlkit:text-recognition-korean:16.0.0' // Korean
 }
 
 flutter {
