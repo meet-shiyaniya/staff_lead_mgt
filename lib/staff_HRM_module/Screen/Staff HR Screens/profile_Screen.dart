@@ -83,7 +83,7 @@ class _profileScreenState extends State<profileScreen> {
                 : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),
           ),
 
-          SizedBox(width: 30,),
+          SizedBox(width: 25,),
 
           Column(
 
@@ -93,15 +93,26 @@ class _profileScreenState extends State<profileScreen> {
             children: [
 
               // SizedBox(height: 10),
-              Text(
-                profile?.staffProfile?.name?.isNotEmpty == true ? profile!.staffProfile!.name! : "N/A",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black),
+              Container(
+                height: 20,
+                width: MediaQuery.of(context).size.width.toDouble()/1.90,
+                // color: Colors.red.shade400,
+                child: Text(
+                  profile?.staffProfile?.name?.isNotEmpty == true ? profile!.staffProfile!.name! : "N/A",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black, overflow: TextOverflow.ellipsis),
+                ),
               ),
-              Text(
-                profile?.staffProfile?.email?.isNotEmpty == true ? profile!.staffProfile!.email! : "N/A",
-                style: TextStyle(color: Colors.grey.shade500, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13),
+              SizedBox(height: 2,),
+              Container(
+                height: 20,
+                width: MediaQuery.of(context).size.width.toDouble()/1.90,
+                // color: Colors.red.shade400,
+                child: Text(
+                  profile?.staffProfile?.email?.isNotEmpty == true ? profile!.staffProfile!.email! : "N/A",
+                  style: TextStyle(color: Colors.grey.shade600, fontFamily: "poppins_light", fontWeight: FontWeight.w800, fontSize: 13, overflow: TextOverflow.ellipsis,),
+                ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 8),
               GestureDetector(
 
                 onTap: () {

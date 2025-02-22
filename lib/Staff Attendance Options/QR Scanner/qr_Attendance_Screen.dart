@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog_Worn_Qr.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 

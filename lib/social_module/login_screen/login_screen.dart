@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hr_app/Staff%20Attendance%20Options/Mannual%20Day%20Start/mannual_Attendance_Screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,12 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
-
-
-
-
-
-
 
   void _markAttendanceAndNavigate(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.primaryColor,
             textColor: Colors.white,
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => mannualAttendanceScreen()));
         } else {
           print("Login failed");
         }
