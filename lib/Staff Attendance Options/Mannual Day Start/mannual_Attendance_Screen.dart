@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hr_app/bottom_navigation.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -24,7 +25,7 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
 
     String createdAtDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
     String totalHours = "0";
-    String punchDate = DateFormat("yyyy-MM-dd").format(DateTime.now()).toString();
+    String punchDate = DateFormat("yyyy-  MM-dd").format(DateTime.now()).toString();
     String entryDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
     String exitDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
     String punchTimeArray = DateFormat("HH:mm:ss").format(DateTime.now());
@@ -71,6 +72,7 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
         // final data = jsonDecode(response.body);
 
         Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BottomNavScreen()));
         return true;
 
       } else {
