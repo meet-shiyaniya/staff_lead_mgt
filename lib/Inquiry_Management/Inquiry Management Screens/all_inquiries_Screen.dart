@@ -16,6 +16,7 @@ import '../Utils/Custom widgets/custom_dialog.dart';
 import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
+import '../Utils/Custom widgets/search_Screen.dart';
 import 'Followup Screen/list_filter_Screen.dart';
 
 class AllInquiriesScreen extends StatefulWidget {
@@ -29,7 +30,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   String selectedList = "All";
   String selectedValue = "0";
   int? selectedIndex;
-  List<LeadModel> LeadList = []; // Remove the mock data
 
   List<CategoryModel> categoryList = [];
   List<Inquiry> filteredLeads = [];
@@ -43,6 +43,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   final List<String> employees = ['employee 1', 'employee 2', 'employee 3'];
 
   bool isStatusFilterActive = false; // Flag to indicate if a status filter is active
+  String? currentStage;
 
   @override
   void initState() {
@@ -54,27 +55,44 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     _scrollController.addListener(_onScroll);
   }
 
+  int currentStatus = 0;
+
   Future<void> loadAllInquiries() async {
-    await Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    await inquiryProvider.fetchInquiries(status: currentStatus);
     setState(() {
-      filteredLeads =
-          List.from(Provider.of<UserProvider>(context, listen: false).inquiries);
+      filteredLeads = _applyStageFilter(inquiryProvider.inquiries);
       selectedValue = filteredLeads.length.toString();
+      isStatusFilterActive = currentStatus != 0 || currentStage != null;
     });
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent &&
-        !Provider.of<UserProvider>(context, listen: false).isLoading &&
-        Provider.of<UserProvider>(context, listen: false).hasMore) {
-      Provider.of<UserProvider>(context, listen: false)
-          .fetchInquiries(isLoadMore: true).then((value) {
-            setState(() {
-              filteredLeads = List.from(Provider.of<UserProvider>(context, listen: false).inquiries);
-            });
-          },);
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent -
+            300 && // Reduced threshold
+        !inquiryProvider.isLoading &&
+        inquiryProvider.hasMore) {
+      inquiryProvider
+          .fetchInquiries(isLoadMore: true, status: currentStatus)
+          .then((_) {
+        setState(() {
+          filteredLeads.addAll(_applyStageFilter(
+              inquiryProvider.inquiries.skip(filteredLeads.length).toList()));
+          selectedValue = filteredLeads.length.toString();
+        });
+      });
     }
+  }
+
+  List<Inquiry> _applyStageFilter(List<Inquiry> inquiries) {
+    if (currentStage == null) {
+      return List.from(inquiries); // Return all if no stage filter
+    }
+    return inquiries
+        .where((inquiry) => inquiry.InqStage == currentStage)
+        .toList();
   }
 
   @override
@@ -98,85 +116,18 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
   void filterLeads(String category) {}
 
-  void filterLiveLeads() {
+  Future<void> filterLeadsByStatus(int status) async {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "1")
-          .toList();
+      currentStatus = status; // Update the current status
+      currentStage = null;
+    });
+    await inquiryProvider.fetchInquiries(status: status);
+    setState(() {
+      filteredLeads = _applyStageFilter(inquiryProvider.inquiries);
       selectedValue = filteredLeads.length.toString();
       selectedList = "All";
       isStatusFilterActive = true;
-    });
-  }
-
-  void filterDismissedLeads() async {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "2")
-          .toList();
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = true;
-    });
-  }
-
-  void filterDismissedRequestLeads() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "3")
-          .toList();
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = true;
-    });
-  }
-
-  void filterConversionRequestLeads() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "4")
-          .toList();
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = true;
-    });
-  }
-
-  void filterDueAppoLeads() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "5")
-          .toList();
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = true;
-    });
-  }
-
-  void filterCNRLeads() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries
-          .where((inquiry) => inquiry.InqStatus == "6")
-          .toList();
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = true;
-    });
-  }
-
-  void filterAllLeads() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries;
-      selectedValue = filteredLeads.length.toString();
-      selectedList = "All";
-      isStatusFilterActive = false; // Turn off status filter
     });
   }
 
@@ -215,12 +166,30 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   }
 
   void toggleSelection(int index) {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false); // Get the provider here
-    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length, (index) => false);
-    selectedCards[index] = !selectedCards[index];
+    final inquiryProvider = Provider.of<UserProvider>(context,
+        listen:
+        false); // Get the provider here, Ensure you're using listen: false here
+    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length,
+            (index) => false); // Reset all cards to false
+    selectedCards[index] = !selectedCards[index]; // Toggle only the selected card
     anySelected = selectedCards.contains(true);
     print("anySelected : $anySelected");
-    setState(() {});
+    setState(() {}); // Update the UI
+  }
+
+  Future<void> filterLeadsByStage(String stage) async {
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    // Fetch all inquiries for the current status if not already loaded
+    if (inquiryProvider.inquiries.isEmpty) {
+      await inquiryProvider.fetchInquiries(status: currentStatus);
+    }
+    setState(() {
+      currentStage = stage;
+      filteredLeads = _applyStageFilter(inquiryProvider.inquiries);
+      selectedValue = filteredLeads.length.toString();
+      selectedList = getInquiryStageText(stage);
+      isStatusFilterActive = true;
+    });
   }
 
   final TextEditingController nextFollowupcontroller = TextEditingController();
@@ -233,6 +202,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   String? selectedTime;
 
   Map<String, dynamic> appliedFilters = {};
+
   void _updateSearchResults(List<Inquiry> results) {
     setState(() {
       filteredLeads = results;
@@ -240,9 +210,11 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   }
 
   void resetFilters() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    final inquiryProvider = Provider.of<UserProvider>(context,
+        listen:
+        false); // Access the provider here, Ensure you're using listen: false here
     setState(() {
-      filteredLeads = inquiryProvider.inquiries;
+      filteredLeads = List.from(inquiryProvider.inquiries);
       appliedFilters.clear();
     });
   }
@@ -253,10 +225,20 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     setState(() {
       appliedFilters = filters;
 
-      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty) ? filters['Id'] : null;
-      filteredName = (filters['Name'] != null && filters['Name'].toString().isNotEmpty) ? filters['Name'] : null;
-      filteredPhone = (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty) ? filters['Mobile'] : null;
-      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty ? List.from(filters['Status']) : [];
+      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty)
+          ? filters['Id']
+          : null;
+      filteredName =
+      (filters['Name'] != null && filters['Name'].toString().isNotEmpty)
+          ? filters['Name']
+          : null;
+      filteredPhone =
+      (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty)
+          ? filters['Mobile']
+          : null;
+      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty
+          ? List.from(filters['Status'])
+          : [];
     });
   }
 
@@ -292,6 +274,16 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               )),
           backgroundColor: Colors.deepPurple.shade300,
           actions: [
+      CircleAvatar(
+        backgroundColor: Colors.white,
+        child: IconButton(
+        icon: Icon(Icons.search),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SearchPage()),
+            );},),
+      ),
             SizedBox(
               width: 10,
             ),
@@ -351,7 +343,8 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                             .map((action) => DropdownMenuItem(
                           value: action,
                           child: Text(action,
-                              style: TextStyle(fontFamily: "poppins_thin")),
+                              style:
+                              TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
                       ),
@@ -392,7 +385,8 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                             .map((employee) => DropdownMenuItem(
                           value: employee,
                           child: Text(employee,
-                              style: TextStyle(fontFamily: "poppins_thin")),
+                              style:
+                              TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
                       ),
@@ -418,77 +412,134 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               ),
             ),
           _buildMainButtonGroup(),
-    GestureDetector(
-    onTap: () async {
-    setState(() {
-    selectedList = "All";
-    selectedValue = "0";
-    selectedIndex = 0;
-    });
+          GestureDetector(
+            onTap: () async {
+              setState(() {
+                selectedList = "All";
+                selectedValue = "0";
+                selectedIndex = 0;
+              });
 
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    final paginatedInquiries = inquiryProvider.paginatedInquiries;
+              final inquiryProvider = Provider.of<UserProvider>(context,
+                  listen: false); // Access the provider here
 
-    List<Categorymodel> filteredOptions = [
-    Categorymodel("All", paginatedInquiries?.totalRecords ?? 0),
-    ];
+              final paginatedInquiries = inquiryProvider.paginatedInquiries;
 
-    if (selectedMainFilter == "Live") {
-    filteredOptions.addAll([
-    Categorymodel("Fresh", int.tryParse(paginatedInquiries?.liveFresh ?? "0") ?? 0),
-    Categorymodel("Contacted", int.tryParse(paginatedInquiries?.liveContacted ?? "0") ?? 0),
-    Categorymodel("Trial", int.tryParse(paginatedInquiries?.liveVisited ?? "0") ?? 0),
-    Categorymodel("Negotiation", int.tryParse(paginatedInquiries?.liveNegotiation ?? "0") ?? 0),
-    Categorymodel("Feedback", int.tryParse(paginatedInquiries?.liveFeedback ?? "0") ?? 0),
-    Categorymodel("Reappointment", int.tryParse(paginatedInquiries?.liveReAppointment ?? "0") ?? 0),
-    Categorymodel("Re-trial", int.tryParse(paginatedInquiries?.liveReVisited ?? "0") ?? 0),
-    Categorymodel("Converted", int.tryParse(paginatedInquiries?.liveConverted ?? "0") ?? 0),
-    ]);
-    } else if (selectedMainFilter == "Dismiss") {
-    filteredOptions.addAll([
-    Categorymodel("Fresh", int.tryParse(paginatedInquiries?.dismissFresh ?? "0") ?? 0),
-    Categorymodel("Contacted", int.tryParse(paginatedInquiries?.dismissContacted ?? "0") ?? 0),
-    Categorymodel("Appointment", int.tryParse(paginatedInquiries?.dismissAppointment ?? "0") ?? 0),
-    Categorymodel("Trial", int.tryParse(paginatedInquiries?.dismissVisited ?? "0") ?? 0),
-    Categorymodel("Negotiation", int.tryParse(paginatedInquiries?.dismissNegotiation ?? "0") ?? 0),
-    Categorymodel("Feedback", int.tryParse(paginatedInquiries?.dismissFeedback ?? "0") ?? 0),
-    Categorymodel("Reappointment", int.tryParse(paginatedInquiries?.dismissReAppointment ?? "0") ?? 0),
-    Categorymodel("Re-trial", int.tryParse(paginatedInquiries?.dismissReVisited ?? "0") ?? 0),
-    Categorymodel("Converted", int.tryParse(paginatedInquiries?.dismissConverted ?? "0") ?? 0),
-    ]);
-    } else if (selectedMainFilter == "Dismissed Request") {
-    // Assuming you have corresponding fields in PaginatedInquiries for these
-    filteredOptions.addAll([
-    Categorymodel("Fresh", int.tryParse(paginatedInquiries?.dismissRequestFresh ?? "0") ?? 0),
-    Categorymodel("Contacted", int.tryParse(paginatedInquiries?.dismissRequestContacted ?? "0") ?? 0),
-    Categorymodel("Appointment", int.tryParse(paginatedInquiries?.dismissRequestAppointment ?? "0") ?? 0),
-    Categorymodel("Trial", int.tryParse(paginatedInquiries?.dismissRequestVisited ?? "0") ?? 0),
-    // Add other relevant fields here based on your model
-    ]);
-    } else if (selectedMainFilter == "Conversion Request") {
-    filteredOptions.addAll([
-    Categorymodel("Trial", int.tryParse(paginatedInquiries?.conversionRequestVisited ?? "0") ?? 0),
-    Categorymodel("Reappointment", int.tryParse(paginatedInquiries?.conversionRequestReAppointment ?? "0") ?? 0),
-    ]);
-    } else if (selectedMainFilter == "Due Appo") {
-    filteredOptions.addAll([
-    Categorymodel("Appointment", int.tryParse(paginatedInquiries?.dueAppoAppointment ?? "0") ?? 0),
-    ]);
-    }
+              List<Categorymodel> filteredOptions = [
+                Categorymodel("All", paginatedInquiries?.totalRecords ?? 0),
+              ];
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ListSelectionscreen(
-          initialSelectedIndex: 0,
-          optionList: filteredOptions,
-        ),
-      ),
-    );
-    },
+              // Access stageCounts directly from the provider
+              Map<String, int> stageCounts = inquiryProvider.stageCounts;
 
-    child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
+              if (selectedMainFilter == "Live") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              } else if (selectedMainFilter == "Dismiss") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              } else if (selectedMainFilter == "Dismissed Request") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              } else if (selectedMainFilter == "Conversion Request") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              } else if (selectedMainFilter == "Due Appo") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              } else if (selectedMainFilter == "CNR") {
+                filteredOptions.addAll([
+                  Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+                  Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+                  Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
+                  Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
+                  Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
+                  Categorymodel("Re-trial", stageCounts["Re-Visited"] ?? 0),
+                  Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+                ]);
+              }
+
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ListSelectionscreen(
+                    initialSelectedIndex: 0,
+                    optionList: filteredOptions,
+                  ),
+                ),
+              );
+              if (result != null) {
+                final selectedCategory =
+                result["selectedCategory"] as Categorymodel;
+                if (selectedCategory.title != "All") {
+                  final stage =
+                  getInquiryStageFromCategory(selectedCategory.title);
+                  if (stage != null) {
+                    await filterLeadsByStage(stage);
+                  }
+                } else {
+                  setState(() {
+                    currentStage = null;
+                    filteredLeads = inquiryProvider.inquiries
+                        .where((inquiry) =>
+                    inquiry.InqStatus == currentStatus.toString())
+                        .toList();
+                    selectedValue = filteredLeads.length.toString();
+                    selectedList = "All";
+                  });
+                }
+              }
+            },
+            child: Padding(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
               child: Container(
                 height: 60,
                 padding: EdgeInsets.symmetric(horizontal: 26.0, vertical: 8.0),
@@ -515,7 +566,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               ),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(children: [
@@ -525,23 +575,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   children: [
                     if (filteredId != null && filteredId!.isNotEmpty)
                       FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18)),
                         label: Text('ID: $filteredId'),
                         onDeleted: () {
                           setState(() {
                             filteredId = null;
                             appliedFilters.remove('Id');
-                            if (selectedMainFilter == "Live") {
-                              filterLiveLeads();
-                            } else if (selectedMainFilter == "Dismiss") {
-                              filterDismissedLeads();
-                            } else if (selectedMainFilter == "Dismissed Request") {
-                              filterDismissedRequestLeads();
-                            } else if (selectedMainFilter == "Conversion Request") {
-                              filterConversionRequestLeads();
-                            } else {
-                              filterAllLeads();
-                            }
+                            loadAllInquiries(); // Reload all inquiries
                           });
                         },
                         onSelected: (bool value) {},
@@ -551,23 +592,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     if (filteredName != null && filteredName!.isNotEmpty)
                       FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18)),
                         label: Text('Name: $filteredName'),
                         onDeleted: () {
                           setState(() {
                             filteredName = null;
                             appliedFilters.remove('Name');
-                            if (selectedMainFilter == "Live") {
-                              filterLiveLeads();
-                            } else if (selectedMainFilter == "Dismiss") {
-                              filterDismissedLeads();
-                            } else if (selectedMainFilter == "Dismissed Request") {
-                              filterDismissedRequestLeads();
-                            } else if (selectedMainFilter == "Conversion Request") {
-                              filterConversionRequestLeads();
-                            } else {
-                              filterAllLeads();
-                            }
+                            loadAllInquiries(); // Reload all inquiries
                           });
                         },
                         onSelected: (bool value) {},
@@ -577,23 +609,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     if (filteredPhone != null && filteredPhone!.isNotEmpty)
                       FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18)),
                         label: Text('Phone: $filteredPhone'),
                         onDeleted: () {
                           setState(() {
                             filteredPhone = null;
                             appliedFilters.remove('Mobile');
-                            if (selectedMainFilter == "Live") {
-                              filterLiveLeads();
-                            } else if (selectedMainFilter == "Dismiss") {
-                              filterDismissedLeads();
-                            } else if (selectedMainFilter == "Dismissed Request") {
-                              filterDismissedRequestLeads();
-                            } else if (selectedMainFilter == "Conversion Request") {
-                              filterConversionRequestLeads();
-                            } else {
-                              filterAllLeads();
-                            }
+                            loadAllInquiries();
                           });
                         },
                         onSelected: (bool value) {},
@@ -603,23 +626,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     if (filteredStatus.isNotEmpty)
                       FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18)),
                         label: Text('Status: ${filteredStatus.join(', ')}'),
                         onDeleted: () {
                           setState(() {
                             filteredStatus.clear();
                             appliedFilters.remove('Status');
-                            if (selectedMainFilter == "Live") {
-                              filterLiveLeads();
-                            } else if (selectedMainFilter == "Dismiss") {
-                              filterDismissedLeads();
-                            } else if (selectedMainFilter == "Dismissed Request") {
-                              filterDismissedRequestLeads();
-                            } else if (selectedMainFilter == "Conversion Request") {
-                              filterConversionRequestLeads();
-                            } else {
-                              filterAllLeads();
-                            }
+                            loadAllInquiries(); // Reload all inquiries
                           });
                         },
                         onSelected: (bool value) {},
@@ -630,13 +644,18 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   ],
                 ),
               ),
-              if (filteredId != null || filteredName != null || filteredPhone != null || filteredStatus.isNotEmpty)
+              if (filteredId != null ||
+                  filteredName != null ||
+                  filteredPhone != null ||
+                  filteredStatus.isNotEmpty)
                 ElevatedButton(
                   onPressed: resetFilters,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple.shade300,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22)),
                   ),
                   child: const Text('Clear All',
                       style: TextStyle(fontFamily: 'poppins_thin', color: Colors.white)),
@@ -646,7 +665,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                await loadAllInquiries();  // Reload ALL inquiries on refresh
+                await loadAllInquiries(); // Reload ALL inquiries on refresh
               },
               child: Builder(
                 builder: (context) {
@@ -658,8 +677,11 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Center(
-                          child: Lottie.asset('asset/Inquiry_module/no_result.json',
-                              fit: BoxFit.contain, width: 300, height: 300),
+                          child: Lottie.asset(
+                              'asset/Inquiry_module/no_result.json',
+                              fit: BoxFit.contain,
+                              width: 300,
+                              height: 300),
                         ),
                         Center(
                           child: Text(
@@ -676,7 +698,9 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     return ListView.builder(
                       controller: _scrollController,
                       itemCount: filteredLeads.length +
-                          (inquiryProvider.hasMore ? 1 : 0),
+                          (inquiryProvider.hasMore || inquiryProvider.isLoading
+                              ? 1
+                              : 0),
                       itemBuilder: (BuildContext context, int index) {
                         if (index < filteredLeads.length) {
                           Inquiry inquiry = filteredLeads[index];
@@ -723,9 +747,13 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                             },
                           );
                         } else {
-                          return Center(
+                          return inquiryProvider.isLoading
+                              ? Center(
                               child: Lottie.asset('asset/loader.json',
-                                  fit: BoxFit.contain, width: 100, height: 100));
+                                  fit: BoxFit.contain,
+                                  width: 100,
+                                  height: 100))
+                              : SizedBox();
                         }
                       },
                     );
@@ -792,27 +820,27 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
           side: const BorderSide(color: Color(0xff6A0DAD)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         ),
-        onPressed: () {
+        onPressed: () async {
           setState(() {
             selectedMainFilter = text;
             selectedList = "All";
             selectedValue = "0";
             selectedIndex = 0;
-
-            if (text == "Live") {
-              filterLiveLeads();
-            } else if (text == "Dismiss") {
-              filterDismissedLeads();
-            } else if (text == "Dismissed Request") {
-              filterDismissedRequestLeads();
-            } else if (text == "Conversion Request") {
-              filterConversionRequestLeads();
-            } else if (text == "Due Appo") {
-              filterDueAppoLeads();
-            } else if (text == "CNR") {
-              filterCNRLeads();
-            }
           });
+
+          if (text == "Live") {
+            await filterLeadsByStatus(1);
+          } else if (text == "Dismiss") {
+            await filterLeadsByStatus(2);
+          } else if (text == "Dismissed Request") {
+            await filterLeadsByStatus(3);
+          } else if (text == "Conversion Request") {
+            await filterLeadsByStatus(4);
+          } else if (text == "Due Appo") {
+            await filterLeadsByStatus(5);
+          } else if (text == "CNR") {
+            await filterLeadsByStatus(6);
+          }
         },
         child: Text(
           text,
