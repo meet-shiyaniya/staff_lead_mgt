@@ -65,14 +65,14 @@ class ApiService{
     try{
       final response=await http.post(
         url,headers: {
-          'Content-Type':'application/json',
+        'Content-Type':'application/json',
       },
-          body: jsonEncode({
-            'username':username,
-            'password':password,
-            'product_id':'1',
-            'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
-          }),
+        body: jsonEncode({
+          'username':username,
+          'password':password,
+          'product_id':'1',
+          'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
+        }),
       );
       if(response.statusCode==200){
         final data=jsonDecode(response.body);
@@ -156,13 +156,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': "application/json"
+            'Content-Type': "application/json"
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -202,13 +202,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': "application/json"
+            'Content-Type': "application/json"
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -233,7 +233,7 @@ class ApiService{
   }
 
   Future<Realtoleavetypesmodel?> fetchLeaveTypesData () async {
-    
+
     final url = Uri.parse("$baseUrl/Leave_add_list");
 
     try {
@@ -248,13 +248,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -279,8 +279,10 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit,  {required int page}) async {
-    final url = Uri.parse("$childUrl?limit=$limit&page=$page");
+  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page}) async {
+    
+    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page");
+    print("API URL: $url"); //
 
 
     try {
@@ -297,7 +299,7 @@ class ApiService{
             'Content-Type': "application/json",
 
           },
-        body: jsonEncode({'token': token})
+          body: jsonEncode({'token': token})
 
 
 
@@ -305,6 +307,7 @@ class ApiService{
       );
 
       if (response.statusCode == 200) {
+        print("resoponse json${response.body}");
         print("Response Status Code: ${response.statusCode}");
         // Ensure response is valid JSON before parsing
         if (response.body.startsWith('{') || response.body.startsWith('[')) {
@@ -372,13 +375,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
 
-        },
-        body: jsonEncode(bodyData)
+          },
+          body: jsonEncode(bodyData)
 
       );
 
@@ -416,13 +419,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 

@@ -13,10 +13,8 @@ class CategoryModel {
 }
 
 class Categorymodel {
-  final String title;
-  final int leadCount;
+  String title;
+  int leads;
 
-  Categorymodel(this.title, this.leadCount);
-
-  int get leads => leadCount;
+  Categorymodel(this.title, this.leads);
 }

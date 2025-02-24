@@ -118,7 +118,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
         officeLongitude,
       );
 
-      if (distanceInMeters <= 100) {
+      if (distanceInMeters <= 1000) {
         isWithinOffice = true;
         break; // Stop checking once a valid location is found
       }
