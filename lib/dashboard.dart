@@ -1,19 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/all_inquiries_Screen.dart';
-import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/dismiss_request_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/followup_and_cnr_Screen.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:animate_do/animate_do.dart'; // For animation effects
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'Inquiry_Management/test.dart';
+import 'package:http/http.dart' as http;
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -23,6 +20,7 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
+
   double progressValue = 0.0;
   Timer? timer;
   int elapsedSeconds = 0;
@@ -31,6 +29,71 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   String entryTime = "";
   String exitTime = "";
   bool isDayEndedToday = false;
+
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  static const String baseUrl = 'https://admin.dev.ajasys.com/api';
+
+  Future<bool> _sendUpdatedAttendanceData () async {
+
+    String editBioStatus = "1";
+    String createdAtDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
+    String exitDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
+
+    final url = Uri.parse('$baseUrl/insert_attendance_newday');
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return false;
+
+      }
+
+      Map<String, String> bodyData = {
+
+        "token": token,
+        "edit_bio": editBioStatus,
+        "created_at": createdAtDateTime,
+        "exit_date_time": exitDateTime,
+
+      };
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode(bodyData)
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+        Fluttertoast.showToast(msg: "✅ Attendance marked: Updated");
+        // Fluttertoast.showToast(msg: data);
+        return true;
+
+      } else {
+
+        Fluttertoast.showToast(msg: "Failed to send attendance data!");
+        return false;
+
+      }
+
+    } catch (e) {
+
+      Fluttertoast.showToast(msg: "Something Went Wrong!");
+      return false;
+
+    }
+
+  }
 
   @override
   void initState() {
@@ -322,7 +385,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GestureDetector(
-                          onTap: isDayEndedToday ? startDay : (isDayStarted ? endDay : startDay),
+                          onTap: isDayEndedToday ? startDay : (isDayStarted ? _sendUpdatedAttendanceData : startDay),
                           child: Container(
                             height: 30,
                             width: 120,

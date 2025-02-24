@@ -17,18 +17,11 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String baseUrl = 'https://admin.dev.ajasys.com/api';
 
-  Future<bool> _sendMemberAttendanceData ({
+  Future<bool> _sendMemberAttendanceData () async {
 
-    required int editBioStatus,
-
-  }) async {
-
+    String editBioStatus = "0";
     String createdAtDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
-    String totalHours = "0";
-    String punchDate = DateFormat("yyyy-  MM-dd").format(DateTime.now()).toString();
     String entryDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
-    String exitDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
-    String punchTimeArray = DateFormat("HH:mm:ss").format(DateTime.now());
 
     final url = Uri.parse('$baseUrl/insert_attendance_newday');
 
@@ -45,13 +38,9 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
       Map<String, String> bodyData = {
 
         "token": token,
-        "edit_bio": editBioStatus.toString(),
+        "edit_bio": editBioStatus,
         "created_at": createdAtDateTime,
-        "total_hours": totalHours,
-        "punch_date": punchDate,
-        "punch_time_array": punchTimeArray,
         "entry_date_time": entryDateTime,
-        "exit_date_time": exitDateTime
 
       };
 
@@ -150,7 +139,7 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
 
                     onTap: () {
 
-                      _sendMemberAttendanceData(editBioStatus: 0);
+                      _sendMemberAttendanceData();
 
                     },
 
@@ -216,4 +205,5 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
     );
 
   }
+
 }
