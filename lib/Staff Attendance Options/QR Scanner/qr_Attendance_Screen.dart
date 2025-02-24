@@ -6,8 +6,8 @@ import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog.d
 import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog_Worn_Qr.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:http/http.dart' as http;
-import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class qrAttendanceScreen extends StatefulWidget {
   const qrAttendanceScreen({Key? key}) : super(key: key);
@@ -50,7 +50,7 @@ class _qrAttendanceScreenState extends State<qrAttendanceScreen> {
       setState(() => isScanning = false);
 
       controller.pauseCamera();
-      Fluttertoast.showToast(msg: scanData.code!);
+      // Fluttertoast.showToast(msg: scanData.code!);
 
       int status = await _sendMemberAttendance(qrAttendance: scanData.code!);
 
