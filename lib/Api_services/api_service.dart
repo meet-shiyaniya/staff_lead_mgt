@@ -279,9 +279,9 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page}) async {
+  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page, required String search}) async {
     
-    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page");
+    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page&search=$search");
     print("API URL: $url"); //
 
 

@@ -51,11 +51,12 @@ class UserProvider with ChangeNotifier {
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
+    String search = '', // ✅ Add search param
   }) async {
     if (!isLoadMore) {
       _currentPage = 1;
       _inquiries.clear();
-      _stageCounts.clear(); // Clear stage counts on initial load
+      _stageCounts.clear();
     }
     if (isLoadMore && !_hasMore) return;
 
@@ -63,7 +64,12 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.fetchInquiries(_limit, status, page: _currentPage);
+      final response = await _apiService.fetchInquiries(
+        _limit,
+        status,
+        search: search, // ✅ Pass search to API
+        page: _currentPage,
+      );
 
       if (response != null) {
         paginatedInquiries = response;
@@ -77,34 +83,32 @@ class UserProvider with ChangeNotifier {
         _hasMore = _currentPage < response.totalPages!;
         if (_hasMore) _currentPage++;
 
-        // Update stage counts directly from PaginatedInquiries
+        // Update stage counts
         _stageCounts = {
           "Fresh": getStageCount(status, "Fresh", response),
           "Contacted": getStageCount(status, "Contacted", response),
           "Appointment": getStageCount(status, "Appointment", response),
-          "Trial": getStageCount(status, "Visited", response), // Map "Visited" to "Trial"
+          "Trial": getStageCount(status, "Visited", response),
           "Negotiation": getStageCount(status, "Negotiation", response),
           "Feedback": getStageCount(status, "Feedback", response),
           "Re-Appointment": getStageCount(status, "Re-Appointment", response),
-          "Re-Visited": getStageCount(status, "Re-Visited", response), // Map "Re-Visited" to "Re-trial"
+          "Re-Visited": getStageCount(status, "Re-Visited", response),
           "Converted": getStageCount(status, "Converted", response),
         };
 
-        // Debug print to check _stageCounts
         print("Stage Counts: $_stageCounts");
       } else {
         _hasMore = false;
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error fetching inquiries: $e");
-      }
+      print("Error fetching inquiries: $e");
       _hasMore = false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
 
   int getStageCount(int status, String stage, PaginatedInquiries data) {
     switch (status) {
