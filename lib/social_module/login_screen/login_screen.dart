@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.primaryColor,
             textColor: Colors.white,
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => mannualAttendanceScreen()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
         } else {
           print("Login failed");
         }

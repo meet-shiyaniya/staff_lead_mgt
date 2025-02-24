@@ -1,9 +1,10 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/pending_Card.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 import '../../Inquiry Management Screens/lead_Detail_Screen.dart';
 import '../../Model/Api Model/allInquiryModel.dart';
@@ -14,104 +15,68 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  TextEditingController _searchController = TextEditingController();
-  ScrollController _scrollController = ScrollController();
-  bool isSearching = false;
-  List<Inquiry> allLeads = [
-    Inquiry(
-      id: '1',
-      fullName: 'John Doe',
-      mobileno: '1234567890',
-      InqStage: 'Pending',
-      createdAt: '2024-02-01',
-      nxtfollowup: '2024-02-10',
-      InqType: 'Type A',
-      InqArea: 'Area 1',
-      PurposeBuy: 'Investment',
-      dayskip: '0',
-      hourskip: '0', remark: '', budget: '', InqStatus: '',
-    ),
-    Inquiry(
-      id: '2',
-      fullName: 'Jane Smith',
-      mobileno: '0987654321',
-      InqStage: 'Completed',
-      createdAt: '2024-01-15',
-      nxtfollowup: '2024-02-12',
-      InqType: 'Type B',
-      InqArea: 'Area 2',
-      PurposeBuy: 'Residential',
-      dayskip: '1',
-      hourskip: '2', remark: '', budget: '', InqStatus: '',
-    ),
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
-  List<Inquiry> filteredLeads = [];
-  bool isLoading = false;
+  bool isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    filteredLeads = allLeads;
+    _searchController.addListener(_onSearchChanged);
   }
 
-  void _filterLeads(String query) {
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+
     setState(() {
       isSearching = query.isNotEmpty;
-      if (query.isEmpty) {
-        filteredLeads = []; // Show nothing when search is empty
-      } else {
-        filteredLeads = allLeads.where((lead) =>
-        lead.fullName.toLowerCase().contains(query.toLowerCase()) ||
-            lead.mobileno.toLowerCase().contains(query.toLowerCase()) ||
-            lead.id.toString().contains(query)
-        ).toList();
-      }
     });
+
+    inquiryProvider.fetchInquiries(search: query);
   }
-
-
 
   @override
   Widget build(BuildContext context) {
+    final inquiryProvider = Provider.of<UserProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColor.Buttoncolor,
         title: TextField(
           controller: _searchController,
           cursorColor: Colors.white,
-          style: TextStyle(color: Colors.white,fontFamily: "poppins_thin"),
+          style: TextStyle(color: Colors.white, fontFamily: "poppins_thin"),
           decoration: InputDecoration(
             hintText: 'Search leads...',
-            hintStyle: TextStyle(color: Colors.white,fontFamily: "poppins_thin"),
+            hintStyle: TextStyle(color: Colors.white, fontFamily: "poppins_thin"),
             border: InputBorder.none,
-
           ),
-          onChanged: _filterLeads,
           autofocus: true,
         ),
-        leading: IconButton(onPressed: () {
-          Navigator.pop(context);
-        }, icon: Icon(CupertinoIcons.back,color: Colors.white,)),
-        iconTheme: IconThemeData(color: Colors.white),
-        // actionsIconTheme: IconThemeData(color: Colors.white),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(CupertinoIcons.back, color: Colors.white),
+        ),
       ),
       body: SafeArea(
         child: isSearching
-            ? filteredLeads.isEmpty
+            ? inquiryProvider.isLoading
             ? Center(
           child: Lottie.asset(
             'asset/loader.json',
-            fit: BoxFit.contain,
             width: 100,
             height: 100,
           ),
         )
+            : inquiryProvider.inquiries.isEmpty
+            ? _buildNoResultsView()
             : ListView.builder(
           controller: _scrollController,
-          itemCount: filteredLeads.length,
-          itemBuilder: (BuildContext context, int index) {
-            Inquiry inquiry = filteredLeads[index];
+          itemCount: inquiryProvider.inquiries.length,
+          itemBuilder: (context, index) {
+            Inquiry inquiry = inquiryProvider.inquiries[index];
             return GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -146,19 +111,56 @@ class _SearchPageState extends State<SearchPage> {
               ),
             );
           },
-        ): Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Center(
-                  child: Lottie.asset(
-                  'asset/Inquiry_module/search.json', // Use a general search animation
-            width: 350,
-            height: 350,
-                  ),
-                ),
-            Text("Search Anything you want",style: TextStyle(fontFamily: "poppins_thin",color: AppColor.MainColor,fontSize: 20),)
-          ],
-        ),
+        )
+            : _buildSearchPromptView(),
+      ),
+    );
+  }
+
+  // Widget to show when no results found
+  Widget _buildNoResultsView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'asset/Inquiry_module/search.json',
+            width: 250,
+            height: 250,
+          ),
+          Text(
+            "No Results Found",
+            style: TextStyle(
+              fontFamily: "poppins_thin",
+              color: AppColor.MainColor,
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget to show when no search input yet
+  Widget _buildSearchPromptView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'asset/Inquiry_module/search.json',
+            width: 300,
+            height: 300,
+          ),
+          Text(
+            "Search Anything You Want",
+            style: TextStyle(
+              fontFamily: "poppins_thin",
+              color: AppColor.MainColor,
+              fontSize: 20,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -168,5 +170,4 @@ class _SearchPageState extends State<SearchPage> {
     _searchController.dispose();
     super.dispose();
   }
-
 }

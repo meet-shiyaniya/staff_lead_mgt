@@ -12,7 +12,7 @@ import 'bottom_navigation.dart';
 void main() {
 
   runApp(
-
+    //
     // ChangeNotifierProvider(
     //     create: (_)=>UserProvider(),
     //   child:MaterialApp(
@@ -28,7 +28,7 @@ void main() {
     //
     // )
 MaterialApp(
-  home: AddBookingScreen(),
+  home: BookingScreen(),
 )
   );
 
