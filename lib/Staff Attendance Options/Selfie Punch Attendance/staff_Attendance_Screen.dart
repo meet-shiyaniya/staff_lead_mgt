@@ -14,8 +14,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../Api_services/api_service.dart';
 
-import 'Api_services/api_service.dart';
 
 class StaffAttendanceScreen extends StatefulWidget {
   @override
@@ -311,16 +311,6 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
             ),
 
             SizedBox(height: 30),
-
-            // ElevatedButton(
-            //   onPressed: _pickSelfie,
-            //   child: Text("Take Selfie", style: TextStyle(fontSize: 14, fontFamily: "poppins_thin", color: Colors.white)),
-            //   style: ElevatedButton.styleFrom(
-            //     backgroundColor: appColor.primaryColor,
-            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 40),
-            //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            //   ),
-            // ),
 
             SizedBox(height: 20),
 
