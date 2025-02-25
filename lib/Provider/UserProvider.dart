@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
@@ -48,10 +49,16 @@ class UserProvider with ChangeNotifier {
 
   Map<String, int> _stageCounts = {};
   Map<String, int> get stageCounts => _stageCounts;
+
+  AddLeadDataModel? _dropdownData;
+  bool _isLoadingDropdown = false;
+
+  AddLeadDataModel? get dropdownData => _dropdownData;
+  bool get isLoadingDropdown => _isLoadingDropdown;
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
-    String search = '', // ✅ Add search param
+    String search = '',
   }) async {
     if (!isLoadMore) {
       _currentPage = 1;
@@ -67,7 +74,7 @@ class UserProvider with ChangeNotifier {
       final response = await _apiService.fetchInquiries(
         _limit,
         status,
-        search: search, // ✅ Pass search to API
+        search: search,
         page: _currentPage,
       );
 
@@ -262,6 +269,23 @@ class UserProvider with ChangeNotifier {
     _hasMore = true;
   }
 
+
+  Future<void> fetchAddLeadData() async {
+    _isLoadingDropdown = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.fetchAddLeadData();
+      if (response != null) {
+        _dropdownData = response;
+      }
+    } catch (e) {
+      print("Error fetching dropdown options in provider: $e");
+    } finally {
+      _isLoadingDropdown = false;
+      notifyListeners();
+    }
+  }
   // Map<String, int> _stageCounts = {};
   // Map<String, int> get stageCounts => _stageCounts;
 
@@ -279,6 +303,43 @@ class UserProvider with ChangeNotifier {
       return false;
     }
 
+  }
+  Future<void> checkLoginStatus() async {
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token != null) {
+
+        _isLoggedIn = true;
+
+        print(token);
+
+        await fetchOfficeLocationData();
+
+        fetchProfileData();
+
+        fetchInquiries();
+
+        // ✅ Run first (waits for completion)
+
+        // Run remaining API calls in the background (parallel)
+        Future.wait([
+
+        ]);
+
+      } else {
+
+        _isLoggedIn = false;
+
+      }
+      notifyListeners();
+    } catch (e) {
+      _isLoggedIn = false;
+      notifyListeners();
+
+    }
   }
 
   Future<void> fetchProfileData () async {

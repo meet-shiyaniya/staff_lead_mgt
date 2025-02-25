@@ -81,75 +81,89 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
 
   }
 
+  // Future<void> checkAttendance(Position staffPosition, List<Data>? officeLocations) async {
+  //
+  //   final prefs = await SharedPreferences.getInstance();
+  //   String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+  //   String? lastEntryDate = prefs.getString('entryDate');
+  //
+  //   if (lastEntryDate == todayDate) {
+  //     Fluttertoast.showToast(msg: "Attendance already marked for today!");
+  //     return;
+  //   }
+  //
+  //   if (recognitionPercentage < 100) {
+  //     setState(() {
+  //       _status = "Attendance marked: Absent ❌";
+  //     });
+  //     Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
+  //     return;
+  //   }
+  //
+  //   if (officeLocations == null || officeLocations.isEmpty) {
+  //     Fluttertoast.showToast(msg: "No office locations data found!");
+  //     return;
+  //   }
+  //
+  //   bool isWithinOffice = false;
+  //
+  //   for (var office in officeLocations) {
+  //     double officeLatitude = double.tryParse(office.latitude ?? '') ?? 0.0;
+  //     double officeLongitude = double.tryParse(office.logitude ?? '') ?? 0.0;
+  //
+  //     double distanceInMeters = Geolocator.distanceBetween(
+  //       staffPosition.latitude,
+  //       staffPosition.longitude,
+  //       officeLatitude,
+  //       officeLongitude,
+  //     );
+  //
+  //     if (distanceInMeters <= 1000) {
+  //       isWithinOffice = true;
+  //       break; // Stop checking once a valid location is found
+  //     }
+  //   }
+  //
+  //   if (isWithinOffice) {
+  //     setState(() {
+  //       _status = "Attendance marked: Present ✅";
+  //     });
+  //     Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
+  //
+  //     // Store Attendance Data
+  //     await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
+  //     await prefs.setBool('attendanceMarked', true);
+  //     await prefs.setString('entryDate', todayDate);
+  //
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
+  //     );
+  //
+  //   } else {
+  //     setState(() {
+  //       _status = "Your current location doesn't match as office location!: Absent ❌";
+  //     });
+  //     print(_status);
+  //     Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
+  //     await showAbsentAnimation(); // Show animation
+  //   }
+  // }
   Future<void> checkAttendance(Position staffPosition, List<Data>? officeLocations) async {
-
     final prefs = await SharedPreferences.getInstance();
     String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    String? lastEntryDate = prefs.getString('entryDate');
 
-    if (lastEntryDate == todayDate) {
-      Fluttertoast.showToast(msg: "Attendance already marked for today!");
-      return;
-    }
+    // Directly store attendance and navigate without checking conditions
+    await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
+    await prefs.setBool('attendanceMarked', true);
+    await prefs.setString('entryDate', todayDate);
 
-    if (recognitionPercentage < 100) {
-      setState(() {
-        _status = "Attendance marked: Absent ❌";
-      });
-      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
-      return;
-    }
-
-    if (officeLocations == null || officeLocations.isEmpty) {
-      Fluttertoast.showToast(msg: "No office locations data found!");
-      return;
-    }
-
-    bool isWithinOffice = false;
-
-    for (var office in officeLocations) {
-      double officeLatitude = double.tryParse(office.latitude ?? '') ?? 0.0;
-      double officeLongitude = double.tryParse(office.logitude ?? '') ?? 0.0;
-
-      double distanceInMeters = Geolocator.distanceBetween(
-        staffPosition.latitude,
-        staffPosition.longitude,
-        officeLatitude,
-        officeLongitude,
-      );
-
-      if (distanceInMeters <= 1000) {
-        isWithinOffice = true;
-        break; // Stop checking once a valid location is found
-      }
-    }
-
-    if (isWithinOffice) {
-      setState(() {
-        _status = "Attendance marked: Present ✅";
-      });
-      Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
-
-      // Store Attendance Data
-      await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
-      await prefs.setBool('attendanceMarked', true);
-      await prefs.setString('entryDate', todayDate);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
-      );
-
-    } else {
-      setState(() {
-        _status = "Your current location doesn't match as office location!: Absent ❌";
-      });
-      print(_status);
-      Fluttertoast.showToast(msg: "❌ Attendance marked: Absent");
-      await showAbsentAnimation(); // Show animation
-    }
+    // Navigate directly to the BottomNavScreen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => BottomNavScreen(showSuccessAnimation: true)),
+    );
   }
-
   Future<bool> _detectFace(File imageFile) async {
     final InputImage inputImage = InputImage.fromFile(imageFile);
     final FaceDetector faceDetector = FaceDetector(

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
@@ -402,6 +403,51 @@ class ApiService{
     }
 
   }
+
+
+  Future<AddLeadDataModel?> fetchAddLeadData() async {
+    final url = Uri.parse("$baseUrl/InquiryDetails");
+    print("Full API URL for dropdown options: $url");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+
+      if (token == null || token.isEmpty) {
+        print("Error: Token is null or empty");
+        return null;
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        return AddLeadDataModel.fromJson(jsonData);
+      } else if (response.statusCode == 401) {
+        print("Unauthorized: Invalid token");
+        return null;
+      } else if (response.statusCode == 500) {
+        print("Server Error: ${response.body}");
+        return null;
+      } else {
+        print("Error fetching dropdown options: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("API error fetching dropdown options: $e");
+      return null;
+    }
+  }
+
 
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 

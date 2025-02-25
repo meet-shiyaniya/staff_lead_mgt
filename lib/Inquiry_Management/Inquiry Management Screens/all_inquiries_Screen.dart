@@ -45,33 +45,34 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   bool isStatusFilterActive = false; // Flag to indicate if a status filter is active
   String? currentStage;
 
+  int currentStatus = 1; // Default to 1 (Live) instead of 0
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadAllInquiries();
+    // Load Live data immediately with status 1
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await loadAllInquiries();
     });
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
   }
 
-  int currentStatus = 0;
-
   Future<void> loadAllInquiries() async {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    await inquiryProvider.fetchInquiries(status: currentStatus);
+    await inquiryProvider.fetchInquiries(status: currentStatus); // Use currentStatus (default 1 for Live)
     setState(() {
       filteredLeads = _applyStageFilter(inquiryProvider.inquiries);
       selectedValue = filteredLeads.length.toString();
       isStatusFilterActive = currentStatus != 0 || currentStage != null;
+      selectedMainFilter = "Live"; // Ensure the UI reflects "Live" as selected
     });
   }
 
   void _onScroll() {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent -
-            300 && // Reduced threshold
+        _scrollController.position.maxScrollExtent - 300 && // Reduced threshold
         !inquiryProvider.isLoading &&
         inquiryProvider.hasMore) {
       inquiryProvider
@@ -128,6 +129,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       selectedValue = filteredLeads.length.toString();
       selectedList = "All";
       isStatusFilterActive = true;
+      selectedMainFilter = status == 1 ? "Live" :
+      status == 2 ? "Dismiss" :
+      status == 3 ? "Dismissed Request" :
+      status == 4 ? "Conversion Request" :
+      status == 5 ? "Due Appo" :
+      "CNR"; // Update selectedMainFilter based on status
     });
   }
 
@@ -166,15 +173,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   }
 
   void toggleSelection(int index) {
-    final inquiryProvider = Provider.of<UserProvider>(context,
-        listen:
-        false); // Get the provider here, Ensure you're using listen: false here
-    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length,
-            (index) => false); // Reset all cards to false
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length, (index) => false); // Reset all cards to false
     selectedCards[index] = !selectedCards[index]; // Toggle only the selected card
     anySelected = selectedCards.contains(true);
     print("anySelected : $anySelected");
-    setState(() {}); // Update the UI
+    setState(() {});
   }
 
   Future<void> filterLeadsByStage(String stage) async {
@@ -210,9 +214,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   }
 
   void resetFilters() {
-    final inquiryProvider = Provider.of<UserProvider>(context,
-        listen:
-        false); // Access the provider here, Ensure you're using listen: false here
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
       filteredLeads = List.from(inquiryProvider.inquiries);
       appliedFilters.clear();
@@ -274,16 +276,18 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               )),
           backgroundColor: Colors.deepPurple.shade300,
           actions: [
-      CircleAvatar(
-        backgroundColor: Colors.white,
-        child: IconButton(
-        icon: Icon(Icons.search),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => SearchPage()),
-            );},),
-      ),
+            CircleAvatar(
+              backgroundColor: Colors.white,
+              child: IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SearchPage()),
+                  );
+                },
+              ),
+            ),
             SizedBox(
               width: 10,
             ),
@@ -324,7 +328,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: true,
+                        isExpanded: false, // Prevent full width
                         hint: Text(
                           'Select Action',
                           style: TextStyle(
@@ -347,6 +351,37 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                               TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
+                        buttonStyleData: ButtonStyleData(
+                          height: 40,
+                          padding: const EdgeInsets.only(left: 14, right: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        iconStyleData: const IconStyleData(
+                          icon: Icon(Icons.arrow_drop_down),
+                          iconSize: 24,
+                        ),
+                        dropdownStyleData: DropdownStyleData(
+                          maxHeight: 200,
+                          padding: null,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                          ),
+                          elevation: 8,
+                          offset: const Offset(0, -4),
+                          scrollbarTheme: ScrollbarThemeData(
+                            radius: const Radius.circular(40),
+                            thickness: MaterialStateProperty.all<double>(6),
+                            thumbVisibility: MaterialStateProperty.all<bool>(true),
+                          ),
+                        ),
+                        menuItemStyleData: const MenuItemStyleData(
+                          height: 40,
+                          padding: EdgeInsets.only(left: 14, right: 14),
+                        ),
                       ),
                     ),
                   ),
@@ -366,7 +401,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: true,
+                        isExpanded: false, // Prevent full width
                         hint: Text(
                           'Select Employee',
                           style: TextStyle(
@@ -389,6 +424,37 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                               TextStyle(fontFamily: "poppins_thin")),
                         ))
                             .toList(),
+                        buttonStyleData: ButtonStyleData(
+                          height: 40,
+                          padding: const EdgeInsets.only(left: 14, right: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        iconStyleData: const IconStyleData(
+                          icon: Icon(Icons.arrow_drop_down),
+                          iconSize: 24,
+                        ),
+                        dropdownStyleData: DropdownStyleData(
+                          maxHeight: 200,
+                          padding: null,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                          ),
+                          elevation: 8,
+                          offset: const Offset(0, -4),
+                          scrollbarTheme: ScrollbarThemeData(
+                            radius: const Radius.circular(40),
+                            thickness: MaterialStateProperty.all<double>(6),
+                            thumbVisibility: MaterialStateProperty.all<bool>(true),
+                          ),
+                        ),
+                        menuItemStyleData: const MenuItemStyleData(
+                          height: 40,
+                          padding: EdgeInsets.only(left: 14, right: 14),
+                        ),
                       ),
                     ),
                   ),
@@ -421,7 +487,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               });
 
               final inquiryProvider = Provider.of<UserProvider>(context,
-                  listen: false); // Access the provider here
+                  listen: false);
 
               final paginatedInquiries = inquiryProvider.paginatedInquiries;
 
@@ -881,7 +947,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     }
   }
 }
-
 class ListSelectionscreen extends StatefulWidget {
   final int? initialSelectedIndex;
   final List<Categorymodel> optionList;
