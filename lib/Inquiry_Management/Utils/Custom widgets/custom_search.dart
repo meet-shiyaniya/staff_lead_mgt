@@ -4,7 +4,7 @@ import '../../Model/followup_Model.dart';
 // import 'package:inquiry_management_ui/Model/followup_Model.dart';
 
 class SearchBar1 extends StatefulWidget {
-  final List<LeadModel> items; // List of LeadModel items
+   List<LeadModel> items; // List of LeadModel items
   final Function(List<LeadModel>) onSearch; // Callback function for search results
 
   SearchBar1({required this.items, required this.onSearch});

@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:hr_app/Staff%20Attendance%20Options/Mannual%20Day%20Start/mannual_Attendance_Screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../Provider/UserProvider.dart';
-import '../../bottom_navigation.dart';
-import '../../dashboard.dart';
-import '../../face_onboarding.dart';
-import '../chatting_module/example.dart';
+import '../../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
 import '../colors/colors.dart';
-import '../registration_screen/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,12 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
-
-
-
-
-
-
 
   void _markAttendanceAndNavigate(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();

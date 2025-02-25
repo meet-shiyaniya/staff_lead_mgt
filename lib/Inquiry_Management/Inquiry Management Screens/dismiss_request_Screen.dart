@@ -1,6 +1,9 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import '../../Provider/UserProvider.dart';
+import '../Model/Api Model/allInquiryModel.dart';
 import '../Model/category_Model.dart';
 import '../Model/followup_Model.dart';
 import '../Utils/Custom widgets/custom_buttons.dart';
@@ -139,6 +142,15 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inquiryProvider = Provider.of<UserProvider>(context);
+    if (selectedCards.length != inquiryProvider.inquiries.length) {
+      selectedCards = List<bool>.generate(
+        inquiryProvider.inquiries.length,
+            (index) => false,
+      );
+
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Dismiss Request", style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
@@ -393,33 +405,46 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                 : ListView.builder(
               itemCount: filteredLeads.length,
               itemBuilder: (context, index) {
-                return GestureDetector(
-                  onLongPress: () {
-                    toggleSelection(index);
-                  },
-                  child: TestCard(
-                    id: filteredLeads[index].id,
-                    name: filteredLeads[index].name,
-                    username: filteredLeads[index].username,
-                    label: filteredLeads[index].label,
-                    followUpDate: filteredLeads[index].followUpDate,
-                    nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                    inquiryType: filteredLeads[index].inquiryType,
-                    phone: filteredLeads[index].phone,
-                    email: filteredLeads[index].email,
-                    source: filteredLeads[index].source,
-                    isSelected: selectedCards[index],
-                    onSelect: () {
-                      toggleSelection(index);
-                    },
-                    callList: ["Followup", "Dismissed", "Appointment", "Negotiation", "Feedback", "Cnr"],
-                    selectedcallFilter: selectedcallFilter,
-                    data: filteredLeads[index],
-                    isTiming: true,
-                    nextFollowupcontroller: nextFollowupcontroller,
-                  ),
-                );
-              },
+    if (index < filteredLeads.length) {
+      Inquiry inquiry = inquiryProvider.inquiries[index];
+      return GestureDetector(
+        onLongPress: () {
+          toggleSelection(index);
+        },
+        child: TestCard(
+          id: filteredLeads[index].id,
+          name: filteredLeads[index].name,
+          username: filteredLeads[index].username,
+          label: filteredLeads[index].label,
+          followUpDate: filteredLeads[index].followUpDate,
+          nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+          inquiryType: filteredLeads[index].inquiryType,
+          intArea: inquiry.InqArea,
+          purposeBuy: inquiry.PurposeBuy,
+          daySkip: inquiry.dayskip,
+          hourSkip: inquiry.hourskip,
+          // phone: filteredLeads[index].phone,
+          // email: filteredLeads[index].email,
+          source: filteredLeads[index].source,
+          isSelected: selectedCards[index],
+          onSelect: () {
+            toggleSelection(index);
+          },
+          callList: [
+            "Followup",
+            "Dismissed",
+            "Appointment",
+            "Negotiation",
+            "Feedback",
+            "Cnr"
+          ],
+          selectedcallFilter: selectedcallFilter,
+          data: inquiry,
+          isTiming: true,
+          nextFollowupcontroller: nextFollowupcontroller,
+        ),
+      );
+    }  },
             ),
           ),
         ],

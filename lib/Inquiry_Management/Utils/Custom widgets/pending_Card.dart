@@ -1,6 +1,9 @@
-import 'dart:ui';
+// import 'dart:ui';
+// import 'dart:ui_web';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/quotation_Screen.dart';
 // import 'package:inquiry_management_ui/Utils/Custom%20widgets/custom_screen.dart';
 // import 'package:inquiry_management_ui/Utils/Custom%20widgets/quotation_Screen.dart';
@@ -16,8 +19,12 @@ class TestCard extends StatelessWidget {
   final String followUpDate;
   final String nextFollowUpDate;
   final String inquiryType;
-  final String phone;
-  final String email;
+  final String intArea;
+  final String purposeBuy;
+  final String daySkip;
+  final String hourSkip;
+  // final String phone;
+  // final String email;
   final String source;
 
   final bool isSelected; // Track if card is selected
@@ -27,7 +34,7 @@ class TestCard extends StatelessWidget {
   final List<String> callList;
   final TextEditingController nextFollowupcontroller;
   final String? selectedcallFilter;
-  final LeadModel data; // change here
+  final Inquiry data; // change here
   final bool isTiming;
   // Assuming data is a dynamic object with properties like product, apxbuying, services, etc.
 
@@ -40,8 +47,12 @@ class TestCard extends StatelessWidget {
     required this.followUpDate,
     required this.nextFollowUpDate,
     required this.inquiryType,
-    required this.phone,
-    required this.email,
+    required this.intArea,
+    required this.purposeBuy,
+    required this.daySkip,
+    required this.hourSkip,
+    // required this.phone,
+    // required this.email,
     required this.source,
     this.isSelected = false,
     required this.onSelect,
@@ -64,7 +75,7 @@ class TestCard extends StatelessWidget {
 
             content: Container(
               height: 150,
-                child: Center(child: Text(data.description,style: TextStyle(fontFamily: "poppins_thin"),))),
+                child: Center(child: Text(data.remark,style: TextStyle(fontFamily: "poppins_thin"),))),
           );
 
         },);
@@ -117,9 +128,10 @@ class TestCard extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => LeadDetailScreen(
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => LeaddetailScreen(
                         selectedApx: "1-2 Days",
                         selectedPurpose: "budget",
                         selectedTime: "12:00 AM",
@@ -199,29 +211,29 @@ class TestCard extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 12),
-              Container(
-                height: 50,
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: Colors.grey.shade300,
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.phone, color: Colors.grey.shade600, size: 17),
-                    SizedBox(width: 4),
-                    Text("+91 $phone", style: TextStyle(fontFamily: "poppins_thin")),
-                    Spacer(),
-                    Icon(Icons.email, color: Colors.grey.shade600, size: 17),
-                    SizedBox(width: 4),
-                    Text(email, style: TextStyle(fontFamily: "poppins_thin")),
-                  ],
-                ),
-              ),
+              // SizedBox(height: 12),
+              // Container(
+              //   height: 50,
+              //   padding: EdgeInsets.all(10),
+              //   decoration: BoxDecoration(
+              //     borderRadius: BorderRadius.circular(18),
+              //     color: Colors.grey.shade200,
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Text("Int Area :",style: TextStyle( color: Colors.grey.shade600)),
+              //       SizedBox(width: 4),
+              //       Text("$intArea", style: TextStyle(fontFamily: "poppins_thin")),
+              //       Spacer(),
+              //       Text("Purpose of Buying :",style: TextStyle( color: Colors.grey.shade600)),
+              //       SizedBox(width: 4),
+              //       Text(purposeBuy, style: TextStyle(fontFamily: "poppins_thin")),
+              //     ],
+              //   ),
+              // ),
               SizedBox(height: 12),
               Text(
-                "Follow-up Date: $followUpDate",
+                "Created At: $followUpDate",
                 style: TextStyle(color: Colors.grey.shade600, fontFamily: "poppins_thin"),
               ),
               Text(
@@ -232,6 +244,13 @@ class TestCard extends StatelessWidget {
                 children: [
                   Text("Source: ", style: TextStyle(fontFamily: "poppins_thin")),
                   _buildSourceChip(source),
+                  SizedBox(width: 5,),
+                  Icon(Icons.calendar_month),
+                  Text(daySkip),
+                  SizedBox(width: 5,),
+                  Icon(CupertinoIcons.clock,size: 18,),
+                  Text(hourSkip),
+
                   Spacer(),
                   CircleAvatar(
                     backgroundColor: Colors.deepPurple.shade300,

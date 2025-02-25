@@ -3,14 +3,14 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
-import '../Inquiry_Management/Inquiry Management Screens/all_inquiries_Screen.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 
 class ApiService{
@@ -66,14 +66,14 @@ class ApiService{
     try{
       final response=await http.post(
         url,headers: {
-          'Content-Type':'application/json',
+        'Content-Type':'application/json',
       },
-          body: jsonEncode({
-            'username':username,
-            'password':password,
-            'product_id':'1',
-            'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
-          }),
+        body: jsonEncode({
+          'username':username,
+          'password':password,
+          'product_id':'1',
+          'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
+        }),
       );
       if(response.statusCode==200){
         final data=jsonDecode(response.body);
@@ -157,13 +157,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': "application/json"
+            'Content-Type': "application/json"
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -203,13 +203,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': "application/json"
+            'Content-Type': "application/json"
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -234,7 +234,7 @@ class ApiService{
   }
 
   Future<Realtoleavetypesmodel?> fetchLeaveTypesData () async {
-    
+
     final url = Uri.parse("$baseUrl/Leave_add_list");
 
     try {
@@ -249,13 +249,13 @@ class ApiService{
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
 
-        },
-        body: jsonEncode({'token': token})
+          },
+          body: jsonEncode({'token': token})
 
       );
 
@@ -280,8 +280,10 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit, {required int page}) async {
-    final url = Uri.parse("$childUrl?limit=$limit&page=$page");
+  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page, required String search}) async {
+    
+    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page&search=$search");
+    print("API URL: $url"); //
 
 
     try {
@@ -298,7 +300,7 @@ class ApiService{
             'Content-Type': "application/json",
 
           },
-        body: jsonEncode({'token': token})
+          body: jsonEncode({'token': token})
 
 
 
@@ -306,6 +308,7 @@ class ApiService{
       );
 
       if (response.statusCode == 200) {
+        print("resoponse json${response.body}");
         print("Response Status Code: ${response.statusCode}");
         // Ensure response is valid JSON before parsing
         if (response.body.startsWith('{') || response.body.startsWith('[')) {
@@ -338,6 +341,7 @@ class ApiService{
     required String to_date,
     required String leave_reason,
     required String leave_type,
+    required String leave_type_id,
 
   }) async {
 
@@ -365,26 +369,26 @@ class ApiService{
         "leave_from_date": from_date,
         "leave_to_date": to_date,
         "leave_reason": leave_reason,
-        "type_of_leave": leave_type
+        "type_of_leave": leave_type,
+        "type_of_leave_id": leave_type_id
 
       };
 
       final response = await http.post(
 
-        url,
-        headers: {
+          url,
+          headers: {
 
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
 
-        },
-        body: jsonEncode(bodyData)
+          },
+          body: jsonEncode(bodyData)
 
       );
 
       if (response.statusCode == 200) {
         print(response.body);
 
-        Fluttertoast.showToast(msg: "Leave Request Successfully Send");
         return true;
 
       } else {
@@ -401,5 +405,95 @@ class ApiService{
 
   }
 
+
+  Future<AddLeadDataModel?> fetchAddLeadData() async {
+    final url = Uri.parse("$baseUrl/InquiryDetails");
+    print("Full API URL for dropdown options: $url");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+
+      if (token == null || token.isEmpty) {
+        print("Error: Token is null or empty");
+        return null;
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        return AddLeadDataModel.fromJson(jsonData);
+      } else if (response.statusCode == 401) {
+        print("Unauthorized: Invalid token");
+        return null;
+      } else if (response.statusCode == 500) {
+        print("Server Error: ${response.body}");
+        return null;
+      } else {
+        print("Error fetching dropdown options: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("API error fetching dropdown options: $e");
+      return null;
+    }
+  }
+
+
+  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
+
+    final url = Uri.parse("$baseUrl/Attendance");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return Realtostaffattendancemodel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
 
 }
