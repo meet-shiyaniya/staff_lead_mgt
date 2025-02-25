@@ -103,11 +103,42 @@ class UserProvider with ChangeNotifier{
 
   }
 
+  Future<void> checkLoginStatus() async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token != null) {
+        _isLoggedIn = true;
+        print(token);
+
+        await fetchOfficeLocationData();
+        fetchProfileData();
+        fetchInquiries();
+
+
+        // ✅ Run first (waits for completion)
+
+        // Run remaining API calls in the background (parallel)
+        Future.wait([
+
+        ]);
+      } else {
+        _isLoggedIn = false;
+      }
+      notifyListeners();
+    } catch (e) {
+      _isLoggedIn = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchProfileData () async {
 
-    _profileData = await _apiService.fetchProfileData();
-
-    notifyListeners();
+    try {
+      _profileData = await _apiService.fetchProfileData();
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching profile data: $e');
+    }
 
   }
 

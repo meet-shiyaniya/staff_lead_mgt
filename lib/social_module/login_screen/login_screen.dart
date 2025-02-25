@@ -52,6 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final username = emailController.text.trim();
       final password = passwordController.text.trim();
 
+
+
       if (username.isEmpty || password.isEmpty) {
         Fluttertoast.showToast(
           msg: "Please enter both email and password❌",
@@ -68,6 +70,41 @@ class _LoginScreenState extends State<LoginScreen> {
       if (isSuccess) {
         String? token = await _secureStorage.read(key: 'token');
         if (token != null) {
+
+          final userProvider = Provider.of<UserProvider>(context, listen: false);
+          await userProvider.fetchProfileData();
+          final profileData = userProvider.profileData;
+
+          if (profileData != null && profileData.staffProfile != null) {
+            final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
+
+            if (staffAttendanceMethod == "0") {
+              print('Navigating to Dashboard (Staff_attendance_method = 0)');
+              Navigator.pushReplacementNamed(context, '/dashboard');
+            } else if (staffAttendanceMethod == "1") {
+              final prefs = await SharedPreferences.getInstance();
+              final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+              final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+
+              if (isAttendanceMarkedForToday) {
+                print('Navigating to Dashboard (Attendance already marked for today)');
+                Navigator.pushReplacementNamed(context, '/dashboard');
+              } else {
+                print('Navigating to FaceOnboarding (Attendance not marked)');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => FaceOnboarding()),
+                );
+              }
+            } else {
+              print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
+              Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
+            }
+          } else {
+            print('Error: Failed to fetch profile data');
+            Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
+            Navigator.pushReplacementNamed(context, '/login');
+          }
           print("Login Successful");
           Fluttertoast.showToast(
             msg: "Login Successful ✅",
@@ -76,7 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.primaryColor,
             textColor: Colors.white,
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+
+          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
         } else {
           print("Login failed");
         }

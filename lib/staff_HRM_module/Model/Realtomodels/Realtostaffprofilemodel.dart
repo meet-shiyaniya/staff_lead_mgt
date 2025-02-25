@@ -50,6 +50,8 @@ class StaffProfile {
   String? jobLocation;
   String? sessionActive;
   String? status;
+  String? isAttendance;
+  String? staffAttendanceMethod;
 
   StaffProfile(
       {this.employeeId,
@@ -76,7 +78,10 @@ class StaffProfile {
         this.joinDate,
         this.jobLocation,
         this.sessionActive,
-        this.status});
+        this.status,
+        this.isAttendance,
+        this.staffAttendanceMethod,
+      });
 
   StaffProfile.fromJson(Map<String, dynamic> json) {
     employeeId = json['employee_id'];
@@ -104,6 +109,8 @@ class StaffProfile {
     jobLocation = json['job_location'];
     sessionActive = json['session_active'];
     status = json['status'];
+    isAttendance = json['is_attendance'];
+    staffAttendanceMethod=json['Staff_attendance_method'];
   }
 
   Map<String, dynamic> toJson() {
@@ -133,6 +140,8 @@ class StaffProfile {
     data['job_location'] = this.jobLocation;
     data['session_active'] = this.sessionActive;
     data['status'] = this.status;
+    data['isAttendance']=this.isAttendance;
+    data['Staff_attendance_method']=this.staffAttendanceMethod;
     return data;
   }
 }

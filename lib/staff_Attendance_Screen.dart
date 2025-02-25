@@ -130,9 +130,12 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
       });
       Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
 
-      // Store Attendance Data
+
+
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      await prefs.setBool('attendanceMarked_$today', true);
       await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
-      await prefs.setBool('attendanceMarked', true);
+      // await prefs.setBool('attendanceMarked', true);
       await prefs.setString('entryDate', todayDate);
 
       Navigator.pushReplacement(

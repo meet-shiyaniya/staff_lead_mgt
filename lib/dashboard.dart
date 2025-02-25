@@ -6,12 +6,17 @@ import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/dismiss
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/followup_and_cnr_Screen.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:animate_do/animate_do.dart'; // For animation effects
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+import 'dashboard_ui/dashboard2/dashboard2.dart';
+import 'dashboard_ui/main_dashboard/mainDashboard.dart';
+import 'dashboard_ui/personalDashboard_screen/personalDashboard_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -29,26 +34,52 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   String entryTime = "";
   String exitTime = "";
   bool isDayEndedToday = false;
+  String selectedFilter = 'Today'; // Default filter
+  List<String> filterOptions = [
+    'Today',
+    'Last 7 Days',
+    'Last 30 Days',
+    'Current Month',
+    'Previous Month'
+  ];
+  String cselectedFilter = 'Daily'; // Default filter
+  List<String> cfilterOptions = ['Daily', 'Last Week', 'Last Month'];
+
+  // Sample data for demonstration
+  List<double> dailyData = [
+    5,
+    3,
+    4,
+    2,
+    6,
+    7,
+    5
+  ]; // Data for each day of the week
+  List<double> lastWeekData = [20, 15, 25, 30, 10, 5, 15]; // Data for last week
+  List<double> lastMonthData = [50, 40, 60, 70]; // Data for last few months
+
+  // State for dashboard selection (default to Personal Dashboard)
+  int _selectedDashboardIndex = 1; // 0: Main, 1: Personal, 2: Site, 3: Team
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchProfileData();
+    });
     WidgetsBinding.instance.addObserver(this);
     _loadState();
   }
 
-  // Update _loadState method
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     final currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    // Check if day was ended today
     final lastEndDateStr = prefs.getString('lastEndDate');
     if (lastEndDateStr != null && lastEndDateStr == currentDate) {
       setState(() {
         isDayEndedToday = false;
         isDayStarted = false;
-        // Load previous day's data
         exitTime = prefs.getString('exitTime') ?? "";
         entryTime = prefs.getString('entryTime') ?? "";
         elapsedSeconds = prefs.getInt('elapsedSeconds') ?? 0;
@@ -56,16 +87,12 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
       return;
     }
 
-    // Load attendance time if exists for current day
-    // In _loadState() method
     final attendanceTimeStr = prefs.getString('attendanceTime');
     if (attendanceTimeStr != null && attendanceTimeStr.isNotEmpty) {
       final attendanceTime = DateFormat('hh:mm:ss a').parse(attendanceTimeStr);
       final now = DateTime.now();
-      final attendanceDateTime = DateTime(
-          now.year, now.month, now.day,
-          attendanceTime.hour, attendanceTime.minute, attendanceTime.second
-      );
+      final attendanceDateTime = DateTime(now.year, now.month, now.day,
+          attendanceTime.hour, attendanceTime.minute, attendanceTime.second);
 
       setState(() {
         isDayStarted = true;
@@ -112,7 +139,6 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
       exitTime = "";
     });
 
-    // Clear previous day's data
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('lastEndDate');
       prefs.setString('attendanceTime', attendanceTimeStr);
@@ -149,13 +175,13 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
       isDayEndedToday = true;
     });
 
-    // Save all relevant data
     await prefs.setString('lastEndDate', DateFormat('yyyy-MM-dd').format(now));
     await prefs.setString('exitTime', exitTime);
     await prefs.setString('entryTime', entryTime);
     await prefs.setInt('elapsedSeconds', elapsedSeconds);
     await _saveState();
   }
+
   String getElapsedTime() {
     final hours = (elapsedSeconds ~/ 3600).toString().padLeft(2, '0');
     final minutes = ((elapsedSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
@@ -171,7 +197,8 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     if (lastRecordedTimeStr != null && attendanceTimeStr != null) {
       final lastRecordedTime = DateTime.parse(lastRecordedTimeStr);
       final currentTime = DateTime.now();
-      final elapsedSinceLastRecord = currentTime.difference(lastRecordedTime).inSeconds;
+      final elapsedSinceLastRecord =
+          currentTime.difference(lastRecordedTime).inSeconds;
 
       setState(() {
         elapsedSeconds += elapsedSinceLastRecord;
@@ -188,34 +215,39 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _saveState(); // Save state when the app goes to the background
+      _saveState();
     } else if (state == AppLifecycleState.resumed) {
-      _syncElapsedTime(); // Sync time when the app resumes
-      // Automatically start the day if it was previously ended
+      _syncElapsedTime();
       _checkAttendanceMarked();
     }
   }
 
-
-  // Update _checkAttendanceMarked()
   Future<void> _checkAttendanceMarked() async {
     final prefs = await SharedPreferences.getInstance();
     bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
 
     if (attendanceMarked) {
-      await prefs.setBool('attendanceMarked', false); // Just reset the flag
+      await prefs.setBool('attendanceMarked', false);
     }
   }
-  // Future<void> _checkAttendanceMarked() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   bool attendanceMarked = prefs.getBool('attendanceMarked') ?? false;
-  //
-  //   if (attendanceMarked) {
-  //     startDay(); // Start the day if attendance was marked
-  //     entryTime = prefs.getString('entryTime') ?? ""; // Set entry time
-  //     await prefs.setBool('attendanceMarked', false); // Reset the flag
-  //   }
-  // }
+
+  DateTime _selectedDate = DateTime.now();
+
+  List<DateTime> _dates = [
+    DateTime.now().add(Duration(days: -3)),
+    DateTime.now().add(Duration(days: -2)),
+    DateTime.now().add(Duration(days: -1)),
+    DateTime.now(),
+    DateTime.now().add(Duration(days: 1)),
+    DateTime.now().add(Duration(days: 2)),
+    DateTime.now().add(Duration(days: 3)),
+  ];
+
+  void _onDateSelected(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+    });
+  }
 
   @override
   void dispose() {
@@ -224,8 +256,862 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Widget _getDashboardBody() {
+    switch (_selectedDashboardIndex) {
+      case 0: // Main Dashboard
+        return DashboardScreen();
+      case 1:
+        return PersonalDashboardScreen();
+        // Personal Dashboard (default)
+        // return SingleChildScrollView(
+        //   child: Column(
+        //     children: [
+        //       Padding(
+        //         padding: const EdgeInsets.only(left: 10.0, right: 10),
+        //         child: Row(
+        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //           children: [
+        //             Text(
+        //               'Generated Leads',
+        //               style: TextStyle(
+        //                 fontSize: 18,
+        //                 fontFamily: "poppins_thin",
+        //                 fontWeight: FontWeight.bold,
+        //               ),
+        //             ),
+        //             PopupMenuButton<String>(
+        //               icon: Container(
+        //                   height: 40,
+        //                   width: 40,
+        //                   decoration: BoxDecoration(
+        //                       border: Border.all(),
+        //                       borderRadius: BorderRadius.circular(10)),
+        //                   child: Icon(Icons.filter_alt_outlined)),
+        //               onSelected: (value) {
+        //                 setState(() {
+        //                   cselectedFilter = value;
+        //                 });
+        //               },
+        //               itemBuilder: (BuildContext context) {
+        //                 return cfilterOptions.map((option) {
+        //                   return PopupMenuItem<String>(
+        //                     value: option,
+        //                     child: Text(option,
+        //                         style: TextStyle(fontFamily: "poppins_thin")),
+        //                   );
+        //                 }).toList();
+        //               },
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //       Container(
+        //         height: 200,
+        //         padding: const EdgeInsets.all(15.0),
+        //         child: BarChart(
+        //           BarChartData(
+        //             groupsSpace: 10,
+        //             barGroups: _getBarGroups(),
+        //             titlesData: FlTitlesData(
+        //               leftTitles: AxisTitles(
+        //                 sideTitles: SideTitles(showTitles: true),
+        //               ),
+        //               topTitles: AxisTitles(
+        //                 sideTitles: SideTitles(showTitles: false),
+        //               ),
+        //               rightTitles: AxisTitles(
+        //                 sideTitles: SideTitles(showTitles: false),
+        //               ),
+        //               bottomTitles: AxisTitles(
+        //                 sideTitles: SideTitles(
+        //                   showTitles: true,
+        //                   getTitlesWidget: (value, meta) {
+        //                     switch (cselectedFilter) {
+        //                       case 'Daily':
+        //                       case 'Last Week':
+        //                         return Text(
+        //                             [
+        //                               'Mon',
+        //                               'Tue',
+        //                               'Wed',
+        //                               'Thu',
+        //                               'Fri',
+        //                               'Sat',
+        //                               'Sun'
+        //                             ][value.toInt()],
+        //                             style:
+        //                                 TextStyle(fontFamily: "poppins_thin"));
+        //                       case 'Last Month':
+        //                         return Text(
+        //                             [
+        //                               'Jan',
+        //                               'Feb',
+        //                               'Mar',
+        //                               'Apr',
+        //                               'May',
+        //                               'Jun',
+        //                               'Jul',
+        //                               'Aug',
+        //                               'Sep',
+        //                               'Oct',
+        //                               'Nov',
+        //                               'Dec'
+        //                             ][value.toInt()],
+        //                             style:
+        //                                 TextStyle(fontFamily: "poppins_thin"));
+        //                       default:
+        //                         return Text('',
+        //                             style:
+        //                                 TextStyle(fontFamily: "poppins_thin"));
+        //                     }
+        //                   },
+        //                 ),
+        //               ),
+        //             ),
+        //             borderData: FlBorderData(show: false),
+        //             gridData: FlGridData(show: false),
+        //           ),
+        //         ),
+        //       ),
+        //       if (isDayStarted)
+        //         Container(
+        //           height: MediaQuery.of(context).size.height / 10,
+        //           width: double.infinity,
+        //           margin: const EdgeInsets.only(left: 10, right: 10),
+        //           padding: const EdgeInsets.all(15),
+        //           decoration: BoxDecoration(
+        //             color: Colors.white,
+        //             borderRadius: BorderRadius.circular(15),
+        //             boxShadow: [
+        //               BoxShadow(
+        //                 color: Colors.grey.shade300,
+        //                 blurRadius: 5,
+        //                 offset: const Offset(1, 2),
+        //               ),
+        //             ],
+        //           ),
+        //           child: Row(
+        //             mainAxisAlignment: MainAxisAlignment.spaceAround,
+        //             children: [
+        //               SizedBox(),
+        //               Image.asset("asset/intime.png", height: 30, width: 30),
+        //               Column(
+        //                 children: [
+        //                   Text(
+        //                     "In Time :",
+        //                     style: TextStyle(
+        //                       fontFamily: "poppins_thin",
+        //                       fontWeight: FontWeight.bold,
+        //                       color: Colors.green,
+        //                     ),
+        //                   ),
+        //                   Text(entryTime.isNotEmpty ? entryTime : "--:--:--",
+        //                       style: TextStyle(
+        //                         fontFamily: "poppins_thin",
+        //                         fontWeight: FontWeight.bold,
+        //                       )),
+        //                 ],
+        //               ),
+        //               const VerticalDivider(
+        //                 color: Colors.grey,
+        //                 thickness: 0.5,
+        //                 width: 18,
+        //               ),
+        //               SizedBox(),
+        //               Image.asset("asset/workingHour.png",
+        //                   height: 30, width: 30),
+        //               Column(
+        //                 children: [
+        //                   Text(
+        //                     "Working Hour:",
+        //                     style: TextStyle(
+        //                       fontFamily: "poppins_thin",
+        //                       fontWeight: FontWeight.bold,
+        //                       color: Colors.blue,
+        //                     ),
+        //                   ),
+        //                   Text(getElapsedTime(),
+        //                       style: TextStyle(fontFamily: "poppins_thin")),
+        //                 ],
+        //               ),
+        //             ],
+        //           ),
+        //         ),
+        //       if (exitTime.isNotEmpty)
+        //         Container(
+        //           height: MediaQuery.of(context).size.height / 10,
+        //           width: double.infinity,
+        //           margin: const EdgeInsets.all(10),
+        //           padding: const EdgeInsets.all(15),
+        //           decoration: BoxDecoration(
+        //             color: Colors.grey.shade50,
+        //             borderRadius: BorderRadius.circular(15),
+        //             boxShadow: [
+        //               BoxShadow(
+        //                 color: Colors.grey.shade300,
+        //                 blurRadius: 5,
+        //                 offset: const Offset(1, 2),
+        //               ),
+        //             ],
+        //           ),
+        //           child: Row(
+        //             mainAxisAlignment: MainAxisAlignment.spaceAround,
+        //             children: [
+        //               SizedBox(),
+        //               Column(
+        //                 crossAxisAlignment: CrossAxisAlignment.center,
+        //                 children: [
+        //                   Row(
+        //                     children: [
+        //                       Image.asset("asset/intime.png",
+        //                           height: 20, width: 20),
+        //                       SizedBox(width: 3),
+        //                       Text("In Time :",
+        //                           style: TextStyle(
+        //                               fontFamily: "poppins_thin",
+        //                               fontWeight: FontWeight.bold,
+        //                               color: Colors.green)),
+        //                     ],
+        //                   ),
+        //                   Text("$entryTime",
+        //                       style: TextStyle(
+        //                           fontFamily: "poppins_thin",
+        //                           fontSize: 15,
+        //                           fontWeight: FontWeight.bold)),
+        //                 ],
+        //               ),
+        //               VerticalDivider(
+        //                 color: Colors.grey,
+        //                 thickness: 0.5,
+        //                 width: 18,
+        //               ),
+        //               Column(
+        //                 crossAxisAlignment: CrossAxisAlignment.center,
+        //                 children: [
+        //                   Row(
+        //                     children: [
+        //                       Image.asset("asset/out time.png",
+        //                           height: 20, width: 20),
+        //                       SizedBox(width: 3),
+        //                       Text("Out Time :",
+        //                           style: TextStyle(
+        //                               fontFamily: "poppins_thin",
+        //                               fontWeight: FontWeight.bold,
+        //                               color: Colors.red)),
+        //                     ],
+        //                   ),
+        //                   Text("$exitTime",
+        //                       style: TextStyle(
+        //                           fontFamily: "poppins_thin",
+        //                           fontSize: 15,
+        //                           fontWeight: FontWeight.bold)),
+        //                 ],
+        //               ),
+        //               SizedBox(),
+        //               VerticalDivider(
+        //                 color: Colors.grey,
+        //                 thickness: 0.5,
+        //                 width: 18,
+        //               ),
+        //               Column(
+        //                 crossAxisAlignment: CrossAxisAlignment.center,
+        //                 children: [
+        //                   Row(
+        //                     children: [
+        //                       Image.asset("asset/workingHour.png",
+        //                           height: 20, width: 20),
+        //                       SizedBox(width: 3),
+        //                       Text("Work Hour:",
+        //                           style: TextStyle(
+        //                               fontFamily: "poppins_thin",
+        //                               fontWeight: FontWeight.bold,
+        //                               color: Colors.blue)),
+        //                     ],
+        //                   ),
+        //                   Text("${getElapsedTime()}",
+        //                       style: TextStyle(
+        //                           fontFamily: "poppins_thin",
+        //                           fontSize: 15,
+        //                           fontWeight: FontWeight.bold)),
+        //                 ],
+        //               ),
+        //             ],
+        //           ),
+        //         ),
+        //       Padding(
+        //         padding: const EdgeInsets.only(
+        //             left: 20, right: 20, bottom: 5, top: 5),
+        //         child: Row(
+        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //           children: [
+        //             Text("Daily Activities",
+        //                 style: TextStyle(fontFamily: "poppins_thin")),
+        //             DropdownButton<String>(
+        //               value: selectedFilter,
+        //               icon: const Icon(Icons.arrow_drop_down),
+        //               onChanged: (String? newValue) {
+        //                 setState(() {
+        //                   selectedFilter = newValue!;
+        //                   if (newValue == 'Today') {
+        //                     selectedFilter = newValue!;
+        //                   }
+        //                 });
+        //               },
+        //               items: filterOptions
+        //                   .map<DropdownMenuItem<String>>((String value) {
+        //                 return DropdownMenuItem<String>(
+        //                   value: value,
+        //                   child: Text(value,
+        //                       style: TextStyle(fontFamily: "poppins_thin")),
+        //                 );
+        //               }).toList(),
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //       Padding(
+        //         padding: const EdgeInsets.only(left: 10.0),
+        //         child: selectedFilter == 'Today'
+        //             ? _buildDateSelection()
+        //             : _buildDirectDataView(),
+        //       ),
+        //       Container(
+        //         height: MediaQuery.of(context).size.height / 2,
+        //         child: GridView.builder(
+        //           itemCount: leads.length,
+        //           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        //             crossAxisCount: 2,
+        //             childAspectRatio: 1.60,
+        //             mainAxisSpacing: 10,
+        //           ),
+        //           physics: NeverScrollableScrollPhysics(),
+        //           itemBuilder: (context, index) {
+        //             return GestureDetector(
+        //               onTap: () {
+        //                 index == 0
+        //                     ? Navigator.push(
+        //                         context,
+        //                         MaterialPageRoute(
+        //                             builder: (context) => AllInquiriesScreen()))
+        //                     : index == 1
+        //                         ? Navigator.push(
+        //                             context,
+        //                             MaterialPageRoute(
+        //                                 builder: (context) =>
+        //                                     DismissRequestScreen()))
+        //                         : index == 2
+        //                             ? Navigator.push(
+        //                                 context,
+        //                                 MaterialPageRoute(
+        //                                     builder: (context) =>
+        //                                         FollowupAndCnrScreen()))
+        //                             : Navigator.push(
+        //                                 context,
+        //                                 MaterialPageRoute(
+        //                                     builder: (context) =>
+        //                                         FollowupAndCnrScreen()));
+        //               },
+        //               child: Container(
+        //                 margin: EdgeInsets.only(left: 10, right: 10),
+        //                 padding: EdgeInsets.all(10),
+        //                 decoration: BoxDecoration(
+        //                   borderRadius: BorderRadius.circular(30),
+        //                   color: leads[index]["mainBg"],
+        //                   boxShadow: [
+        //                     BoxShadow(
+        //                       color: Colors.grey.shade300,
+        //                       offset: Offset(1, 3),
+        //                       blurRadius: 1,
+        //                       spreadRadius: 1,
+        //                     ),
+        //                   ],
+        //                 ),
+        //                 child: Column(
+        //                   crossAxisAlignment: CrossAxisAlignment.start,
+        //                   children: [
+        //                     Padding(
+        //                       padding: const EdgeInsets.all(10.0),
+        //                       child: Row(
+        //                         mainAxisAlignment:
+        //                             MainAxisAlignment.spaceBetween,
+        //                         children: [
+        //                           Text(
+        //                             leads[index]["name"],
+        //                             style: TextStyle(
+        //                                 fontFamily: "poppins_thin",
+        //                                 fontSize: 15),
+        //                           ),
+        //                           Container(
+        //                             height: 50,
+        //                             width:
+        //                                 MediaQuery.of(context).size.width / 12,
+        //                             decoration: BoxDecoration(
+        //                               borderRadius: BorderRadius.circular(20),
+        //                               gradient: leads[index]['bgColor'],
+        //                             ),
+        //                             child: Icon(leads[index]["icon"],
+        //                                 color: Colors.white, weight: 35),
+        //                           ),
+        //                         ],
+        //                       ),
+        //                     ),
+        //                     Padding(
+        //                       padding: EdgeInsets.only(left: 10, right: 10),
+        //                       child: Column(
+        //                         crossAxisAlignment: CrossAxisAlignment.start,
+        //                         children: [
+        //                           Text(leads[index]["leadCount"],
+        //                               style: TextStyle(
+        //                                   fontFamily: "poppins_thin",
+        //                                   fontWeight: FontWeight.bold,
+        //                                   fontSize: 20)),
+        //                         ],
+        //                       ),
+        //                     ),
+        //                   ],
+        //                 ),
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // );
+      case 2: // Site Dashboard
+        return StaffDashboard();
+      case 3: // Team Dashboard
+        return DashboardScreen();
+      default:
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Default to Personal Dashboard content (same as above)
+              Padding(
+                padding: const EdgeInsets.only(left: 10.0, right: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Generated Leads',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: "poppins_thin",
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Container(
+                          height: 40,
+                          width: 40,
+                          decoration: BoxDecoration(
+                              border: Border.all(),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Icon(Icons.filter_alt_outlined)),
+                      onSelected: (value) {
+                        setState(() {
+                          cselectedFilter = value;
+                        });
+                      },
+                      itemBuilder: (BuildContext context) {
+                        return cfilterOptions.map((option) {
+                          return PopupMenuItem<String>(
+                            value: option,
+                            child: Text(option,
+                                style: TextStyle(fontFamily: "poppins_thin")),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 200,
+                padding: const EdgeInsets.all(15.0),
+                child: BarChart(
+                  BarChartData(
+                    groupsSpace: 10,
+                    barGroups: _getBarGroups(),
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: true),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            switch (cselectedFilter) {
+                              case 'Daily':
+                              case 'Last Week':
+                                return Text(
+                                    [
+                                      'Mon',
+                                      'Tue',
+                                      'Wed',
+                                      'Thu',
+                                      'Fri',
+                                      'Sat',
+                                      'Sun'
+                                    ][value.toInt()],
+                                    style:
+                                        TextStyle(fontFamily: "poppins_thin"));
+                              case 'Last Month':
+                                return Text(
+                                    [
+                                      'Jan',
+                                      'Feb',
+                                      'Mar',
+                                      'Apr',
+                                      'May',
+                                      'Jun',
+                                      'Jul',
+                                      'Aug',
+                                      'Sep',
+                                      'Oct',
+                                      'Nov',
+                                      'Dec'
+                                    ][value.toInt()],
+                                    style:
+                                        TextStyle(fontFamily: "poppins_thin"));
+                              default:
+                                return Text('',
+                                    style:
+                                        TextStyle(fontFamily: "poppins_thin"));
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: false),
+                  ),
+                ),
+              ),
+              if (isDayStarted)
+                Container(
+                  height: MediaQuery.of(context).size.height / 10,
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(left: 10, right: 10),
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 5,
+                        offset: const Offset(1, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      SizedBox(),
+                      Image.asset("asset/intime.png", height: 30, width: 30),
+                      Column(
+                        children: [
+                          Text(
+                            "In Time :",
+                            style: TextStyle(
+                              fontFamily: "poppins_thin",
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                          Text(entryTime.isNotEmpty ? entryTime : "--:--:--",
+                              style: TextStyle(
+                                fontFamily: "poppins_thin",
+                                fontWeight: FontWeight.bold,
+                              )),
+                        ],
+                      ),
+                      const VerticalDivider(
+                        color: Colors.grey,
+                        thickness: 0.5,
+                        width: 18,
+                      ),
+                      SizedBox(),
+                      Image.asset("asset/workingHour.png",
+                          height: 30, width: 30),
+                      Column(
+                        children: [
+                          Text(
+                            "Working Hour:",
+                            style: TextStyle(
+                              fontFamily: "poppins_thin",
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          Text(getElapsedTime(),
+                              style: TextStyle(fontFamily: "poppins_thin")),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              if (exitTime.isNotEmpty)
+                Container(
+                  height: MediaQuery.of(context).size.height / 10,
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 5,
+                        offset: const Offset(1, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      SizedBox(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Image.asset("asset/intime.png",
+                                  height: 20, width: 20),
+                              SizedBox(width: 3),
+                              Text("In Time :",
+                                  style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green)),
+                            ],
+                          ),
+                          Text("$entryTime",
+                              style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      VerticalDivider(
+                        color: Colors.grey,
+                        thickness: 0.5,
+                        width: 18,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Image.asset("asset/out time.png",
+                                  height: 20, width: 20),
+                              SizedBox(width: 3),
+                              Text("Out Time :",
+                                  style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red)),
+                            ],
+                          ),
+                          Text("$exitTime",
+                              style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      SizedBox(),
+                      VerticalDivider(
+                        color: Colors.grey,
+                        thickness: 0.5,
+                        width: 18,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Image.asset("asset/workingHour.png",
+                                  height: 20, width: 20),
+                              SizedBox(width: 3),
+                              Text("Work Hour:",
+                                  style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue)),
+                            ],
+                          ),
+                          Text("${getElapsedTime()}",
+                              style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: 20, right: 20, bottom: 5, top: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Daily Activities",
+                        style: TextStyle(fontFamily: "poppins_thin")),
+                    DropdownButton<String>(
+                      value: selectedFilter,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedFilter = newValue!;
+                          if (newValue == 'Today') {
+                            selectedFilter = newValue!;
+                          }
+                        });
+                      },
+                      items: filterOptions
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value,
+                              style: TextStyle(fontFamily: "poppins_thin")),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 10.0),
+                child: selectedFilter == 'Today'
+                    ? _buildDateSelection()
+                    : _buildDirectDataView(),
+              ),
+              Container(
+                height: MediaQuery.of(context).size.height / 2,
+                child: GridView.builder(
+                  itemCount: leads.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.60,
+                    mainAxisSpacing: 10,
+                  ),
+                  physics: NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        index == 0
+                            ? Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => AllInquiriesScreen()))
+                            : index == 1
+                                ? Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            DismissRequestScreen()))
+                                : index == 2
+                                    ? Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                FollowupAndCnrScreen()))
+                                    : Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                FollowupAndCnrScreen()));
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(left: 10, right: 10),
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: leads[index]["mainBg"],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.shade300,
+                              offset: Offset(1, 3),
+                              blurRadius: 1,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    leads[index]["name"],
+                                    style: TextStyle(
+                                        fontFamily: "poppins_thin",
+                                        fontSize: 15),
+                                  ),
+                                  Container(
+                                    height: 50,
+                                    width:
+                                        MediaQuery.of(context).size.width / 12,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      gradient: leads[index]['bgColor'],
+                                    ),
+                                    child: Icon(leads[index]["icon"],
+                                        color: Colors.white, weight: 35),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 10, right: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(leads[index]["leadCount"],
+                                      style: TextStyle(
+                                          fontFamily: "poppins_thin",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    Realtostaffprofilemodel? profile = userProvider.profileData;
+    if (profile == null) {
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -252,26 +1138,33 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      offset: const Offset(0.5, 0.5),
-                      color: Colors.grey.shade400,
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedDashboardIndex = 1; // Return to Personal Dashboard
+                  });
+                },
+                child: Container(
+                  height: 50,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        offset: const Offset(0.5, 0.5),
+                        color: Colors.grey.shade400,
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 1.0,
                     ),
-                  ],
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 1.0,
                   ),
-                ),
-                child: ClipOval(
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    "https://i.pinimg.com/736x/85/25/83/852583511c3109d7a4efa0c3a233be1e.jpg",
+                  child: ClipOval(
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      "https://i.pinimg.com/736x/85/25/83/852583511c3109d7a4efa0c3a233be1e.jpg",
+                    ),
                   ),
                 ),
               ),
@@ -279,7 +1172,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Hello, Maulik Patel",
+                    "Hello, ${profile?.staffProfile?.name.toString() ?? 'User'}",
                     style: TextStyle(
                       fontFamily: "poppins_thin",
                       fontWeight: FontWeight.bold,
@@ -290,380 +1183,220 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                     "Today " + DateFormat('yyyy-MM-dd').format(DateTime.now()),
                     style: TextStyle(
                       fontSize: 12,
-                      fontFamily: AppColors.font,
+                      fontFamily: "poppins_thin",
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              const Icon(Icons.search),
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border:Border.all(),
+                ),
+                child: PopupMenuButton<int>(
+                  icon: const Icon(Icons.menu, color: Colors.black87),
+                  onSelected: (int index) {
+                    setState(() {
+                      _selectedDashboardIndex = index;
+                    });
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
+                    _buildPopupMenuItem(0, 'Main', Icons.dashboard),
+                    _buildPopupMenuItem(1, 'Personal', Icons.person),
+                    _buildPopupMenuItem(2, 'Site', Icons.location_city),
+                    _buildPopupMenuItem(3, 'Team', Icons.group),
+                  ],
+                  color: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade200, width: 1),
+                  ),
+                  offset: const Offset(0, 50),
+                ),
+              ),
             ],
           ),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height / 5.1,
-              width: double.infinity,
-              margin: const EdgeInsets.only(left: 15, right: 15),
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: isDayEndedToday ? startDay : (isDayStarted ? endDay : startDay),
-                          child: Container(
-                            height: 30,
-                            width: 120,
-                            margin: const EdgeInsets.only(left: 30, top: 20),
-                            decoration: BoxDecoration(
-                              color: isDayEndedToday ? Colors.white70: Colors.white70,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Center(
-                              child: Text(
-                                isDayStarted ? "Day End" : "Day Start",
-                                style: TextStyle(
-                                  fontFamily: "poppins_thin",
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDayEndedToday ? Colors.black45 : Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // GestureDetector(
-                        //   onTap: isDayStarted ? endDay : startDay, // Toggle between start and end
-                        //   child: Container(
-                        //     height: 30,
-                        //     width: 120,
-                        //     margin: const EdgeInsets.only(left: 30, top: 20),
-                        //     decoration: BoxDecoration(
-                        //       color: Colors.white54,
-                        //       borderRadius: BorderRadius.circular(20),
-                        //     ),
-                        //     child: Center(
-                        //       child: Text(
-                        //         isDayStarted ? "Day End" : "Day Start",
-                        //         style: TextStyle(
-                        //             fontFamily: "poppins_thin",
-                        //             fontSize: 12,
-                        //             fontWeight: FontWeight.bold),
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(left: 25, top: 5),
-                          child: Text(
-                            isDayStarted
-                                ? "Unify your social world—connect, manage, and grow your Company effortlessly. All the Best"
-                                : "Start your day with purpose and positivity. Let's make it productive and fulfilling!",
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: AppColors.font,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // if (isDayStarted)
-                          Container(
-                            margin: EdgeInsets.only(top: 10, left: 30),
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: Container(
-                                height: 25,
-                                width: 150,
-                                decoration: BoxDecoration(
-                                  color: Colors.white54,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    "Working Time: ${getElapsedTime()}",
-                                    style: TextStyle(
-                                        fontFamily: "poppins_thin",
-                                        fontSize: 10,
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 15),
-                    child: CircularPercentIndicator(
-                      radius: 45,
-                      lineWidth: 14,
-                      backgroundWidth: 8,
-                      percent: progressValue,
-                      animation: true,
-                      animateFromLastPercent: true,
-                      center: Lottie.asset(
-                        'asset/working_hours.json',
-                        fit: BoxFit.contain,
-                        width: 50,
-                        height: 50,
-                      ),
-                      progressColor: AppColors.primaryColor,
-                      backgroundColor: Colors.grey.shade200,
-                      circularStrokeCap: CircularStrokeCap.round,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isDayStarted)
-              Container(
-                height: MediaQuery.of(context).size.height / 10,
-                width: double.infinity,
-                margin: const EdgeInsets.all(15),
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 5,
-                      offset: const Offset(1, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    SizedBox(),
-                    Image.asset("asset/intime.png", height: 30, width: 30),
-                    Column(
-                      children: [
-                        const Text(
-                          "In Time :",
-                          style: TextStyle(
-                            fontFamily: "poppins_thin",
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                        Text(entryTime.isNotEmpty ? entryTime : "--:--:--",style: TextStyle(
-                          fontFamily: "poppins_thin",
-                          fontWeight: FontWeight.bold,
+      body: _getDashboardBody(),
+    );
+  }
 
-                        ),),
-                      ],
-                    ),
-                    const VerticalDivider(
-                      color: Colors.grey,
-                      thickness: 0.5,
-                      width: 18,
-                    ),
-                    SizedBox(),
-                    Image.asset("asset/workingHour.png", height: 30, width: 30),
-                    Column(
-                      children: [
-                        const Text(
-                          "Working Hour:",
-                          style: TextStyle(
-                            fontFamily: "poppins_thin",
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        Text(getElapsedTime(), style: const TextStyle(fontFamily: "poppins_thin")),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            if (exitTime.isNotEmpty)
-              Container(
-                height: MediaQuery.of(context).size.height / 10,
-                width: double.infinity,
-                margin: const EdgeInsets.all(10),
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 5,
-                      offset: const Offset(1, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    SizedBox(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Image.asset("asset/intime.png", height: 20, width: 20),
-                            SizedBox(width: 3),
-                            Text("In Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.green)),
-                          ],
-                        ),
-                        Text("$entryTime", style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
-                      ],
-                    ),
-                    VerticalDivider(
-                      color: Colors.grey,
-                      thickness: 0.5,
-                      width: 18,
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Image.asset("asset/out time.png", height: 20, width: 20),
-                            SizedBox(width: 3),
-                            Text("Out Time :", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.red)),
-                          ],
-                        ),
-                        Text("$exitTime", style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
-                      ],
-                    ),
-                    SizedBox(),
-                    VerticalDivider(
-                      color: Colors.grey,
-                      thickness: 0.5,
-                      width: 18,
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Image.asset("asset/workingHour.png", height: 20, width: 20),
-                            SizedBox(width: 3),
-                            Text("Work Hour:", style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, color: Colors.blue,)),
-                          ],
-                        ),
-                        Text("${getElapsedTime()}",style: TextStyle(fontFamily: "poppins_thin",fontSize:15,fontWeight: FontWeight.bold,)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Daily Activities", style: TextStyle(fontFamily: "poppins_thin")),
-                  Image.asset("asset/peopleDashboard.png", height: 50, width: 100),
-                ],
-              ),
+  PopupMenuItem<int> _buildPopupMenuItem(
+      int index, String title, IconData icon) {
+    return PopupMenuItem<int>(
+      value: index,
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.deepPurple[900], size: 20),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: "poppins_thin",
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
             ),
-            Container(
-              height: MediaQuery.of(context).size.height / 2,
-              child: GridView.builder(
-                itemCount: leads.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.05,
-                  mainAxisSpacing: 10,
-                ),
-                physics: NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      index == 0
-                          ? Navigator.push(context, MaterialPageRoute(builder: (context) => AllInquiriesScreen()))
-                          : index == 1
-                          ? Navigator.push(context, MaterialPageRoute(builder: (context) => DismissRequestScreen()))
-                          : index == 2
-                          ? Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()))
-                          : Navigator.push(context, MaterialPageRoute(builder: (context) => FollowupAndCnrScreen()));
-                    },
-                    child: Container(
-                      margin: EdgeInsets.only(left: 10, right: 10),
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.deepPurple.shade50,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade300,
-                            offset: Offset(1, 3),
-                            blurRadius: 1,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  leads[index]["name"],
-                                  style: TextStyle(fontFamily: "poppins_thin", fontSize: 16),
-                                ),
-                                Container(
-                                  height: 60,
-                                  width: MediaQuery.of(context).size.width/10,
-                                  // margin: EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    gradient: leads[index]['bgColor'],
-                                  ),
-                                  child: Icon(leads[index]["icon"], color: Colors.white, weight: 35),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(left: 10, right: 10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(leads[index]["leadCount"], style: TextStyle(fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 23)),
-                                Text(leads[index]["detail"], style: TextStyle(fontFamily: "poppins", fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildDateSelection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _dates.map((date) {
+        bool isSelected = _selectedDate.day == date.day;
+        return GestureDetector(
+          onTap: () => _onDateSelected(date),
+          child: Container(
+            height: isSelected
+                ? MediaQuery.of(context).size.height / 12
+                : MediaQuery.of(context).size.height / 14,
+            width: isSelected
+                ? MediaQuery.of(context).size.width / 8.5
+                : MediaQuery.of(context).size.width / 9.5,
+            margin: EdgeInsets.only(left: 5, bottom: 5, right: 5),
+            padding: EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color:
+                  isSelected ? Colors.deepPurple.shade300 : Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: isSelected ? Colors.deepPurple.shade300 : Colors.grey,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${date.day}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : Colors.black,
+                  ),
+                ),
+                Text(
+                  _getDayName(date.weekday),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected ? Colors.white : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDirectDataView() {
+    switch (selectedFilter) {
+      case 'Last 7 Days':
+        return Text('Data for Last 7 Days',
+            style: TextStyle(fontFamily: "poppins_thin"));
+      case 'Last 30 Days':
+        return Text('Data for Last 30 Days',
+            style: TextStyle(fontFamily: "poppins_thin"));
+      case 'Current Month':
+        return Text('Data for Current Month',
+            style: TextStyle(fontFamily: "poppins_thin"));
+      case 'Previous Month':
+        return Text('Data for Previous Month',
+            style: TextStyle(fontFamily: "poppins_thin"));
+      default:
+        return Text('Select a filter',
+            style: TextStyle(fontFamily: "poppins_thin"));
+    }
+  }
+
+  String _getDayName(int weekday) {
+    switch (weekday) {
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
+    }
+  }
+
+  List<BarChartGroupData> _getBarGroups() {
+    List<double> data = [];
+    switch (cselectedFilter) {
+      case 'Daily':
+        data = dailyData;
+        break;
+      case 'Last Week':
+        data = lastWeekData;
+        break;
+      case 'Last Month':
+        data = lastMonthData;
+        break;
+      default:
+        data = [];
+    }
+
+    DateTime now = DateTime.now();
+    int currentDayIndex = now.weekday - 1; // Monday = 0, Sunday = 6
+    int currentMonthIndex = now.month - 1; // January = 0, December = 11
+
+    return data.asMap().entries.map((entry) {
+      int index = entry.key;
+      double value = entry.value;
+      bool isHighlighted = false;
+      switch (cselectedFilter) {
+        case 'Daily':
+        case 'Last Week':
+          isHighlighted = index == currentDayIndex;
+          break;
+        case 'Last Month':
+          isHighlighted = index == currentMonthIndex;
+          break;
+      }
+
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            color:
+                isHighlighted ? Colors.deepPurple : Colors.deepPurple.shade300,
+            width: 20,
+          ),
+        ],
+      );
+    }).toList();
   }
 
   final List leads = [
     {
       "name": "Total\nLeads",
       "icon": Icons.leaderboard_outlined,
+      "mainBg": Colors.green.shade50,
       "bgColor": LinearGradient(
         colors: [Colors.green, Colors.green, Colors.white70],
         begin: Alignment.topLeft,
@@ -675,6 +1408,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     {
       "name": "Deal\nClosed",
       "icon": Icons.done,
+      "mainBg": Colors.red.shade50,
       "bgColor": LinearGradient(
         colors: [Colors.red, Colors.red, Colors.white70],
         begin: Alignment.topLeft,
@@ -686,6 +1420,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     {
       "name": "Today's\nMeetings",
       "icon": Icons.schedule,
+      "mainBg": Colors.blue.shade50,
       "bgColor": LinearGradient(
         colors: [Colors.blue, Colors.blue, Colors.white70],
         begin: Alignment.topLeft,
@@ -697,6 +1432,7 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     {
       "name": "Today's\nTask",
       "icon": Icons.task_alt,
+      "mainBg": Colors.orange.shade50,
       "bgColor": LinearGradient(
         colors: [Colors.orange, Colors.orange, Colors.white70],
         begin: Alignment.topLeft,
