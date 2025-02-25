@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry_Management_Screen.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import 'package:hr_app/splash_screen/splash_screen.dart';
@@ -18,7 +19,7 @@ void main() {
         title: "RealtoSmart",
         initialRoute: "/",
         routes: {
-          "/":(context)=> SplashScreen(),
+          "/":(context)=> BottomNavScreen(),
           '/login': (context) => LoginScreen(),
           '/dashboard': (context) => BottomNavScreen(),
         },
