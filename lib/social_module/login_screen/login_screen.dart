@@ -6,9 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../Provider/UserProvider.dart';
-import '../../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
-import '../../bottom_navigation.dart';
 import '../colors/colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,29 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  var staffAttendanceMethod;
-  var staffAttendanceMethodStatus;
-
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
-
-  Future<String> _fetchAttendanceMethod() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.fetchProfileData();
-
-    // Store values locally before calling setState
-    final String attendanceMethod = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
-    final String attendanceMethodStatus = userProvider.profileData?.staffProfile?.staffAttendanceMethod ?? "0";
-
-    // Ensure widget is still in the widget tree before calling setState
-    if (!mounted) return attendanceMethod;
-
-    setState(() {
-      staffAttendanceMethod = attendanceMethod;
-      staffAttendanceMethodStatus = attendanceMethodStatus;
-    });
-
-    return attendanceMethod;
-  }
 
   void _markAttendanceAndNavigate(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -60,42 +36,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
 
-    Widget _getNextScreen() {
 
-      if (staffAttendanceMethodStatus == "1") {
-
-        switch (staffAttendanceMethod) {
-
-          case "day_attendance":
-
-            return mannualAttendanceScreen();
-
-          case "qr_attendance":
-
-            return qrOnboardingScreen();
-
-          default:
-
-            return FaceOnboarding();
-
-        }
-
-      } else {
-
-        return BottomNavScreen();
-
-      }
-
-    }
 
     void signIn() async {
-
       final username = emailController.text.trim();
-
       final password = passwordController.text.trim();
 
-      if (username.isEmpty || password.isEmpty) {
 
+
+      if (username.isEmpty || password.isEmpty) {
         Fluttertoast.showToast(
           msg: "Please enter both email and password❌",
           toastLength: Toast.LENGTH_SHORT,
@@ -103,16 +52,63 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.black,
           textColor: Colors.white,
         );
-
         return;
-
       }
 
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      bool isSuccess = await userProvider.login(username, password);
+      bool isSuccess = await Provider.of<UserProvider>(context, listen: false).login(username, password);
 
-      if (!isSuccess) {
+      if (isSuccess) {
+        String? token = await _secureStorage.read(key: 'token');
+        if (token != null) {
 
+          final userProvider = Provider.of<UserProvider>(context, listen: false);
+          await userProvider.fetchProfileData();
+          final profileData = userProvider.profileData;
+
+          if (profileData != null && profileData.staffProfile != null) {
+            final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
+
+            if (staffAttendanceMethod == "0") {
+              print('Navigating to Dashboard (Staff_attendance_method = 0)');
+              Navigator.pushReplacementNamed(context, '/dashboard');
+            } else if (staffAttendanceMethod == "1") {
+              final prefs = await SharedPreferences.getInstance();
+              final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+              final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+
+              if (isAttendanceMarkedForToday) {
+                print('Navigating to Dashboard (Attendance already marked for today)');
+                Navigator.pushReplacementNamed(context, '/dashboard');
+              } else {
+                print('Navigating to FaceOnboarding (Attendance not marked)');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => FaceOnboarding()),
+                );
+              }
+            } else {
+              print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
+              Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
+            }
+          } else {
+            print('Error: Failed to fetch profile data');
+            Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+          print("Login Successful");
+          Fluttertoast.showToast(
+            msg: "Login Successful ✅",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: AppColors.primaryColor,
+            textColor: Colors.white,
+          );
+
+          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
+        } else {
+          print("Login failed");
+        }
+      } else {
         Fluttertoast.showToast(
           msg: "Invalid username or password. Please try again ❌.",
           toastLength: Toast.LENGTH_SHORT,
@@ -120,43 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.black,
           textColor: Colors.white,
         );
-
-        return;
-
       }
-
-      String? token = await _secureStorage.read(key: 'token');
-
-      if (token == null) {
-
-        Fluttertoast.showToast(
-          msg: "Login failed. Please try again later ❌.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.black,
-          textColor: Colors.white,
-        );
-
-        return;
-
-      }
-
-      await _fetchAttendanceMethod(); // Ensure attendance method is loaded
-
-      if (!mounted) return; // Prevent errors if the widget is unmounted
-
-      Fluttertoast.showToast(
-        msg: "Login Successful ✅",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: AppColors.primaryColor,
-        textColor: Colors.white,
-      );
-
-      // Navigate to the appropriate screen
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => _getNextScreen()));
-
     }
+
 
     return Scaffold(
         backgroundColor: AppColors.whiteColor,
@@ -347,3 +309,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
@@ -386,6 +387,7 @@ class ApiService{
       );
 
       if (response.statusCode == 200) {
+        print(response.body);
 
         return true;
 
@@ -403,6 +405,52 @@ class ApiService{
 
   }
 
+  Future<AddLeadDataModel?> fetchAddLeadData() async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/InquiryDetails"); // Use your baseUrl
+    print("Full API URL for dropdown options: $url");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+      if (token == null || token.isEmpty) {
+        print("Error: Token is null or empty");
+        return null;
+      }
+
+      // Send token in the body instead of header
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'token': token, // Adjust this key if API expects something else (e.g., "auth_token")
+        }),
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        print("Parsed JSON Data: $jsonData");
+
+        // Check for success status (adjust based on API convention)
+        if (jsonData['status'] == null || jsonData['status'] == 1) { // Assuming 1 is success
+          return AddLeadDataModel.fromJson(jsonData);
+        } else {
+          print("API Error: ${jsonData['message']}");
+          return null;
+        }
+      } else {
+        print("Error fetching dropdown options: Status ${response.statusCode}, Body: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("API error fetching dropdown options: $e");
+      return null;
+    }
+  }
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 
     final url = Uri.parse("$baseUrl/Attendance");

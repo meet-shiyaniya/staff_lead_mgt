@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/bottom_navigation.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:hr_app/social_module/login_screen/login_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../Provider/UserProvider.dart';
+import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
+import '../dashboard.dart';
+// import '../face_onboarding.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,41 +17,84 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   bool _isExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _navigateToNextScreen();
+    _checkInitialNavigation();
 
     Future.delayed(const Duration(milliseconds: 80), () {
-      setState(() {
-        _isExpanded = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isExpanded = true;
+        });
+      }
     });
   }
 
-  Future<void> _navigateToNextScreen() async {
+  Future<void> _checkInitialNavigation() async {
     await Future.delayed(const Duration(seconds: 3));
 
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final entryDate = prefs.getString('entryDate');
-    final isAttendance = prefs.getBool('attendanceMarked') ?? false;
+    if (!mounted) return; // Check if widget is still mounted
 
-    if (isAttendance && entryDate == today) {
-      // Attendance already marked for today, navigate to dashboard
-      Navigator.pushReplacementNamed(context, '/dashboard');
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+    final token = await _secureStorage.read(key: 'token');
+
+    if (isFirstLaunch || token == null || token.isEmpty) {
+      print('First launch or no token, navigating to LoginScreen');
+      await prefs.setBool('isFirstLaunch', false);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+        // Handle subsequent navigation in the LoginScreen instead of here
+      }
     } else {
-      // No attendance marked or date changed, reset and navigate to login
-      prefs.setBool('attendanceMarked', false); // Reset attendance only for the new day
-      // prefs.setString('entryDate', today); // Update the entry date
-      Navigator.pushReplacementNamed(context, '/login');
+      _handleAuthenticatedFlow();
     }
   }
 
+  Future<void> _handleAuthenticatedFlow() async {
+    if (!mounted) return;
 
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.fetchProfileData();
+    final profileData = userProvider.profileData;
+
+    if (!mounted) return;
+
+    if (profileData != null && profileData.staffProfile != null) {
+      final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
+
+      if (staffAttendanceMethod == "0") {
+        print('Navigating to Dashboard (Staff_attendance_method = 0)');
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else if (staffAttendanceMethod == "1") {
+        final prefs = await SharedPreferences.getInstance();
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+
+        if (isAttendanceMarkedForToday) {
+          print('Navigating to Dashboard (Attendance already marked for today)');
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          print('Navigating to FaceOnboarding (Attendance not marked)');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => FaceOnboarding()),
+          );
+        }
+      } else {
+        print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
+        Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
+      }
+    } else {
+      print('Error: Failed to fetch profile data');
+      Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,5 +130,10 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
