@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Provider/UserProvider.dart';
+import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
 import '../dashboard.dart';
-import '../face_onboarding.dart';
+// import '../face_onboarding.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

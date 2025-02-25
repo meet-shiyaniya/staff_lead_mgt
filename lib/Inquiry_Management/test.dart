@@ -1345,7 +1345,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Lead',style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
+        title: Text('Visit Entry',style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
         backgroundColor: AppColor.Buttoncolor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios,color: Colors.white,),

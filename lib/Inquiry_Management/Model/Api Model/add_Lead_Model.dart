@@ -22,34 +22,17 @@ class AddLeadDataModel {
     required this.inqSource,
     required this.apxTime,
   });
-
   factory AddLeadDataModel.fromJson(Map<String, dynamic> json) => AddLeadDataModel(
-    cststatus: (json['cststatus'] as List<dynamic>?)
-        ?.map((x) => CstStatus.fromJson(x))
-        .toList() ?? [],
-    areaCityCountry: (json['area_city_country'] as List<dynamic>?)
-        ?.map((x) => AreaCityCountry.fromJson(x))
-        .toList() ?? [],
-    intArea: (json['IntArea'] as List<dynamic>?)
-        ?.map((x) => AreaCityCountry.fromJson(x))
-        .toList() ?? [],
-    budget: json['Budget'] != null ? Budget.fromJson(json['Budget']) : null,
-    purposeOfBuying: json['Purpose_of_Buying'] != null
-        ? PurposeOfBuying.fromJson(json['Purpose_of_Buying'])
-        : null,
-    propertyConfiguration: (json['PropertyConfiguration'] as List<dynamic>?)
-        ?.map((x) => PropertyConfiguration.fromJson(x))
-        .toList() ?? [],
-    intSite: (json['IntSite'] as List<dynamic>?)
-        ?.map((x) => IntSite.fromJson(x))
-        .toList() ?? [],
-    inqType: (json['InqType'] as List<dynamic>?)
-        ?.map((x) => InqType.fromJson(x))
-        .toList() ?? [],
-    inqSource: (json['InqSource'] as List<dynamic>?)
-        ?.map((x) => InqSource.fromJson(x))
-        .toList() ?? [],
-    apxTime: json['ApxTime'] != null ? ApxTime.fromJson(json['ApxTime']) : null,
+    cststatus: (json['cststatus'] as List<dynamic>?)?.map((x) => CstStatus.fromJson(x)).toList() ?? [],
+    areaCityCountry: (json['area_city_country'] as List<dynamic>?)?.map((x) => AreaCityCountry.fromJson(x)).toList() ?? [],
+    intArea: (json['IntArea'] as List<dynamic>?)?.map((x) => AreaCityCountry.fromJson(x)).toList() ?? [],
+    budget: json['Budget'] != null ? Budget.fromJson(json['Budget']!) : null,
+    purposeOfBuying: json['Purpose_of_Buying'] != null ? PurposeOfBuying.fromJson(json['Purpose_of_Buying']!) : null,
+    propertyConfiguration: (json['PropertyConfiguration'] as List<dynamic>?)?.map((x) => PropertyConfiguration.fromJson(x)).toList() ?? [],
+    intSite: (json['IntSite'] as List<dynamic>?)?.map((x) => IntSite.fromJson(x)).toList() ?? [],
+    inqType: (json['InqType'] as List<dynamic>?)?.map((x) => InqType.fromJson(x)).toList() ?? [],
+    inqSource: (json['InqSource'] as List<dynamic>?)?.map((x) => InqSource.fromJson(x)).toList() ?? [],
+    apxTime: json['ApxTime'] != null ? ApxTime.fromJson(json['ApxTime']!) : null,
   );
 }
 
@@ -79,11 +62,11 @@ class AreaCityCountry {
   });
 
   factory AreaCityCountry.fromJson(Map<String, dynamic> json) => AreaCityCountry(
-    id: json['id'],
-    area: json['area'],
-    city: json['city'],
-    state: json['state'],
-    country: json['country'],
+    id: json['id'] ?? '',  // Use ?? to provide default value if 'id' is null
+    area: json['area'] ?? '',
+    city: json['city'] ?? '',
+    state: json['state'] ?? '',
+    country: json['country'] ?? '',
   );
 }
 
@@ -92,8 +75,10 @@ class Budget {
 
   Budget({required this.values});
 
-  factory Budget.fromJson(Map<String, dynamic> json) =>
-      Budget(values: json['values']);
+
+  factory Budget.fromJson(Map<String, dynamic> json) => Budget(
+    values: json['values'] ?? '', //provide a default value
+  );
 }
 
 class PurposeOfBuying {
@@ -128,8 +113,8 @@ class IntSite {
   IntSite({required this.id, required this.productName});
 
   factory IntSite.fromJson(Map<String, dynamic> json) => IntSite(
-    id: json['id'],
-    productName: json['product_name'],
+    id: json['id'] ?? '',
+    productName: json['product_name'] ?? '',
   );
 }
 
@@ -140,8 +125,8 @@ class InqType {
   InqType({required this.id, required this.inquiryDetails});
 
   factory InqType.fromJson(Map<String, dynamic> json) => InqType(
-    id: json['id'],
-    inquiryDetails: json['inquiry_details'],
+    id: json['id'] ?? '',  // Use ?? to provide default value if 'id' is null
+    inquiryDetails: json['inquiry_details'] ?? '',
   );
 }
 
@@ -162,6 +147,7 @@ class ApxTime {
 
   ApxTime({required this.apxTimeData});
 
-  factory ApxTime.fromJson(Map<String, dynamic> json) =>
-      ApxTime(apxTimeData: json['ApxTimeData']);
+  factory ApxTime.fromJson(Map<String, dynamic> json) => ApxTime(
+      apxTimeData: json['ApxTimeData'] ?? '' //provide a default value
+  );
 }
