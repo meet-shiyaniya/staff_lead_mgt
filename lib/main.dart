@@ -16,10 +16,15 @@ void main() {
     ChangeNotifierProvider(
         create: (_)=>UserProvider(),
       child:MaterialApp(
+        theme: ThemeData(
+          fontFamily: 'poppins_thin',
+          useMaterial3: true,
+        ),
         debugShowCheckedModeBanner: false,
         title: "RealtoSmart",
         initialRoute: "/",
         routes: {
+           // "/":(context)=> BottomNavScreen(),
           "/":(context)=> SplashScreen(),
           '/login': (context) => LoginScreen(),
           '/dashboard': (context) => BottomNavScreen(),
