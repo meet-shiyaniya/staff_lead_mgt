@@ -352,6 +352,7 @@ class _BookingScreenState extends State<BookingScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Form submitted successfully!')),
     );
+    Navigator.pop(context);
   }
 
   void _addCashField() {

@@ -1315,12 +1315,12 @@ import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
-class AddLeadScreen extends StatefulWidget {
+class AddVisitScreen extends StatefulWidget {
   @override
-  _AddLeadScreenState createState() => _AddLeadScreenState();
+  _AddVisitScreenState createState() => _AddVisitScreenState();
 }
 
-class _AddLeadScreenState extends State<AddLeadScreen> {
+class _AddVisitScreenState extends State<AddVisitScreen> {
   PageController _pageController = PageController();
   int _currentPage = 0;
   DateTime? nextFollowUp;
@@ -1458,7 +1458,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pop(context);
+                },
                 child: Text('Submit',style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),

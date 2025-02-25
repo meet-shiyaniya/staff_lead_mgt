@@ -4,7 +4,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart';
+import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/booking_Screen.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/quotation_Screen.dart';
+import 'package:hr_app/Inquiry_Management/test.dart';
 // import 'package:inquiry_management_ui/Utils/Custom%20widgets/custom_screen.dart';
 // import 'package:inquiry_management_ui/Utils/Custom%20widgets/quotation_Screen.dart';
 import '../../Model/followup_Model.dart';
@@ -131,64 +133,19 @@ class TestCard extends StatelessWidget {
 
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => LeaddetailScreen(
-                        selectedApx: "1-2 Days",
-                        selectedPurpose: "budget",
-                        selectedTime: "12:00 AM",
-                        data: data,
-                        callList: callList,
-                        selectedaction: "Package 1",
-                        selectedButton: "Followup",
-                        controller: nextFollowupcontroller,
-                        isTiming: isTiming,),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => AddVisitScreen(),));
                     },
-                    child: CircleAvatar(
-                        backgroundColor: Colors.deepPurple.shade300,
-                        child: Icon(Icons.call, color: Colors.white)),
+                    child: Image(image: AssetImage("asset/Inquiry_module/map.png"),width: 25,height: 25,),
                   ),
-                  SizedBox(width: 6),
+                  SizedBox(width: 16),
+
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => QuotationScreen(),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => BookingScreen(),));
                     },
-                    child: CircleAvatar(
-                        backgroundColor: Colors.deepPurple.shade300,
-                        child: Icon(Icons.library_books, color: Colors.white)),
+                    child: Image(image: AssetImage("asset/Inquiry_module/rupee.png"),width: 25,height: 25,),
                   ),
-                  SizedBox(width: 6),
-                  CircleAvatar(
-                    backgroundColor: Colors.deepPurple.shade300,
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_vert,color: Colors.white,),
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          // Handle Edit action
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: true,),));
-                        } else if (value == 'delete') {
-                          // Handle Delete action
-                        }
-                      },
-                      offset: Offset(0, 20),
-                      itemBuilder: (BuildContext context) {
-                        return [
-                          PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Text(
-                              'Edit',
-                              style: TextStyle(fontFamily: "poppins_thin"),
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Text(
-                              'Delete',
-                              style: TextStyle(fontFamily: "poppins_thin"),
-                            ),
-                          ),
-                        ];
-                      },
-                    ),
-                  ),
+                  SizedBox(width: 10,)
                 ],
               ),
               SizedBox(height: 12),

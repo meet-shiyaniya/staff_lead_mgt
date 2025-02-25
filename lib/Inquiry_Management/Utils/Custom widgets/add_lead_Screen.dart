@@ -1,16 +1,19 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
+// import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+// import 'package:inquiry_management_ui/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-import '../../../Provider/UserProvider.dart';
 import '../../Inquiry Management Screens/all_inquiries_Screen.dart';
+import '../../test.dart';
 import '../Colors/app_Colors.dart';
 import 'custom_buttons.dart';
 
+// import 'Utils/Custom widgets/custom_buttons.dart';
+
 class AddLeadScreen extends StatefulWidget {
-  final bool? isEdit;
-  AddLeadScreen({super.key, this.isEdit});
+   final bool? isEdit;
+   AddLeadScreen({super.key, this.isEdit});
 
   @override
   _AddLeadScreenState createState() => _AddLeadScreenState();
@@ -23,11 +26,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String? _selectedCity;
   String? _selectedInquiryType;
   String? _selectedInqSource;
-  String? _selectedIntSite;
-  String? _selectedBudget;
-  String? _selectedPurpose;
-  String? _selectedApxTime;
-  String? _selectedPropertyConfiguration;
 
   bool _isCSTInterestVisible = false;
   String? _selectedCSTType = 'Service';
@@ -46,19 +44,18 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String approxBuying = "";
   String serviceDuration = "";
 
-  final List<String> _steps = ["Personal Info", "CST & Inquiry", "Follow Up"];
+  // List Options
+  final List<String> products = ['Laptop', 'Mobile Phone', 'Tablet'];
+  final List<String> services = ['IELTS (UK)', 'IELTS (US)', 'TOEFL'];
+  final List<String> areas = ['Area 1', 'Area 2', 'Area 3'];
+  final List<String> cities = ['City A', 'City B', 'City C'];
+  final List<String> countryCodes = ['+1', '+44', '+91'];
+  final List<String> inquiryTypes = ['Type A', 'Type B', 'Type C'];
+  final List<String> inquirySources = ['Source 1', 'Source 2', 'Source 3'];
+  final List<String> buyingTimes = ['Now', 'Soon', 'Later'];
+  final List<String> durations = ['1-month', '3-month', '6-month', '12-month'];
 
-  @override
-  void initState() {
-    super.initState();
-    // Fetch dropdown options when the screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      userProvider.fetchAddLeadData().then((_) {
-        setState(() {});
-      });
-    });
-  }
+  final List<String> _steps = ["Personal Info", "CST & Inquiry", "Follow Up"];
 
   @override
   Widget build(BuildContext context) {
@@ -79,117 +76,53 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               color: Colors.white,
             )),
       ),
-      body: Consumer<UserProvider>(
-        builder: (context, userProvider, child) {
-          if (userProvider.isLoadingDropdown) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final dropdownData = userProvider.dropdownData;
-          if (dropdownData == null) {
-            print("Dropdown data is null");
-            return const Center(child: Text("Failed to load dropdown options"));
-          }
-
-          // Extract data from AddLeadDataModel with null safety and filtering
-          final countryCodes = ['+1', '+44', '+91']; // Hardcoded for now; update from API if available
-          final areas = dropdownData.areaCityCountry.map((area) => area.area).where((area) => area.trim().isNotEmpty || area == 'Surat' || area == 'Varachha').toList();
-          final cities = dropdownData.areaCityCountry.map((city) => city.city).where((city) => city.trim().isNotEmpty || city == 'Surat').toList();
-          final inquiryTypes = dropdownData.inqType.map((inq) => inq.inquiryDetails).where((type) => type.trim().isNotEmpty).toList();
-          final inquirySources = dropdownData.inqSource.map((source) => source.source).where((source) => source.trim().isNotEmpty).toList();
-          final buyingTimes = dropdownData.apxTime?.apxTimeData.split(',').map((e) => e.trim()).where((time) => time.isNotEmpty).toList() ?? ['2-3 days', '1 week', '1 month'];
-          final budgets = dropdownData.budget?.values.split(',').map((value) => value.trim()).where((value) => value.isNotEmpty).toList() ?? ['0-10', '10-20', '20-50'];
-          final purposes = dropdownData.purposeOfBuying != null
-              ? [dropdownData.purposeOfBuying!.investment, dropdownData.purposeOfBuying!.personalUse].where((purpose) => purpose.isNotEmpty).toList()
-              : ['Investment', 'Personal Use'];
-          final propertyConfigurations = dropdownData.propertyConfiguration.map((prop) => prop.propertyType).where((config) => config.trim().isNotEmpty).toList();
-          final intSites = dropdownData.intSite.map((site) => site.productName).where((site) => site.trim().isNotEmpty).toList();
-
-          print("Areas: $areas");
-          print("Cities: $cities");
-          print("Buying Times: $buyingTimes");
-          print("Budgets: $budgets");
-          print("Purposes: $purposes");
-          print("Property Configurations: $propertyConfigurations");
-          print("Int Sites: $intSites");
-          print("Inquiry Types: $inquiryTypes");
-          print("Inquiry Sources: $inquirySources");
-
-          return Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildFormContent(countryCodes, areas, cities, inquiryTypes, inquirySources, buyingTimes, budgets, purposes, propertyConfigurations, intSites),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: _currentStep == 0
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_currentStep > 0)
-                      GradientButton(
-                        buttonText: "",
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                        width: 40.0,
-                        onPressed: _goToPreviousStep,
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildFormContent(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: _currentStep == 0
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentStep > 0)
+                  GradientButton(
+                    buttonText: "",
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    width: 40.0,
+                    onPressed: _goToPreviousStep,
+                  ),
+                GradientButton(
+                  buttonText:
+                  _currentStep == _steps.length - 1 ? "Submit" : "Next",
+                  width: 120.0,
+                  onPressed: _currentStep == _steps.length - 1
+                      ? () {
+                    Navigator.pop(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                        const AllInquiriesScreen(), // Navigate
                       ),
-                    GradientButton(
-                      buttonText: _currentStep == _steps.length - 1 ? "Submit" : "Next",
-                      width: 120.0,
-                      onPressed: _currentStep == _steps.length - 1
-                          ? () {
-                        Navigator.pop(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AllInquiriesScreen(),
-                          ),
-                        );
-                      }
-                          : _goToNextStep,
-                    ),
-                  ],
+                    );
+                  }
+                      : _goToNextStep,
                 ),
-              )
-            ],
-          );
-        },
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
 
-  Widget _buildFormContent(List<String> countryCodes, List<String> areas, List<String> cities, List<String> inquiryTypes, List<String> inquirySources, List<String> buyingTimes, List<String> budgets, List<String> purposes, List<String> propertyConfigurations, List<String> intSites) {
-    // Filter out empty strings, but allow non-empty strings (including "Surat" or numbers)
-    final filteredAreas = areas.where((area) => area.trim().isNotEmpty || area == 'Surat' || area == 'Varachha').toList(); // Allow specific non-empty values
-    final filteredCities = cities.where((city) => city.trim().isNotEmpty || city == 'Surat').toList(); // Allow specific non-empty values
-    final filteredIntSites = intSites.where((site) => site.trim().isNotEmpty).toList();
-    final filteredPropertyConfigurations = propertyConfigurations.where((config) => config.trim().isNotEmpty).toList();
-    final filteredInquiryTypes = inquiryTypes.where((type) => type.trim().isNotEmpty).toList();
-    final filteredInquirySources = inquirySources.where((source) => source.trim().isNotEmpty).toList();
-
-    // Handle Budget: Split the comma-separated string into a list of numbers
-    final filteredBudgets = budgets.isNotEmpty && budgets[0].isNotEmpty
-        ? budgets[0].split(',').map((value) => value.trim()).where((value) => value.isNotEmpty).toList()
-        : ['0-10', '10-20', '20-50']; // Default values if empty
-
-    // Handle Buying Times: Split the comma-separated string and filter non-empty
-    final filteredBuyingTimes = buyingTimes.isNotEmpty
-        ? buyingTimes.where((time) => time.trim().isNotEmpty).toList()
-        : ['2-3 days', '1 week', '1 month']; // Default values if empty
-
-    print("Filtered Areas: $filteredAreas");
-    print("Filtered Cities: $filteredCities");
-    print("Filtered Buying Times: $filteredBuyingTimes");
-    print("Filtered Budgets: $filteredBudgets");
-    print("Filtered Purposes: $purposes");
-    print("Filtered Property Configurations: $filteredPropertyConfigurations");
-    print("Filtered Int Sites: $filteredIntSites");
-    print("Filtered Inquiry Types: $filteredInquiryTypes");
-    print("Filtered Inquiry Sources: $filteredInquirySources");
-
+  Widget _buildFormContent() {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(0.0),
@@ -201,7 +134,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 "Personal Inquiry",
                 style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
               ),
-              Card(child: _buildPersonalInquirySection(countryCodes, filteredAreas, filteredCities)),
+              Card(child: _buildPersonalInquirySection()),
             ],
             if (_currentStep == 1) ...[
               const Text(
@@ -209,8 +142,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
               ),
               Card(
-                child: _buildCSTInterestSection(context, filteredAreas, filteredIntSites, filteredBudgets, purposes, filteredBuyingTimes, filteredPropertyConfigurations, filteredInquirySources),
+                child: _buildCSTInterestSection(context),
               ),
+
             ],
             if (_currentStep == 2) ...[
               const SizedBox(height: 16),
@@ -218,7 +152,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 "Inquiry Information",
                 style: TextStyle(fontSize: 24, fontFamily: "poppins_thin"),
               ),
-              Card(child: _buildInquiryInformationSection(filteredInquiryTypes, filteredInquirySources)),
+              Card(child: _buildInquiryInformationSection()),
               SizedBox(height: 15,),
               Text(
                 "Follow up",
@@ -231,6 +165,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       ),
     );
   }
+
   void _goToNextStep() {
     if (_currentStep < _steps.length - 1) {
       setState(() {
@@ -244,12 +179,185 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     if (_currentStep > 0) {
       setState(() {
         _currentStep--;
-        print("Navigating to next step: $_currentStep");
+        print("Navigating to previous step: $_currentStep");
       });
     }
   }
 
-  Widget _buildPersonalInquirySection(List<String> countryCodes, List<String> areas, List<String> cities) {
+
+  Widget _buildCSTInterestSection(BuildContext context) {
+    return   Padding(
+      padding: const EdgeInsets.all(14.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          const SizedBox(height: 16),
+
+          // Int Area and Int Site
+          Column(
+            children: [
+              Row( // Use Row as the parent
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Int Area*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
+                        CombinedDropdownTextField(
+                          options: areaOptions,
+                          onSelected: (String selectedArea) {
+                            setState(() {
+                              _selectedArea = selectedArea;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                ],
+              ),
+              SizedBox(height: 16,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Int Site*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
+                  CombinedDropdownTextField(
+                    options: intSiteOptions,
+                    onSelected: (String selectedIntSite) {
+                      setState(() {
+                        _selectedIntSite = selectedIntSite;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Budget and Purpose
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Budget(In Lac)*",
+                        style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+                    CombinedDropdownTextField(
+                      options: budgetOptions,
+                      onSelected: (String selectedBudget) {
+                        setState(() {
+                          _selectedBudget = selectedBudget;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Purpose of Buying*",
+                  style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: purposeOptions,
+                onSelected: (String selectedPurpose) {
+                  setState(() {
+                    _selectedPurpose = selectedPurpose;
+                  });
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 16,),
+          // Apx Buying Time and Property Configuration
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Apx Buying Time : *",
+                        style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+                    CombinedDropdownTextField(
+                      options: apxTimeOptions,
+                      onSelected: (String selectedApxTime) {
+                        setState(() {
+                          _selectedApxTime = selectedApxTime;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Property Configuration*",
+                  style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: propertyConfigurationOptions,
+                onSelected: (String selectedPropertyConfiguration) {
+                  setState(() {
+                    _selectedPropertyConfiguration =
+                        selectedPropertyConfiguration;
+                  });
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 15,),
+          // Inq Source
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Inq Source*", style: TextStyle(fontSize: 16,fontFamily: "poppins_thin")),
+              CombinedDropdownTextField(
+                options: inqSourceOptions,
+                onSelected: (String selectedInqSource) {
+                  setState(() {
+                    _selectedInqSource = selectedInqSource;
+                  });
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  // String? _selectedArea;
+  String? _selectedIntSite;
+  String? _selectedBudget;
+  String? _selectedPurpose;
+  String? _selectedApxTime;
+  String? _selectedPropertyConfiguration;
+  // String? _selectedInqSource;
+
+  // Define lists of options for each dropdown
+  List<String> areaOptions = ['Area 1', 'Area 2', 'Area 3']; // Replace with your actual data
+  List<String> intSiteOptions = ['Site A', 'Site B', 'Site C']; // Replace with your actual data
+  List<String> budgetOptions = ['50-75 Lac', '75-100 Lac', '100+ Lac']; // Replace with your actual data
+  List<String> purposeOptions = ['Investment', 'Self Use', 'Rental Income']; // Replace with your actual data
+  List<String> apxTimeOptions = ['2-3 Days', 'Week'];
+  List<String> propertyConfigurationOptions = ['Apartment', 'Villa', 'Land']; // Replace with your actual data
+  List<String> inqSourceOptions = ['Website', 'Referral', 'Social Media']; // Replace with your actual data
+
+  Widget _buildPersonalInquirySection() {
     return Padding(
       padding: const EdgeInsets.all(18.0),
       child: Column(
@@ -258,13 +366,13 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
             children: [
               // Country Code Dropdown
               SizedBox(
-                width: 80,
+                width: 90,
                 child: DropdownButton2(
                   isExpanded: true,
                   hint: Text('+91',
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: Colors.black,
-                          fontSize: 14,
+                          fontSize: 16,
                           fontFamily: "poppins_thin")),
                   value: _selectedCountryCode,
                   buttonStyleData: ButtonStyleData(
@@ -286,10 +394,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     ),
                     elevation: 10,
                   ),
-                  items: countryCodes.map((code) => DropdownMenuItem(
-                    value: code,
-                    child: Text(code, style: const TextStyle(fontFamily: "poppins_thin")),
-                  )).toList(),
+                  items: const [
+                    DropdownMenuItem(
+                        value: '+87',
+                        child: Text('+87',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: '+78',
+                        child: Text('+91',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: '+73',
+                        child: Text('+85',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                  ],
                   onChanged: (value) {
                     setState(() {
                       _selectedCountryCode = value;
@@ -358,10 +476,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     ),
                     elevation: 10,
                   ),
-                  items: areas.map((area) => DropdownMenuItem(
-                    value: area,
-                    child: Text(area, style: const TextStyle(fontFamily: "poppins_thin")),
-                  )).toList(),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'Area 1',
+                        child: Text('Area 1',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: 'Area 2',
+                        child: Text('Area 2',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: 'Area 3',
+                        child: Text('Area 3',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                  ],
                   onChanged: (value) {
                     setState(() {
                       _selectedArea = value;
@@ -399,10 +527,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     ),
                     elevation: 10,
                   ),
-                  items: cities.map((city) => DropdownMenuItem(
-                    value: city,
-                    child: Text(city, style: const TextStyle(fontFamily: "poppins_thin")),
-                  )).toList(),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'Surat',
+                        child: Text('Surat',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: 'Ahmedabad',
+                        child: Text('Ahmedabad',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: 'Vadodara',
+                        child: Text('Vadodara',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                  ],
                   onChanged: (value) {
                     setState(() {
                       _selectedCity = value;
@@ -474,10 +612,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     ),
                     elevation: 10,
                   ),
-                  items: countryCodes.map((code) => DropdownMenuItem(
-                    value: code,
-                    child: Text(code, style: const TextStyle(fontFamily: "poppins_thin")),
-                  )).toList(),
+                  items: const [
+                    DropdownMenuItem(
+                        value: '+87',
+                        child: Text('+87',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: '+78',
+                        child: Text('+91',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                    DropdownMenuItem(
+                        value: '+73',
+                        child: Text('+85',
+                            style: TextStyle(fontFamily: "poppins_thin"))),
+                  ],
                   onChanged: (value) {
                     setState(() {
                       _selectedCountryCode = value;
@@ -561,6 +709,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 ),
               ),
               const SizedBox(width: 10,),
+
               Expanded(
                 child: TextFormField(
                   controller: _anniversaryController,
@@ -595,365 +744,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     );
   }
 
-  Widget _buildCSTInterestSection(BuildContext context, List<String> areas, List<String> intSites, List<String> budgets, List<String> purposes, List<String> buyingTimes, List<String> propertyConfigurations, List<String> inquirySources) {
-    return Padding(
-      padding: const EdgeInsets.all(14.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-
-          // Int Area and Int Site
-          Column(
-            children: [
-              Row( // Use Row as the parent
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Int Area*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-                        DropdownButton2(
-                          isExpanded: true,
-                          hint: Text('Select Int Area',
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontFamily: "poppins_thin")),
-                          value: _selectedArea,
-                          buttonStyleData: ButtonStyleData(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              color: Colors.grey.shade200,
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.grey.shade300,
-                                    blurRadius: 4,
-                                    spreadRadius: 2)
-                              ],
-                            ),
-                          ),
-                          underline: const Center(),
-                          dropdownStyleData: DropdownStyleData(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black, width: 2),
-                            ),
-                            elevation: 10,
-                          ),
-                          items: areas.map((area) => DropdownMenuItem(
-                            value: area,
-                            child: Text(area, style: const TextStyle(fontFamily: "poppins_thin")),
-                          )).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedArea = value;
-                              print('Int Area Dropdown changed to: $_selectedArea');
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16,),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Int Site*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-                  DropdownButton2(
-                    isExpanded: true,
-                    hint: Text('Select Int Site',
-                        style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontFamily: "poppins_thin")),
-                    value: _selectedIntSite,
-                    buttonStyleData: ButtonStyleData(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        color: Colors.grey.shade200,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.grey.shade300,
-                              blurRadius: 4,
-                              spreadRadius: 2)
-                        ],
-                      ),
-                    ),
-                    underline: const Center(),
-                    dropdownStyleData: DropdownStyleData(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black, width: 2),
-                      ),
-                      elevation: 10,
-                    ),
-                    items: intSites.map((site) => DropdownMenuItem(
-                      value: site,
-                      child: Text(site, style: const TextStyle(fontFamily: "poppins_thin")),
-                    )).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedIntSite = value;
-                        print('Int Site Dropdown changed to: $_selectedIntSite');
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Budget and Purpose
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Budget(In Lac)*",
-                        style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-                    DropdownButton2(
-                      isExpanded: true,
-                      hint: Text('Select Budget',
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontFamily: "poppins_thin")),
-                      value: _selectedBudget,
-                      buttonStyleData: ButtonStyleData(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          color: Colors.grey.shade200,
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.grey.shade300,
-                                blurRadius: 4,
-                                spreadRadius: 2)
-                          ],
-                        ),
-                      ),
-                      underline: const Center(),
-                      dropdownStyleData: DropdownStyleData(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2),
-                        ),
-                        elevation: 10,
-                      ),
-                      items: budgets.map((budget) => DropdownMenuItem(
-                        value: budget.isNotEmpty ? budget : null,
-                        child: Text(budget, style: const TextStyle(fontFamily: "poppins_thin")),
-                      )).where((item) => item.value != null).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedBudget = value;
-                          print('Budget Dropdown changed to: $_selectedBudget');
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Purpose of Buying*",
-                  style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-              DropdownButton2(
-                isExpanded: true,
-                hint: Text('Select Purpose',
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: "poppins_thin")),
-                value: _selectedPurpose,
-                buttonStyleData: ButtonStyleData(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: Colors.grey.shade200,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2)
-                    ],
-                  ),
-                ),
-                underline: const Center(),
-                dropdownStyleData: DropdownStyleData(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 2),
-                  ),
-                  elevation: 10,
-                ),
-                items: purposes.where((purpose) => purpose.isNotEmpty).map((purpose) => DropdownMenuItem(
-                  value: purpose,
-                  child: Text(purpose, style: const TextStyle(fontFamily: "poppins_thin")),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPurpose = value;
-                    print('Purpose Dropdown changed to: $_selectedPurpose');
-                  });
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 16,),
-          // Apx Buying Time and Property Configuration
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Apx Buying Time : *",
-                        style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-                    DropdownButton2(
-                      isExpanded: true,
-                      hint: Text('Select Apx Buying Time',
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontFamily: "poppins_thin")),
-                      value: _selectedApxTime,
-                      buttonStyleData: ButtonStyleData(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          color: Colors.grey.shade200,
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.grey.shade300,
-                                blurRadius: 4,
-                                spreadRadius: 2)
-                          ],
-                        ),
-                      ),
-                      underline: const Center(),
-                      dropdownStyleData: DropdownStyleData(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2),
-                        ),
-                        elevation: 10,
-                      ),
-                      items: buyingTimes.map((time) => DropdownMenuItem(
-                        value: time,
-                        child: Text(time, style: const TextStyle(fontFamily: "poppins_thin")),
-                      )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedApxTime = value;
-                          print('Apx Buying Time Dropdown changed to: $_selectedApxTime');
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Property Configuration*",
-                  style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-              DropdownButton2(
-                isExpanded: true,
-                hint: Text('Select Property Configuration',
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: "poppins_thin")),
-                value: _selectedPropertyConfiguration,
-                buttonStyleData: ButtonStyleData(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: Colors.grey.shade200,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2)
-                    ],
-                  ),
-                ),
-                underline: const Center(),
-                dropdownStyleData: DropdownStyleData(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 2),
-                  ),
-                  elevation: 10,
-                ),
-                items: propertyConfigurations.map((config) => DropdownMenuItem(
-                  value: config,
-                  child: Text(config, style: const TextStyle(fontFamily: "poppins_thin")),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPropertyConfiguration = value;
-                    print('Property Configuration Dropdown changed to: $_selectedPropertyConfiguration');
-                  });
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 15,),
-          // Inq Source
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Inq Source*", style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-              DropdownButton2(
-                isExpanded: true,
-                hint: Text('Select Inq Source',
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: "poppins_thin")),
-                value: _selectedInqSource,
-                buttonStyleData: ButtonStyleData(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: Colors.grey.shade200,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2)
-                    ],
-                  ),
-                ),
-                underline: const Center(),
-                dropdownStyleData: DropdownStyleData(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 2),
-                  ),
-                  elevation: 10,
-                ),
-                items: inquirySources.map((source) => DropdownMenuItem(
-                  value: source,
-                  child: Text(source, style: const TextStyle(fontFamily: "poppins_thin")),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedInqSource = value;
-                    print('Inq Source Dropdown changed to: $_selectedInqSource');
-                  });
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInquiryInformationSection(List<String> inquiryTypes, List<String> inquirySources) {
+  Widget _buildInquiryInformationSection() {
     return Padding(
       padding: const EdgeInsets.all(18.0),
       child: Center(
@@ -986,10 +777,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 ),
                 elevation: 10,
               ),
-              items: inquiryTypes.map((type) => DropdownMenuItem(
-                value: type,
-                child: Text(type, style: const TextStyle(fontFamily: "poppins_thin")),
-              )).toList(),
+              items: const [
+                DropdownMenuItem(
+                    value: 'Telephone',
+                    child: Text('Telephone',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Website',
+                    child: Text('Website',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Facebook',
+                    child: Text('Facebook',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+              ],
               onChanged: (value) {
                 setState(() {
                   _selectedInquiryType = value;
@@ -1025,10 +826,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 ),
                 elevation: 10,
               ),
-              items: inquirySources.map((source) => DropdownMenuItem(
-                value: source,
-                child: Text(source, style: const TextStyle(fontFamily: "poppins_thin")),
-              )).toList(),
+              items: const [
+                DropdownMenuItem(
+                    value: 'Events',
+                    child: Text('Events',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Website',
+                    child: Text('Website',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+                DropdownMenuItem(
+                    value: 'Facebook',
+                    child: Text('Facebook',
+                        style: TextStyle(fontFamily: "poppins_thin"))),
+              ],
               onChanged: (value) {
                 setState(() {
                   _selectedInqSource = value;
@@ -1084,6 +895,179 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         maxLines: 3,
+      ),
+    );
+  }
+}
+// import 'package:flutter/material.dart';
+// import 'package:flutter/scheduler.dart';
+// import 'package:flutter/material.dart';
+
+class CombinedDropdownTextField extends StatefulWidget {
+  final List<String> options;
+  final Function(String) onSelected;
+
+  const CombinedDropdownTextField({
+    super.key,
+    required this.options,
+    required this.onSelected,
+  });
+
+  @override
+  State<CombinedDropdownTextField> createState() =>
+      _CombinedDropdownTextFieldState();
+}
+
+class _CombinedDropdownTextFieldState extends State<CombinedDropdownTextField> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isDropdownVisible = false;
+  List<String> _filteredOptions = [];
+  final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink(); // Define LayerLink here
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _hideOverlay();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isDropdownVisible = _focusNode.hasFocus;
+      if (_isDropdownVisible) {
+        _showOverlay(context);
+      } else {
+        _hideOverlay();
+      }
+    });
+  }
+
+  void _filterOptions(String query) {
+    setState(() {
+      _filteredOptions = widget.options
+          .where((option) =>
+          option.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  void _selectOption(String option) {
+    setState(() {
+      _controller.text = option;
+      _filteredOptions = [];
+      _isDropdownVisible = false;
+    });
+    widget.onSelected(option);
+    _focusNode.unfocus();
+    _hideOverlay();
+  }
+
+  void _showOverlay(BuildContext context) {
+    if (_overlayEntry != null) return;
+
+    final overlayState = Overlay.of(context);
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: size.width,
+        child: CompositedTransformFollower(
+          link: _layerLink, // Use defined _layerLink
+          showWhenUnlinked: false,
+          offset: Offset(0.0, size.height + 5.0), // Adjust as needed
+          child: Card(
+            elevation: 4,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: _filteredOptions.length,
+                itemBuilder: (context, index) {
+                  final option = _filteredOptions[index];
+                  return InkWell(
+                    onTap: () => _selectOption(option),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(option),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlayState.insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget( // Wrap TextField with CompositedTransformTarget
+      link: _layerLink,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            controller: _controller,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              // labelText: 'Select or Type',
+              hintText: 'Select or Type',
+              hintStyle: TextStyle(fontFamily: "poppins_light"),
+              border: const OutlineInputBorder(),
+              suffixIcon: _isDropdownVisible
+                  ? IconButton(
+                icon: const Icon(Icons.arrow_drop_up),
+                onPressed: () {
+                  setState(() {
+                    _isDropdownVisible = false;
+                    _focusNode.unfocus();
+                    _hideOverlay();
+                  });
+                },
+              )
+                  : IconButton(
+                icon: const Icon(Icons.arrow_drop_down),
+                onPressed: () {
+                  setState(() {
+                    _isDropdownVisible = true;
+                    _focusNode.requestFocus();
+                    _filterOptions(_controller.text);
+                    _showOverlay(context);
+                  });
+                },
+              ),
+            ),
+            onChanged: _filterOptions,
+            onTap: () {
+              setState(() {
+                _isDropdownVisible = true;
+                _focusNode.requestFocus();
+                _filterOptions(_controller.text);
+                _showOverlay(context);
+              });
+            },
+          ),
+        ],
       ),
     );
   }
