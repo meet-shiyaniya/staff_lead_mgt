@@ -405,26 +405,27 @@ class ApiService{
 
   }
 
-
   Future<AddLeadDataModel?> fetchAddLeadData() async {
-    final url = Uri.parse("$baseUrl/InquiryDetails");
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/InquiryDetails"); // Use your baseUrl
     print("Full API URL for dropdown options: $url");
 
     try {
       String? token = await _secureStorage.read(key: 'token');
       print("Token: $token");
-
       if (token == null || token.isEmpty) {
         print("Error: Token is null or empty");
         return null;
       }
 
+      // Send token in the body instead of header
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
         },
+        body: jsonEncode({
+          'token': token, // Adjust this key if API expects something else (e.g., "auth_token")
+        }),
       );
 
       print("Response Status Code: ${response.statusCode}");
@@ -432,15 +433,17 @@ class ApiService{
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        return AddLeadDataModel.fromJson(jsonData);
-      } else if (response.statusCode == 401) {
-        print("Unauthorized: Invalid token");
-        return null;
-      } else if (response.statusCode == 500) {
-        print("Server Error: ${response.body}");
-        return null;
+        print("Parsed JSON Data: $jsonData");
+
+        // Check for success status (adjust based on API convention)
+        if (jsonData['status'] == null || jsonData['status'] == 1) { // Assuming 1 is success
+          return AddLeadDataModel.fromJson(jsonData);
+        } else {
+          print("API Error: ${jsonData['message']}");
+          return null;
+        }
       } else {
-        print("Error fetching dropdown options: ${response.statusCode}");
+        print("Error fetching dropdown options: Status ${response.statusCode}, Body: ${response.body}");
         return null;
       }
     } catch (e) {
@@ -448,8 +451,6 @@ class ApiService{
       return null;
     }
   }
-
-
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 
     final url = Uri.parse("$baseUrl/Attendance");

@@ -55,6 +55,9 @@ class UserProvider with ChangeNotifier {
 
   AddLeadDataModel? get dropdownData => _dropdownData;
   bool get isLoadingDropdown => _isLoadingDropdown;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
@@ -269,23 +272,28 @@ class UserProvider with ChangeNotifier {
     _hasMore = true;
   }
 
-
   Future<void> fetchAddLeadData() async {
     _isLoadingDropdown = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
       final response = await _apiService.fetchAddLeadData();
       if (response != null) {
         _dropdownData = response;
+      } else {
+        _errorMessage = "Failed to fetch dropdown data from API";
+        print("Provider: $_errorMessage");
       }
     } catch (e) {
-      print("Error fetching dropdown options in provider: $e");
+      _errorMessage = "Error fetching dropdown options: $e";
+      print("Provider Error: $_errorMessage");
     } finally {
       _isLoadingDropdown = false;
       notifyListeners();
     }
   }
+
   // Map<String, int> _stageCounts = {};
   // Map<String, int> get stageCounts => _stageCounts;
 

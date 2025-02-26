@@ -352,6 +352,7 @@ class _BookingScreenState extends State<BookingScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Form submitted successfully!')),
     );
+    Navigator.pop(context);
   }
 
   void _addCashField() {
@@ -406,7 +407,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Lead', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
+        title: Text('Add New Booking', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
         backgroundColor: AppColor.Buttoncolor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),

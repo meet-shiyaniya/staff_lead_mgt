@@ -761,6 +761,9 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                       ],
                     );
                   } else {
+                    if (selectedCards.length != filteredLeads.length) {
+                      selectedCards = List<bool>.filled(filteredLeads.length, false);
+                    }
                     return ListView.builder(
                       controller: _scrollController,
                       itemCount: filteredLeads.length +
@@ -837,7 +840,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => AddLeadScreen(
-                  isEdit: false,
+
                 ),
               ));
         },
