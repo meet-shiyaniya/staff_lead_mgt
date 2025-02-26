@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/Show%20Leave%20Details%20Screens/pending_Screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/Show%20Leave%20Details%20Screens/reject_Screen.dart';
 
@@ -35,7 +36,7 @@ class _showLeaveOptionScreenState extends State<showLeaveOptionScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
 
-                Icon(Icons.leave_bags_at_home_rounded, size: 22, color: appColor.bodymainTxtColor,),
+                Icon(FontAwesomeIcons.calendarCheck, size: 20, color: appColor.bodymainTxtColor,),
 
                 SizedBox(width: 10,),
 

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Attendannce/attendance_Screen.dart';
@@ -161,23 +162,22 @@ class _profileScreenState extends State<profileScreen> {
           child: Text("Account", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
         ),
         SizedBox(height: 5,),
-        _buildListItem(context, Icons.calendar_month_rounded, "Attendance", 0),
-        _buildListItem(context, Icons.leave_bags_at_home_rounded, "Leave", 1),
-        _buildListItem(context, Icons.laptop_mac_rounded, "Working Details", 2),
+        _buildListItem(context, FontAwesomeIcons.calendarCheck, "Attendance", 0),
+        _buildListItem(context, FontAwesomeIcons.calendarPlus, "Leave", 1),
         SizedBox(height: 20,),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Text("Notification", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
         ),
         SizedBox(height: 5,),
-        _buildListItem(context, Icons.notifications_rounded, "Pop-up Notification", 3),
+        _buildListItem(context, FontAwesomeIcons.bell, "Pop-up Notification", 3),
         SizedBox(height: 20,),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Text("Account Logout", style: TextStyle(color: Colors.black, fontSize: 16, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
         ),
         SizedBox(height: 5,),
-        _buildListItem(context, Icons.power_settings_new_rounded, "Log Out", 4),
+        _buildListItem(context, FontAwesomeIcons.powerOff, "Log Out", 4),
       ],
     );
   }
@@ -196,7 +196,7 @@ class _profileScreenState extends State<profileScreen> {
 
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.deepPurple.shade300, size: 24),
+        leading: Icon(icon, color: Colors.deepPurple.shade300, size: 20),
         title: Text(text, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.grey.shade800)),
         trailing: index == 4 ? null : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade800),
         onTap: () {
