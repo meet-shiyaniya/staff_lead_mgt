@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../Provider/UserProvider.dart';
 import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
@@ -16,7 +19,21 @@ class staffProfileScreen extends StatefulWidget {
 
 class _staffProfileScreenState extends State<staffProfileScreen> {
 
+  File? _profileImage;
   bool isSelected = false;
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+
+      // Optionally, upload image to the server
+      // await uploadProfileImage(File(pickedFile.path));
+    }
+  }
 
   @override
   void initState() {
@@ -364,18 +381,49 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
                   shape: BoxShape.circle,
 
-                  // color: Colors.red,
+                  color: Colors.grey.shade100,
 
                   border: Border.all(color: Colors.deepPurple.shade900, width: 2),
 
                   image: DecorationImage(
-                    image: (profile?.staffProfile?.profileImg?.isNotEmpty == true)
+                    image: _profileImage != null
+                        ? FileImage(_profileImage!) as ImageProvider
+                        : (profile?.staffProfile?.profileImg?.isNotEmpty == true
                         ? CachedNetworkImageProvider(profile!.staffProfile!.profileImg!)
-                        : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),
+                        : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg")),
                   ),
 
                 ),
 
+              ),
+            ),
+
+            Positioned(
+              top: 78,
+              left: 216,
+              child: GestureDetector(
+
+                onTap: _pickImage,
+
+                child: Container(
+
+                  height: 22,
+                  width: 22,
+
+                  decoration: BoxDecoration(
+
+                    shape: BoxShape.circle,
+                    color: appColor.primaryColor
+
+                  ),
+
+                  child: Center(
+
+                    child: Icon(Icons.edit_rounded, color: Colors.white, size: 15,),
+
+                  ),
+
+                ),
               ),
             ),
 

@@ -202,15 +202,15 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
   Widget _buildSummaryCards() {
     return Row(
       children: [
-        Expanded(child: _buildSummaryCard('Total Leads', '120', Colors.blue.shade50)),
-        Expanded(child: _buildSummaryCard('My Visits', '45', Colors.yellow.shade50)),
-        Expanded(child: _buildSummaryCard('My Booking', '15', Colors.green.shade50)),
-        Expanded(child: _buildSummaryCard('Follow ups', '12.5%', Colors.red.shade50)),
+        Expanded(child: _buildSummaryCard('asset/Dashboard/leads.png', '120', Colors.blue.shade50)),
+        Expanded(child: _buildSummaryCard('asset/Dashboard/visit.png', '45', Colors.yellow.shade50)),
+        Expanded(child: _buildSummaryCard('asset/Dashboard/booking.png', '15', Colors.green.shade50)),
+        Expanded(child: _buildSummaryCard('asset/Dashboard/followUp.png', '12.5%', Colors.red.shade50)),
       ],
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, Color color) {
+  Widget _buildSummaryCard(String image, String value, Color color) {
     return Container(
       margin: EdgeInsets.only(left: 5, right: 5),
       height: MediaQuery.of(context).size.height / 8.5,
@@ -231,7 +231,8 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
         padding: const EdgeInsets.all(10.0),
         child: Column(
           children: [
-            Text(title, style: TextStyle(fontSize: 14, fontFamily: "poppins_thin")),
+            SizedBox(height:10),
+            Image.asset(image,height:35,width:35),
             Spacer(),
             Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],

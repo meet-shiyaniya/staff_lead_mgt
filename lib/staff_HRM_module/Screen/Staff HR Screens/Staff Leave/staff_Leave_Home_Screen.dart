@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/all_Staff_Leaves_Screen.dart';
 import '../../Color/app_Color.dart';
 import 'Show Leave Details Screens/show_Leave_Option_Screen.dart';
 import 'leave_Request_Screen.dart';
@@ -13,215 +14,111 @@ class staffLeaveHomeScreen extends StatefulWidget {
 
 class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
 
-  bool isSelected = false;
+  int isSelectedIndex = 0;
+
+  final List<Widget> screens = [
+    allStaffLeavesScreen(),
+    leaveRequestScreen(),
+    showLeaveOptionScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       backgroundColor: appColor.backgroundColor,
-
       appBar: AppBar(
-
         backgroundColor: appColor.primaryColor,
-
-        title: Text("Leave Form", style: TextStyle(color: appColor.appbarTxtColor, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
-
-        centerTitle: true,
-
-        foregroundColor: Colors.transparent,
-
-        leading: IconButton(
-
-          onPressed: (){
-            Navigator.pop(context);
-          },
-
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20,),
-
+        title: const Text(
+          "Leave Form",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: "poppins_thin",
+          ),
         ),
-
+        centerTitle: true,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+        ),
       ),
-
       body: Column(
-
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
-
           Container(
-
             height: 60,
-            width: MediaQuery.of(context).size.width.toDouble(),
+            width: double.infinity,
             color: Colors.grey.shade100,
-
             child: Padding(
-
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-
-              child: Row(
-
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-
-                children: [
-
-                  Center(
-
-                    child: GestureDetector(
-
-                      onTap: () {
-
-                        setState(() {
-
-                          isSelected = false;
-
-                        });
-
-                      },
-
-                      child: Container(
-
-                        height: 40,
-                        width: MediaQuery.of(context).size.width.toDouble() / 2.4,
-
-                        decoration: BoxDecoration(
-
-                          color: isSelected ? Colors.transparent : appColor.primaryColor,
-
-                          borderRadius: BorderRadius.circular(20),
-
-                          border: Border.all(color: isSelected ? appColor.primaryColor : Colors.transparent, width: 1.5),
-
-                        ),
-
-                        child: Row(
-                          children: [
-
-                            SizedBox(width: 2.1,),
-
-                            Container(
-
-                              height: 34,
-                              width: 34,
-
-                              decoration: BoxDecoration(
-
-                                shape: BoxShape.circle,
-                                color: isSelected ? appColor.boxColor : Colors.white,
-
-                              ),
-
-                              child: Center(
-
-                                child: Icon(Icons.request_page_rounded, color: Colors.black, size: 20,),
-
-                              ),
-
-                            ),
-
-                            SizedBox(width: 10,),
-
-                            Text("Request", style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 14),),
-
-                          ],
-                        ),
-
-                      ),
-
-                    ),
-
-                  ),
-
-                  // Spacer(),
-
-                  Center(
-
-                    child: GestureDetector(
-
-                      onTap: () {
-
-                        setState(() {
-
-                          isSelected = true;
-
-                        });
-
-                      },
-
-                      child: Container(
-
-                        height: 40,
-                        width: MediaQuery.of(context).size.width.toDouble() / 2.4,
-
-                        decoration: BoxDecoration(
-
-                          color: isSelected ? appColor.primaryColor : Colors.transparent,
-
-                          borderRadius: BorderRadius.circular(20),
-
-                          border: Border.all(color: isSelected ? Colors.transparent : appColor.primaryColor, width: 1.5),
-
-                        ),
-
-                        child: Row(
-                          children: [
-
-                            SizedBox(width: 2.1,),
-
-                            Container(
-
-                              height: 34,
-                              width: 34,
-
-                              decoration: BoxDecoration(
-
-                                shape: BoxShape.circle,
-                                color: isSelected ? Colors.white : appColor.boxColor,
-
-                              ),
-
-                              child: Center(
-
-                                child: Icon(Icons.leave_bags_at_home_rounded, color: Colors.black, size: 20,),
-
-                              ),
-
-                            ),
-
-                            SizedBox(width: 10,),
-
-                            Text("Leave", style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontFamily: "poppins_thin", fontWeight: FontWeight.bold, fontSize: 14),),
-
-                          ],
-                        ),
-
-                      ),
-
-                    ),
-
-                  ),
-
-                ],
-
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(3, (index) {
+                    return _buildTab(index);
+                  }),
+                ),
               ),
-
             ),
-
           ),
-
-          Expanded(
-
-            child: isSelected ? showLeaveOptionScreen() : leaveRequestScreen(),
-
-          ),
-
-          SizedBox(height: 5,),
-
+          Expanded(child: screens[isSelectedIndex]),
+          const SizedBox(height: 5),
         ],
-
       ),
+    );
+  }
 
+  Widget _buildTab(int index) {
+    List<String> titles = ["Leave Request", "My Leaves", "Leave Status"];
+    List<IconData> icons = [
+      FontAwesomeIcons.solidCalendarDays,
+      FontAwesomeIcons.calendarPlus,
+      FontAwesomeIcons.calendarCheck
+    ];
+
+    bool isSelected = isSelectedIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          isSelectedIndex = index;
+        });
+      },
+      child: Container(
+        margin: EdgeInsets.only(right: 8),
+        height: 40,
+        width: MediaQuery.of(context).size.width / 2.6,
+        decoration: BoxDecoration(
+          color: isSelected ? appColor.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? Colors.transparent : appColor.primaryColor, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 1.6),
+            Container(
+              height: 34,
+              width: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? Colors.white : appColor.boxColor,
+              ),
+              child: Center(child: Icon(icons[index], color: Colors.black, size: 16.5)),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              titles[index],
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black,
+                fontFamily: "poppins_thin",
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

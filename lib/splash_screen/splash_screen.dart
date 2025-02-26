@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Provider/UserProvider.dart';
+import '../Staff Attendance Options/Mannual Day Start/mannual_Attendance_Screen.dart';
+import '../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
 import '../dashboard.dart';
-// import '../face_onboarding.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -74,16 +76,26 @@ class _SplashScreenState extends State<SplashScreen> {
         final prefs = await SharedPreferences.getInstance();
         final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
         final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+        final String staffAttendanceMethodStatus = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
 
         if (isAttendanceMarkedForToday) {
           print('Navigating to Dashboard (Attendance already marked for today)');
           Navigator.pushReplacementNamed(context, '/dashboard');
+
+
         } else {
+
+
           print('Navigating to FaceOnboarding (Attendance not marked)');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => FaceOnboarding()),
-          );
+          if(staffAttendanceMethodStatus=="day_attendance"){
+            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>mannualAttendanceScreen()));
+          }else if(staffAttendanceMethodStatus=="qr_attendance"){
+            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>qrOnboardingScreen()));
+
+          }else{
+            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>FaceOnboarding()));
+          }
+
         }
       } else {
         print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
