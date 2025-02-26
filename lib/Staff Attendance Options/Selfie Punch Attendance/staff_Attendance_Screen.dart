@@ -151,12 +151,14 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen> {
   // }
   Future<void> checkAttendance(Position staffPosition, List<Data>? officeLocations) async {
     final prefs = await SharedPreferences.getInstance();
-    String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
 
     // Directly store attendance and navigate without checking conditions
     await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
-    await prefs.setBool('attendanceMarked', true);
-    await prefs.setString('entryDate', todayDate);
+
+    await prefs.setBool('attendanceMarked_$today', true);
+    await prefs.setString('entryDate', today);
 
     // Navigate directly to the BottomNavScreen
     Navigator.pushReplacement(

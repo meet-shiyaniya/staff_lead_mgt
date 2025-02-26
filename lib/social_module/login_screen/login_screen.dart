@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../Provider/UserProvider.dart';
+import '../../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
 import '../colors/colors.dart';
 
@@ -22,6 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
+
+  var staffAttendanceMethod;
+  var staffAttendanceMethodStatus;
 
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
@@ -55,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+
       bool isSuccess = await Provider.of<UserProvider>(context, listen: false).login(username, password);
 
       if (isSuccess) {
@@ -75,16 +80,22 @@ class _LoginScreenState extends State<LoginScreen> {
               final prefs = await SharedPreferences.getInstance();
               final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
               final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+              final String staffAttendanceMethodStatus = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
 
               if (isAttendanceMarkedForToday) {
                 print('Navigating to Dashboard (Attendance already marked for today)');
                 Navigator.pushReplacementNamed(context, '/dashboard');
+
               } else {
-                print('Navigating to FaceOnboarding (Attendance not marked)');
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => FaceOnboarding()),
-                );
+                print('Navigating to FaceOnboarding $staffAttendanceMethodStatus');
+                if(staffAttendanceMethodStatus=="day_attendance"){
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>mannualAttendanceScreen()));
+                }else if(staffAttendanceMethodStatus=="qr_attendance"){
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>qrOnboardingScreen()));
+
+                }else{
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>FaceOnboarding()));
+                }
               }
             } else {
               print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
