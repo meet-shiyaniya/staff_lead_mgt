@@ -171,14 +171,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       selectedEmployee = null;
     });
   }
-
   void toggleSelection(int index) {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length, (index) => false); // Reset all cards to false
-    selectedCards[index] = !selectedCards[index]; // Toggle only the selected card
-    anySelected = selectedCards.contains(true);
-    print("anySelected : $anySelected");
-    setState(() {});
+    setState(() {
+      selectedCards[index] = !selectedCards[index]; // Simply toggle the current card's state
+      anySelected = selectedCards.contains(true);   // Update the anySelected flag
+      print("anySelected : $anySelected");
+    });
   }
 
   Future<void> filterLeadsByStage(String stage) async {
@@ -328,7 +326,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: false, // Prevent full width
+                        isExpanded: true, // Prevent full width
                         hint: Text(
                           'Select Action',
                           style: TextStyle(
@@ -401,7 +399,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: false, // Prevent full width
+                        isExpanded: true, // Prevent full width
                         hint: Text(
                           'Select Employee',
                           style: TextStyle(
@@ -503,7 +501,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
                   Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
                   Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
-                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  // Categorymodel("Trial", stageCounts["Visited"] ?? 0),
                   Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
                   Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
                   Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
@@ -840,6 +838,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => AddLeadScreen(
+                  isEdit: false,
 
                 ),
               ));
