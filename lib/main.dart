@@ -5,6 +5,7 @@ import 'package:hr_app/Staff%20Attendance%20Options/Selfie%20Punch%20Attendance/
 import 'package:hr_app/social_module/login_screen/login_screen.dart';
 import 'package:hr_app/splash_screen/splash_screen.dart';
 import 'package:provider/provider.dart';
+import 'Inquiry_Management/Inquiry_Management_Screen.dart';
 import 'bottom_navigation.dart';
 
 
@@ -25,7 +26,7 @@ void main() {
         initialRoute: "/",
         routes: {
            // "/":(context)=> BottomNavScreen(),
-          "/":(context)=> SplashScreen(),
+          "/":(context)=> BottomNavScreen(),
           '/login': (context) => LoginScreen(),
           '/dashboard': (context) => BottomNavScreen(),
           '/attandance':(context)=>StaffAttendanceScreen()
