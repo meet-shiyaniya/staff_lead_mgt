@@ -13,44 +13,71 @@ class Inquiry {
   final String PurposeBuy;
   final String InqStage;
   final String InqStatus;
+  final String inquiry_source_type;
+  final String intersted_site_name;
+  final String property_type;
+  final String property_sub_type;
+  final String approx_buy;
+  final String email;
+  final String day_skip;
+  final String hour_skip;
+  final String assign_id;
 
-  Inquiry({
-    required this.id,
-    required this.fullName,
-    required this.mobileno,
-    required this.remark,
-    required this.createdAt,
-    required this.budget,
-    required this.nxtfollowup,
-    required this.dayskip,
-    required this.hourskip,
-    required this.InqType,
-    required this.InqArea,
-    required this.PurposeBuy,
-    required this.InqStage,
-    required this.InqStatus
-  });
+
+  Inquiry(
+      {required this.id,
+        required this.fullName,
+        required this.mobileno,
+        required this.remark,
+        required this.createdAt,
+        required this.budget,
+        required this.nxtfollowup,
+        required this.dayskip,
+        required this.hourskip,
+        required this.InqType,
+        required this.InqArea,
+        required this.PurposeBuy,
+        required this.InqStage,
+        required this.InqStatus,
+        required this.inquiry_source_type,
+        required this.intersted_site_name,
+        required this.property_sub_type,
+        required this.approx_buy,
+        required this.email,
+        required this.day_skip,
+        required this.hour_skip,
+        required this.assign_id,
+
+
+        required this.property_type});
 
   factory Inquiry.fromJson(Map<String, dynamic> json) {
     return Inquiry(
-      id: json['id'] ?? "",
-      fullName: json['full_name'] ?? "N/A",
-      mobileno: json['mobileno'] ?? "N/A",
-      remark: json['remark'] ?? "N/A",
-      createdAt: json['created_at'] ?? "",
-      budget: json['budget']??"",
-      nxtfollowup: json['nxt_follow_up']??"",
-      dayskip: json['day_skip']??"",
-      hourskip: json['hour_skip']??"",
-      InqType: json['inquiry_type']??"",
-      InqArea: json['intrested_area']??"",
-      PurposeBuy: json['purpose_buy']??"",
-      InqStage: json['inquiry_stages']??"",
-      InqStatus: json['inquiry_status']??""
-    );
+        id: json['id'] ?? "",
+        fullName: json['full_name'] ?? "N/A",
+        mobileno: json['mobileno'] ?? "N/A",
+        remark: json['remark'] ?? "N/A",
+        createdAt: json['created_at'] ?? "",
+        budget: json['budget'] ?? "",
+        nxtfollowup: json['nxt_follow_up'] ?? "",
+        dayskip: json['day_skip'] ?? "",
+        hourskip: json['hour_skip'] ?? "",
+        InqType: json['inquiry_type'] ?? "",
+        InqArea: json['intrested_area'] ?? "",
+        PurposeBuy: json['purpose_buy'] ?? "",
+        InqStage: json['inquiry_stages'] ?? "",
+        InqStatus: json['inquiry_status'] ?? "",
+        inquiry_source_type: json['inquiry_source_type'] ?? "",
+        intersted_site_name: json['intersted_site_name'] ?? "",
+        property_sub_type: json['property_sub_type'] ?? "",
+        approx_buy: json['approx_buy'] ?? "",
+        email: json['email'] ?? "",
+        property_type: json['property_type'] ?? "",
+        day_skip: json['day_skip'] ?? "0",
+        hour_skip: json['hour_skip'] ?? "0",
+        assign_id: json['assign_id'] ?? "");
   }
 }
-
 class PaginatedInquiries {
   final int? currentPage;
   final int? totalPages;

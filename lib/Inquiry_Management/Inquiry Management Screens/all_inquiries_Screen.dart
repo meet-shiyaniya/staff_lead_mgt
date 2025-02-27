@@ -767,7 +767,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     return ListView.builder(
                       controller: _scrollController,
                       itemCount: filteredLeads.length +
-                          (inquiryProvider.hasMore || inquiryProvider.isLoading
+                          (inquiryProvider.isLoading
                               ? 1
                               : 0),
                       itemBuilder: (BuildContext context, int index) {
@@ -791,26 +791,23 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                                 child: TestCard(
                                   id: inquiry.id,
                                   name: inquiry.fullName,
-                                  username: inquiry.mobileno,
+                                  username: inquiry.assign_id,
                                   label: getInquiryStageText(inquiry.InqStage),
                                   followUpDate: inquiry.createdAt,
                                   nextFollowUpDate: inquiry.nxtfollowup,
                                   inquiryType: inquiry.InqType,
                                   intArea: inquiry.InqArea,
                                   purposeBuy: inquiry.PurposeBuy,
-                                  daySkip: inquiry.dayskip,
-                                  hourSkip: inquiry.hourskip,
-                                  source: inquiry.mobileno,
+                                  daySkip: inquiry.day_skip,
+                                  hourSkip: inquiry.hour_skip,
+                                  source: inquiry.inquiry_source_type,
                                   isSelected: selectedCards[index],
-                                  onSelect: () {
-                                    toggleSelection(index);
-                                  },
+                                  onSelect: () => toggleSelection(index),
                                   callList: callList,
                                   selectedcallFilter: selectedcallFilter,
                                   data: inquiry,
                                   isTiming: true,
-                                  nextFollowupcontroller:
-                                  nextFollowupcontroller,
+                                  nextFollowupcontroller: nextFollowupcontroller,
                                 ),
                               );
                             },

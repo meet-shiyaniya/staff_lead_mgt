@@ -67,6 +67,7 @@ dependencies:
   qr_code_scanner_plus: ^2.0.10+1
   toggle_switch: ^2.3.0
   syncfusion_flutter_charts: ^28.2.7
+  timelines_plus: ^1.0.6
 
 dev_dependencies:
   flutter_test:

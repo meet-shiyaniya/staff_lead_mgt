@@ -32,7 +32,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String? _selectedApxTime;
   String? _selectedPropertyConfiguration;
   String action = "insert";
-  String? _selectedInterestedProduct = "1"; // Placeholder until UI is added
+  String? _selectedInterestedProduct = "1";
   DateTime? nextFollowUp;
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
@@ -44,6 +44,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   final TextEditingController _dateController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? _selectedFollowUpTime;
+  String? _fillInterest;
+
+  final List<String> countryCodeOptions = ['+1', '+44', '+91'];
 
   final List<String> _steps = ["Personal Info", "CST & Inquiry", "Follow Up"];
 
@@ -53,7 +56,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.fetchAddLeadData().then((_) {
-        setState(() {});
+        setState(() {
+          _fillInterest = userProvider.dropdownData?.cststatus.isNotEmpty == true
+              ? userProvider.dropdownData!.cststatus.first.fillInterest
+              : "0";
+        });
       });
     });
   }
@@ -85,23 +92,21 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       return;
     }
 
-    // Format nxt_follow_up as dd-MM-yyyy
     String formattedNextFollowUp = _dateController.text.isNotEmpty
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(_dateController.text))
         : "";
 
-    // Map dropdown selections to IDs where required
     String budgetId = dropdownData.budget != null && _selectedBudget != null
         ? dropdownData.budget!.values
         .split(',')
         .indexOf(_selectedBudget!)
-        .toString() // Assuming budget ID is the index in the comma-separated string
+        .toString()
         : "";
     String approxBuyId = dropdownData.apxTime != null && _selectedApxTime != null
         ? dropdownData.apxTime!.apxTimeData
         .split(',')
         .indexOf(_selectedApxTime!)
-        .toString() // Assuming approx_buy ID is the index
+        .toString()
         : "";
     String inquiryTypeId = _selectedInquiryType?.id ?? "";
     String inquirySourceId = dropdownData.inqSource
@@ -124,35 +129,38 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         orElse: () => PropertyConfiguration(id: "", propertyType: ""))
         .id ??
         "";
+    String countryCodeId = _selectedCountryCode != null
+        ? _selectedCountryCode!.replaceAll('+', '')
+        : "";
 
     bool isLeadAdded = await userProvider.addLead(
       action: action,
-      nxt_follow_up: formattedNextFollowUp, // e.g., 19-02-2025
-      time: _selectedFollowUpTime ?? "", // Text
-      purpose_buy: _selectedPurpose ?? "", // Text
-      city: _selectedCity ?? "", // Text
-      country_code: _selectedCountryCode ?? "", // Text (e.g., "+91")
-      intrested_area: interestedAreaId, // ID
-      full_name: _fullNameController.text, // Text
-      budget: budgetId, // ID (index-based)
-      approx_buy: approxBuyId, // ID (index-based)
-      area: _selectedArea ?? "", // Text
-      mobileno: _mobileController.text, // Text
-      inquiry_type: inquiryTypeId, // ID
-      inquiry_source_type: inquirySourceId, // ID
-      intrested_area_name: interestedAreaId, // ID
-      intersted_site_name: interestedSiteId, // ID
-      PropertyConfiguration: propertyConfigId, // ID
-      society: _societyController.text, // Text
-      houseno: _houseController.text, // Text
-      altmobileno: _altMobileController.text, // Text
+      nxt_follow_up: formattedNextFollowUp,
+      time: _selectedFollowUpTime ?? "",
+      purpose_buy: _selectedPurpose ?? "",
+      city: _selectedCity ?? "",
+      country_code: countryCodeId,
+      intrested_area: interestedAreaId,
+      full_name: _fullNameController.text,
+      budget: budgetId,
+      approx_buy: approxBuyId,
+      area: _selectedArea ?? "",
+      mobileno: _mobileController.text,
+      inquiry_type: inquiryTypeId,
+      inquiry_source_type: inquirySourceId,
+      intrested_area_name: interestedAreaId,
+      intersted_site_name: interestedSiteId,
+      PropertyConfiguration: propertyConfigId,
+      society: _societyController.text,
+      houseno: _houseController.text,
+      altmobileno: _altMobileController.text,
     );
 
     if (isLeadAdded) {
       Fluttertoast.showToast(msg: "Lead added successfully");
       Navigator.pop(context, true);
     } else {
-      Fluttertoast.showToast(msg: "Failed to add lead");
+      Fluttertoast.showToast(msg: "This mobile number is already created");
     }
   }
 
@@ -182,7 +190,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
             return const Center(child: Text("Failed to load dropdown options"));
           }
 
-          final List<String> countryCodeOptions = ['+1', '+44', '+91'];
           final List<String> areaOptions = (dropdownData.areaCityCountry ?? [])
               .map<String>((area) => area.area)
               .where((area) => area.trim().isNotEmpty)
@@ -528,7 +535,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   options: countryCodeOptions,
                   onSelected: (String value) {
                     setState(() {
-                      _selectedCountryCode = value;
+                      _selectedCountryCode = value; // Reuse for simplicity
                     });
                   },
                 ),
@@ -583,7 +590,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         children: [
           const SizedBox(height: 16),
           const Text(
-            "Int Area*",
+            "Int Area",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
           CombinedDropdownTextField<String>(
@@ -593,11 +600,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 _selectedArea = selectedArea;
               });
             },
-            isRequired: true,
+            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
-            "Int Site*",
+            "Int Site",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
           CombinedDropdownTextField<String>(
@@ -607,7 +614,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 _selectedIntSite = selectedIntSite;
               });
             },
-            isRequired: true,
+            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
@@ -625,7 +632,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            "Purpose of Buying*",
+            "Purpose of Buying",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
           CombinedDropdownTextField<String>(
@@ -635,11 +642,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 _selectedPurpose = selectedPurpose;
               });
             },
-            isRequired: true,
+            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
-            "Apx Buying Time : *",
+            "Apx Buying Time",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
           CombinedDropdownTextField<String>(
@@ -649,7 +656,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 _selectedApxTime = selectedApxTime;
               });
             },
-            isRequired: true,
+            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
@@ -859,7 +866,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
 
 class CombinedDropdownTextField<T> extends StatefulWidget {
   final List<T> options;
-  final String Function(T)? displayString; // Made optional
+  final String Function(T)? displayString;
   final Function(T) onSelected;
   final bool isRequired;
 
@@ -923,7 +930,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
   String _getDisplayString(T option) {
     return widget.displayString != null
         ? widget.displayString!(option)
-        : option.toString(); // Default to toString() if displayString is null
+        : option.toString();
   }
 
   void _selectOption(T option) {
