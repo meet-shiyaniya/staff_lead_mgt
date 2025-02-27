@@ -793,61 +793,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
       ],
     );
   }
-  Widget _timelineEntry(Map<String, String> item, int index) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      decoration: BoxDecoration(
-        color: index.isEven ? Colors.blue.shade50 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.calendar_today, size: 16, color: Colors.black54),
-              SizedBox(width: 4),
-              Text(
-                item["date"]!,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(width: 10),
-              Icon(Icons.person, size: 16, color: Colors.black54),
-              SizedBox(width: 4),
-              Text(
-                item["user"]!,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Spacer(),
-              Text(item["type"]!, style: TextStyle(color: Colors.black54)),
-            ],
-          ),
-          SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.message, size: 16, color: Colors.black54),
-              SizedBox(width: 4),
-              Expanded(child: Text(item["message"]!)),
-            ],
-          ),
-          if (item["nextDate"] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Row(
-                children: [
-                  Icon(Icons.event, size: 16, color: Colors.black54),
-                  SizedBox(width: 4),
-                  Text("Next: ${item["nextDate"]!}",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
 }
 
