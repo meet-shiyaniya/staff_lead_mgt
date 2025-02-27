@@ -17,6 +17,7 @@ import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
 import '../Utils/Custom widgets/search_Screen.dart';
+import 'Filters/inquiry_Filter_Screen.dart';
 import 'Followup Screen/list_filter_Screen.dart';
 
 class AllInquiriesScreen extends StatefulWidget {
@@ -293,6 +294,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               backgroundColor: Colors.white,
               child: IconButton(
                   onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => inquiryFilterScreen(),));
                     // showBottomModalSheet(context);
                   },
                   icon: Icon(

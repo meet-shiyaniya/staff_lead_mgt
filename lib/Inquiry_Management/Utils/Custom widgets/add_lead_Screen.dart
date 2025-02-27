@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../../../Provider/UserProvider.dart';
 import '../../Inquiry Management Screens/all_inquiries_Screen.dart';
 import '../../Model/Api Model/add_Lead_Model.dart';
-import '../../test.dart';
 import '../Colors/app_Colors.dart';
 import 'custom_buttons.dart';
 
@@ -79,55 +78,74 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     }
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final dropdownData = userProvider.dropdownData;
 
-    Map<String, String> leadData = {
-      "action": action,
-      "nxt_follow_up": _dateController.text,
-      "time": _selectedFollowUpTime ?? "",
-      "purpose_buy": _selectedPurpose ?? "",
-      "city": _selectedCity ?? "",
-      "country_code": _selectedCountryCode ?? "",
-      "intrested_area": _selectedArea ?? "",
-      "full_name": _fullNameController.text,
-      "budget": _selectedBudget ?? "",
-      "approx_buy": _selectedApxTime ?? "",
-      "area": _selectedArea ?? "",
-      "mobileno": _mobileController.text,
-      "inquiry_type": _selectedInquiryType?.id ?? "",
-      "inquiry_source_type": _selectedInqSource ?? "",
-      "intrested_area_name": _selectedArea ?? "",
-      "intersted_site_name": _selectedIntSite ?? "",
-      "PropertyConfiguration": _selectedPropertyConfiguration ?? "",
-      "society": _societyController.text,
-      "houseno": _houseController.text,
-      "altmobileno": _altMobileController.text,
-      "intrested_product": _selectedInterestedProduct ?? "1",
-    };
+    if (dropdownData == null) {
+      Fluttertoast.showToast(msg: "Dropdown data not loaded");
+      return;
+    }
 
-    print("Submitting Lead Data: $leadData");
+    // Format nxt_follow_up as dd-MM-yyyy
+    String formattedNextFollowUp = _dateController.text.isNotEmpty
+        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(_dateController.text))
+        : "";
+
+    // Map dropdown selections to IDs where required
+    String budgetId = dropdownData.budget != null && _selectedBudget != null
+        ? dropdownData.budget!.values
+        .split(',')
+        .indexOf(_selectedBudget!)
+        .toString() // Assuming budget ID is the index in the comma-separated string
+        : "";
+    String approxBuyId = dropdownData.apxTime != null && _selectedApxTime != null
+        ? dropdownData.apxTime!.apxTimeData
+        .split(',')
+        .indexOf(_selectedApxTime!)
+        .toString() // Assuming approx_buy ID is the index
+        : "";
+    String inquiryTypeId = _selectedInquiryType?.id ?? "";
+    String inquirySourceId = dropdownData.inqSource
+        ?.firstWhere((source) => source.source == _selectedInqSource,
+        orElse: () => InqSource(id: "", source: ""))
+        .id ??
+        "";
+    String interestedAreaId = dropdownData.areaCityCountry
+        ?.firstWhere((area) => area.area == _selectedArea,
+        orElse: () => AreaCityCountry(id: "", area: "", city: "", state: "", country: ""))
+        .id ??
+        "";
+    String interestedSiteId = dropdownData.intSite
+        ?.firstWhere((site) => site.productName == _selectedIntSite,
+        orElse: () => IntSite(id: "", productName: ""))
+        .id ??
+        "";
+    String propertyConfigId = dropdownData.propertyConfiguration
+        ?.firstWhere((prop) => prop.propertyType == _selectedPropertyConfiguration,
+        orElse: () => PropertyConfiguration(id: "", propertyType: ""))
+        .id ??
+        "";
 
     bool isLeadAdded = await userProvider.addLead(
       action: action,
-      nxt_follow_up: _dateController.text,
-      time: _selectedFollowUpTime ?? "",
-      purpose_buy: _selectedPurpose ?? "",
-      city: _selectedCity ?? "",
-      country_code: _selectedCountryCode ?? "",
-      intrested_area: _selectedArea ?? "",
-      full_name: _fullNameController.text,
-      budget: _selectedBudget ?? "",
-      approx_buy: _selectedApxTime ?? "",
-      area: _selectedArea ?? "",
-      mobileno: _mobileController.text,
-      inquiry_type: _selectedInquiryType?.id ?? "",
-      inquiry_source_type: _selectedInqSource ?? "",
-      intrested_area_name: _selectedArea ?? "",
-      intersted_site_name: _selectedIntSite ?? "",
-      PropertyConfiguration: _selectedPropertyConfiguration ?? "",
-      society: _societyController.text,
-      houseno: _houseController.text,
-      altmobileno: _altMobileController.text,
-      // intrested_product: _selectedInterestedProduct ?? "1",
+      nxt_follow_up: formattedNextFollowUp, // e.g., 19-02-2025
+      time: _selectedFollowUpTime ?? "", // Text
+      purpose_buy: _selectedPurpose ?? "", // Text
+      city: _selectedCity ?? "", // Text
+      country_code: _selectedCountryCode ?? "", // Text (e.g., "+91")
+      intrested_area: interestedAreaId, // ID
+      full_name: _fullNameController.text, // Text
+      budget: budgetId, // ID (index-based)
+      approx_buy: approxBuyId, // ID (index-based)
+      area: _selectedArea ?? "", // Text
+      mobileno: _mobileController.text, // Text
+      inquiry_type: inquiryTypeId, // ID
+      inquiry_source_type: inquirySourceId, // ID
+      intrested_area_name: interestedAreaId, // ID
+      intersted_site_name: interestedSiteId, // ID
+      PropertyConfiguration: propertyConfigId, // ID
+      society: _societyController.text, // Text
+      houseno: _houseController.text, // Text
+      altmobileno: _altMobileController.text, // Text
     );
 
     if (isLeadAdded) {
