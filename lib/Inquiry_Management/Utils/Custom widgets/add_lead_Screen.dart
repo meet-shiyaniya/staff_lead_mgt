@@ -995,9 +995,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               .toList() ??
               [];
           final List<String> purposeOptions = dropdownData.purposeOfBuying != null
-              ? [
-            dropdownData.purposeOfBuying!.investment,
-            dropdownData.purposeOfBuying!.personalUse
+          ? [
+          dropdownData.purposeOfBuying!.investment,
+              dropdownData.purposeOfBuying!.personalUse
           ].where((purpose) => purpose.trim().isNotEmpty).toList()
               : [];
           final List<String> apxTimeOptions = dropdownData.apxTime?.apxTimeData
@@ -1006,7 +1006,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               .where((time) => time.isNotEmpty)
               .toSet()
               .toList() ??
-              [];
+          [];
           final List<String> propertyConfigurationOptions =
           (dropdownData.propertyConfiguration ?? [])
               .map<String>((prop) => prop.propertyType)
@@ -1027,56 +1027,56 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
           print("Property Configurations: $propertyConfigurationOptions");
 
           return Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildFormContent(
-                    countryCodeOptions,
-                    areaOptions,
-                    cityOptions,
-                    inquiryTypeOptions,
-                    inquirySourceOptions,
-                    intSiteOptions,
-                    budgetOptions,
-                    purposeOptions,
-                    apxTimeOptions,
-                    propertyConfigurationOptions,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: _currentStep == 0
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_currentStep > 0)
-                      GradientButton(
-                        buttonText: "",
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                        width: 40.0,
-                        onPressed: _goToPreviousStep,
-                      ),
-                    GradientButton(
-                      buttonText: _currentStep == _steps.length - 1 ? "Submit" : "Next",
-                      width: 120.0,
-                      onPressed: _currentStep == _steps.length - 1
-                          ? () {
-                        Navigator.pop(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AllInquiriesScreen(),
-                          ),
-                        );
-                      }
-                          : _goToNextStep,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          children: [
+          Expanded(
+          child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _buildFormContent(
+          countryCodeOptions,
+          areaOptions,
+          cityOptions,
+          inquiryTypeOptions,
+          inquirySourceOptions,
+          intSiteOptions,
+          budgetOptions,
+          purposeOptions,
+          apxTimeOptions,
+          propertyConfigurationOptions,
+          ),
+          ),
+          ),
+          Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+          mainAxisAlignment: _currentStep == 0
+          ? MainAxisAlignment.end
+              : MainAxisAlignment.spaceBetween,
+          children: [
+          if (_currentStep > 0)
+          GradientButton(
+          buttonText: "",
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          width: 40.0,
+          onPressed: _goToPreviousStep,
+          ),
+          GradientButton(
+          buttonText: _currentStep == _steps.length - 1 ? "Submit" : "Next",
+          width: 120.0,
+          onPressed: _currentStep == _steps.length - 1
+          ? () {
+          Navigator.pop(
+          context,
+          MaterialPageRoute(
+          builder: (context) => const AllInquiriesScreen(),
+          ),
+          );
+          }
+              : _goToNextStep,
+          ),
+          ],
+          ),
+          ),
+          ],
           );
         },
       ),

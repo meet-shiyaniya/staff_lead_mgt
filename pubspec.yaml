@@ -67,6 +67,7 @@ dependencies:
   qr_code_scanner_plus: ^2.0.10+1
   toggle_switch: ^2.3.0
   syncfusion_flutter_charts: ^28.2.7
+  table_calendar:
 
 dev_dependencies:
   flutter_test:
@@ -100,6 +101,7 @@ flutter:
    - asset/social_module/images/icon/
    - asset/social_module/images/login/
    - asset/Inquiry_module/
+   - asset/Dashboard/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

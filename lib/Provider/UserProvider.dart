@@ -9,6 +9,7 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendance
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 
 class UserProvider with ChangeNotifier {
 
@@ -32,6 +33,14 @@ class UserProvider with ChangeNotifier {
 
   Realtostaffattendancemodel? _staffAttendanceData;
   Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
+
+  VisitEntryModel? _visitData;
+  bool _isLoadingg = false;
+  String? _error;
+
+  VisitEntryModel? get visitData => _visitData;
+  bool get isLoadingg => _isLoadingg;
+  String? get error => _error;
 
   final ApiService _apiService = ApiService();
 
@@ -272,6 +281,26 @@ class UserProvider with ChangeNotifier {
     _hasMore = true;
   }
 
+
+  Future<void> fetchVisitData() async {
+    _isLoadingg = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _visitData = await _apiService.fetchVisitData();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoadingg = false;
+      notifyListeners();
+    }
+  }
+
+
+
+
+
   Future<void> fetchAddLeadData() async {
     _isLoadingDropdown = true;
     _errorMessage = null;
@@ -281,6 +310,7 @@ class UserProvider with ChangeNotifier {
       final response = await _apiService.fetchAddLeadData();
       if (response != null) {
         _dropdownData = response;
+
       } else {
         _errorMessage = "Failed to fetch dropdown data from API";
         print("Provider: $_errorMessage");

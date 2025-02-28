@@ -12,6 +12,7 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemod
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
@@ -95,7 +96,35 @@ class ApiService{
     }
   }
 
+  Future<VisitEntryModel> fetchVisitData() async {
+    String? token = await _secureStorage.read(key: 'token');
+    final body = {
+      "token": token ,
+      "edit_id": 95560,
+    };
+    print(token);
 
+    final response = await http.post(
+      Uri.parse('$baseUrl/fetch_visit_data'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: jsonEncode(body),
+
+    );
+    print(response.body);
+
+    if (response.statusCode == 200) {
+      print("Api Succefully worked");
+      return VisitEntryModel.fromJson(jsonDecode(response.body));
+
+      print(response.body);
+
+    } else {
+      throw Exception('Failed to load visit data: ${response.statusCode} - ${response.body}');
+    }
+  }
 
   Future<Realtostaffprofilemodel?> fetchProfileData() async {
 
@@ -424,7 +453,9 @@ class ApiService{
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'token': token, // Adjust this key if API expects something else (e.g., "auth_token")
+          'token': token,
+
+          // Adjust this key if API expects something else (e.g., "auth_token")
         }),
       );
 
@@ -451,6 +482,8 @@ class ApiService{
       return null;
     }
   }
+
+
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 
     final url = Uri.parse("$baseUrl/Attendance");

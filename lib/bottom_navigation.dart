@@ -6,7 +6,9 @@ import 'package:hr_app/social_module/chatting_module/example.dart';
 import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:hr_app/social_module/custom_widget/appbar_button.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/profile_Screen.dart';
-import 'package:lottie/lottie.dart'; // ✅ Import Lottie
+import 'package:lottie/lottie.dart';
+
+import 'dashboard_ui/main_dashboard/calender.dart'; // ✅ Import Lottie
 
 class BottomNavScreen extends StatefulWidget {
   final bool showSuccessAnimation;
@@ -72,6 +74,14 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
                 ? AppColors.primaryColor.withOpacity(0.7)
                 : Colors.white,
             actions: [
+              if (_selectedIndex == 0)
+                GestureDetector(
+                    onTap: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context)=>ProfessionalCalendar()));
+                    },
+                    child: Image.asset("asset/Dashboard/booking.png",height: 25,width: 25,)),
+              SizedBox(width: 10,),
+
               CustomAppBarButton(
                 icon: Icons.notifications_rounded,
                 color: Colors.grey.shade100,
