@@ -23,6 +23,7 @@ class _inquiryFilterScreenState extends State<inquiryFilterScreen> {
   void _showInquiryBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.9, // 80% of screen height
         minChildSize: 0.9,    // Minimum size when dragged down
@@ -80,7 +81,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'New Inquiry',
+                  'Filter',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

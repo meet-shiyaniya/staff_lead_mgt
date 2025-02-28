@@ -221,33 +221,132 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   }
 
   String? filteredPhone;
-
-  void _updateAppliedFilters(Map<String, dynamic> filters) {
-    setState(() {
-      appliedFilters = filters;
-
-      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty)
-          ? filters['Id']
-          : null;
-      filteredName =
-      (filters['Name'] != null && filters['Name'].toString().isNotEmpty)
-          ? filters['Name']
-          : null;
-      filteredPhone =
-      (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty)
-          ? filters['Mobile']
-          : null;
-      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty
-          ? List.from(filters['Status'])
-          : [];
-    });
-  }
-
   String? filteredId;
   String? filteredName;
   String? filteredMobile;
   List<String> filteredStatus = [];
 
+
+
+  void showActionDialog(
+      BuildContext context,
+      bool anySelected,
+      Function(String, String) handleAction,
+      List<String> actions,
+      List<String> employees,
+      ) {
+    if (!anySelected) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        String? selectedAction;
+        String? selectedEmployee;
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Perform Action', style: TextStyle(fontWeight: FontWeight.w600)),
+              content: SingleChildScrollView(
+                child: Container(
+                  height: 200,
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 20,),
+                      _buildDropdown(
+                        label: "Select Action",
+                        hint: "Choose Action",
+                        value: selectedAction,
+                        items: actions,
+                        onChanged: (value) => setState(() => selectedAction = value),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDropdown(
+                        label: "Select Employee",
+                        hint: "Choose Employee",
+                        value: selectedEmployee,
+                        items: employees,
+                        onChanged: (value) => setState(() => selectedEmployee = value),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text("Cancel"),
+                ),
+                GradientButton(
+                  onPressed: () {
+                    if (selectedAction == null || selectedEmployee == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please select both action and employee")),
+                      );
+                    } else {
+                      handleAction(selectedAction!, selectedEmployee!);
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  width: 100,
+                  buttonText:("Submit"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String hint,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Colors.grey[800], fontSize: 16, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey.shade100,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton2<String>(
+              isExpanded: true,
+              hint: Text(hint, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+              value: value,
+              onChanged: onChanged,
+              items: items
+                  .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(item, style: const TextStyle(fontWeight: FontWeight.w400)),
+              ))
+                  .toList(),
+              buttonStyleData: const ButtonStyleData(height: 40),
+              iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700])),
+              dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final inquiryProvider = Provider.of<UserProvider>(context);
@@ -275,6 +374,21 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               )),
           backgroundColor: Colors.deepPurple.shade300,
           actions: [
+
+            if(anySelected)CircleAvatar(
+              backgroundColor: Colors.white,
+              child: GestureDetector(
+
+                onTap: () {
+                  showActionDialog(context, anySelected, handleAction, actions, employees);
+                },
+                child: Image(
+                  image: AssetImage("asset/Inquiry_module/fast-forward.png"),height: 25,width: 25,
+
+                ),
+              ),
+            ),
+            SizedBox(width: 10,),
             CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
@@ -308,175 +422,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
           ]),
       body: Column(
         children: [
-          if (anySelected)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey.shade100,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton2<String>(
-                        isExpanded: true, // Prevent full width
-                        hint: Text(
-                          'Select Action',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontFamily: "poppins_thin",
-                          ),
-                        ),
-                        value: selectedAction,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedAction = value;
-                          });
-                        },
-                        items: actions
-                            .map((action) => DropdownMenuItem(
-                          value: action,
-                          child: Text(action,
-                              style:
-                              TextStyle(fontFamily: "poppins_thin")),
-                        ))
-                            .toList(),
-                        buttonStyleData: ButtonStyleData(
-                          height: 40,
-                          padding: const EdgeInsets.only(left: 14, right: 14),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        iconStyleData: const IconStyleData(
-                          icon: Icon(Icons.arrow_drop_down),
-                          iconSize: 24,
-                        ),
-                        dropdownStyleData: DropdownStyleData(
-                          maxHeight: 200,
-                          padding: null,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: Colors.white,
-                          ),
-                          elevation: 8,
-                          offset: const Offset(0, -4),
-                          scrollbarTheme: ScrollbarThemeData(
-                            radius: const Radius.circular(40),
-                            thickness: MaterialStateProperty.all<double>(6),
-                            thumbVisibility: MaterialStateProperty.all<bool>(true),
-                          ),
-                        ),
-                        menuItemStyleData: const MenuItemStyleData(
-                          height: 40,
-                          padding: EdgeInsets.only(left: 14, right: 14),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey.shade100,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton2<String>(
-                        isExpanded: true, // Prevent full width
-                        hint: Text(
-                          'Select Employee',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontFamily: "poppins_thin",
-                          ),
-                        ),
-                        value: selectedEmployee,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedEmployee = value;
-                          });
-                        },
-                        items: employees
-                            .map((employee) => DropdownMenuItem(
-                          value: employee,
-                          child: Text(employee,
-                              style:
-                              TextStyle(fontFamily: "poppins_thin")),
-                        ))
-                            .toList(),
-                        buttonStyleData: ButtonStyleData(
-                          height: 40,
-                          padding: const EdgeInsets.only(left: 14, right: 14),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        iconStyleData: const IconStyleData(
-                          icon: Icon(Icons.arrow_drop_down),
-                          iconSize: 24,
-                        ),
-                        dropdownStyleData: DropdownStyleData(
-                          maxHeight: 200,
-                          padding: null,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: Colors.white,
-                          ),
-                          elevation: 8,
-                          offset: const Offset(0, -4),
-                          scrollbarTheme: ScrollbarThemeData(
-                            radius: const Radius.circular(40),
-                            thickness: MaterialStateProperty.all<double>(6),
-                            thumbVisibility: MaterialStateProperty.all<bool>(true),
-                          ),
-                        ),
-                        menuItemStyleData: const MenuItemStyleData(
-                          height: 40,
-                          padding: EdgeInsets.only(left: 14, right: 14),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Center(
-                    child: SizedBox(
-                      child: GradientButton(
-                        buttonText: "Submit",
-                        onPressed: () {
-                          if (selectedAction == null || selectedEmployee == null) {
-                            showsubmitdialog(context);
-                          } else {
-                            showConfirmationDialog(context);
-                            handleAction(selectedAction!, selectedEmployee!);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+
           _buildMainButtonGroup(),
           GestureDetector(
             onTap: () async {
