@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -10,6 +12,8 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendance
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 
 class UserProvider with ChangeNotifier {
 
@@ -62,6 +66,9 @@ class UserProvider with ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  List<NextSlot> _nextSlots = [];
+  List<NextSlot> get nextSlots => _nextSlots;
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
@@ -297,6 +304,38 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<void> fetchNextSlots(String date) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _nextSlots = [];
+    notifyListeners();
+
+    try {
+      _nextSlots = await _apiService.fetchNextSlots(date);
+      print("UserProvider: Successfully fetched ${_nextSlots.length} slots");
+      if (_nextSlots.isEmpty) {
+        _errorMessage = "No slots available for this date";
+        print("UserProvider: No slots available");
+      } else {
+        print("UserProvider: Slots fetched - ${jsonEncode(_nextSlots.map((slot) => {'id': slot.id, 'source': slot.source, 'disabled': slot.disabled}).toList())}");
+      }
+    } catch (e) {
+      _errorMessage = "Error fetching data: $e";
+      print("UserProvider Error: $_errorMessage");
+      _nextSlots = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void clear() {
+    _nextSlots = [];
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+
 
   // Map<String, int> _stageCounts = {};
   // Map<String, int> get stageCounts => _stageCounts;
@@ -426,6 +465,127 @@ class UserProvider with ChangeNotifier {
     } catch (e) {
       print("Error sending leave request: $e");
       return false;
+    }
+  }
+
+  Future<bool> addLead({
+    required String action,
+    required String nxt_follow_up,
+    required String time,
+    required String purpose_buy,
+    required String city,
+    required String country_code,
+    required String intrested_area,
+    required String full_name,
+    required String budget,
+    required String approx_buy,
+    required String area,
+    required String mobileno,
+    required String inquiry_type,
+    required String inquiry_source_type,
+    required String intrested_area_name,
+    required String intersted_site_name,
+    required String PropertyConfiguration,
+    required String society,
+    required String houseno,
+    required String altmobileno, required String description
+
+  }) async {
+    try {
+      bool success = await _apiService.addLead(
+          action:action,
+          nxt_follow_up: nxt_follow_up,
+          time: time,
+          purpose_buy: purpose_buy,
+          city: city,
+          country_code: country_code,
+          intrested_area: intrested_area,
+          full_name: full_name,
+          budget: budget,
+          approx_buy: approx_buy,
+          area: area,
+          mobileno: mobileno,
+          inquiry_type:inquiry_type,
+          inquiry_source_type:inquiry_source_type,
+          intrested_area_name:intrested_area_name,
+          intersted_site_name:intersted_site_name,
+        altmobileno: altmobileno,
+        houseno: houseno,
+        PropertyConfiguration: PropertyConfiguration,
+        society: society, description: ''
+
+      );
+
+      if (success) {
+        print("Lead Added Successfully");
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error adding Lead  $e");
+      return false;
+    }
+  }
+  InquiryTimeLineModel? _inquiryTimeline;
+  InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
+
+  Future<void> fetchInquiryTimeline({required String inquiryId}) async {
+    try {
+      _inquiryTimeline = await _apiService.fetchInquiryTimeline(inquiryId: inquiryId);
+      if (_inquiryTimeline != null) {
+        // Print the top-level fields
+        print("Inquiry Timeline Data:");
+        print("Result: ${_inquiryTimeline!.result}");
+        print("Inquiry ID: ${_inquiryTimeline!.inquiryId}");
+
+        // Print the list of Data objects
+        if (inquiryTimeline!.data != null && inquiryTimeline!.data!.isNotEmpty) {
+          print("Data List (${_inquiryTimeline!.data!.length} items):");
+          for (var i = 0; i < _inquiryTimeline!.data!.length; i++) {
+            final dataItem = _inquiryTimeline!.data![i];
+            print("  Item #$i:");
+            print("    Created At: ${dataItem.createdAt}");
+            print("    Username: ${dataItem.username}");
+            print("    Status Label: ${dataItem.statusLabel}");
+            print("    Next Follow Date: ${dataItem.nxtfollowdate}");
+            print("    Remark Text: ${dataItem.remarktext}");
+            print("    Condition Wise BG: ${dataItem.conditionWIseBG}");
+            print("    Stages ID: ${dataItem.stagesId}");
+            print("    Inquiry Log: ${dataItem.inquiryLog}");
+          }
+        } else {
+          print("No Data items available.");
+        }
+      } else {
+        print("No data returned from API");
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error in provider: $e");
+      _inquiryTimeline = null; // Reset on error
+      notifyListeners();
+    }
+
+  }
+  String? _error;
+  String? get error => _error;
+
+  VisitEntryModel? _visitData;
+  VisitEntryModel? get visitData => _visitData;
+  Future<void> fetchVisitData() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _visitData = await _apiService.fetchVisitData();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

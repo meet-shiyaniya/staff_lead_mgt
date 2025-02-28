@@ -406,6 +406,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       appBar: AppBar(
         title: Text('Add New Booking', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
         backgroundColor: AppColor.Buttoncolor,
@@ -414,7 +415,7 @@ class _BookingScreenState extends State<BookingScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: PageView(
           controller: _pageController,
@@ -438,8 +439,19 @@ class _BookingScreenState extends State<BookingScreen> {
           Expanded(
             child: ListView(
               children: [
-                Text('Customer Information', style: TextStyle(fontSize: 20, fontFamily: "poppins_thin")),
-                Card(
+                Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 10,),
+                    Text('Customer Information', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
+
+                  ],
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color:Colors.grey.shade200,
+                    borderRadius:BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
@@ -484,8 +496,20 @@ class _BookingScreenState extends State<BookingScreen> {
           Expanded(
             child: ListView(
               children: [
-                Text('Project Details', style: TextStyle(fontSize: 20, fontFamily: "poppins_thin")),
-                Card(
+                Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 10,),
+                    Text('Project Detail', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
+
+                  ],
+                ),
+                // Text('Project Details', style: TextStyle(fontSize: 20, fontFamily: "poppins_thin")),
+                Container(
+                  decoration: BoxDecoration(
+                    color:Colors.grey.shade200,
+                    borderRadius:BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
@@ -569,8 +593,19 @@ class _BookingScreenState extends State<BookingScreen> {
           Expanded(
             child: ListView(
               children: [
-                Text('Payment Condition', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Card(
+                Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 10,),
+                    Text('Payment Condition', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
+
+                  ],
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color:Colors.grey.shade200,
+                    borderRadius:BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
@@ -702,8 +737,19 @@ class _BookingScreenState extends State<BookingScreen> {
           Expanded(
             child: ListView(
               children: [
-                Text('Token Payment Status', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Card(
+                Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 10,),
+                    Text('Token Payment Status', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
+
+                  ],
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color:Colors.grey.shade200,
+                    borderRadius:BorderRadius.circular(20),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
@@ -835,20 +881,37 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildTextField(String label,
       {TextEditingController? controller, String? prefix, bool readOnly = false, int maxLines = 1}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: TextField(
-        controller: controller,
-        readOnly: readOnly,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(fontFamily: "poppins_thin"),
-          prefixText: prefix != null ? '$prefix ' : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Container(
+
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                offset: Offset(1,3),
+                color: Colors.grey.shade400,
+              )
+            ]
         ),
-        keyboardType: (label.contains('Amount') && !label.contains('Words')) || label.contains('Price') || label.contains('Discount')
-            ? TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
+        child: TextFormField(
+          controller: controller,
+          readOnly: readOnly,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(fontFamily: "poppins_thin",fontSize: 15),
+            prefixText: prefix != null ? '$prefix ' : null,
+            filled: true,
+            fillColor: Colors.white, // White background
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          keyboardType: (label.contains('Amount') && !label.contains('Words')) || label.contains('Price') || label.contains('Discount')
+              ? TextInputType.numberWithOptions(decimal: true)
+              : TextInputType.text,
+        ),
       ),
     );
   }
@@ -861,7 +924,9 @@ class _BookingScreenState extends State<BookingScreen> {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontFamily: "poppins_thin"),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16),borderSide: BorderSide(color: Colors.grey)),
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         readOnly: true,
@@ -884,16 +949,14 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildDropdown2(String label,
       {required List<String> items, required Function(String?) onChanged}) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.only(top: 10,bottom: 10),
       child: Container(
-        width: MediaQuery.of(context).size.width,
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width , // 40% of screen width (adjust as needed)
-        ),
-
+        height: 55,
+        width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          border: Border.all(color: Colors.grey),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.shade300,
@@ -907,8 +970,7 @@ class _BookingScreenState extends State<BookingScreen> {
             hint: Text(
               label,
               style: TextStyle(
-                fontSize: 16,
-                color: Colors.black,
+                fontSize: 15,
                 fontFamily: "poppins_thin",
               ),
             ),
