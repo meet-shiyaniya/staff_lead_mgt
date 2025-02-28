@@ -473,8 +473,7 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno,
-    required String description
+    required String altmobileno
 
   }) async {
     try {
@@ -498,8 +497,7 @@ class UserProvider with ChangeNotifier {
         altmobileno: altmobileno,
         houseno: houseno,
         PropertyConfiguration: PropertyConfiguration,
-        society: society,
-        description: description
+        society: society, description: ''
 
       );
 
