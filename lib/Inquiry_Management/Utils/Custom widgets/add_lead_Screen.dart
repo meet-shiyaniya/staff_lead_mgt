@@ -154,6 +154,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       society: _societyController.text,
       houseno: _houseController.text,
       altmobileno: _altMobileController.text,
+      description: _descriptionController.text
     );
 
     if (isLeadAdded) {
