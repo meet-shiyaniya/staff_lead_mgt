@@ -1,24 +1,18 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/lead_Detail_Screen.dart';
-import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-
 import '../../Provider/UserProvider.dart';
 import '../Model/Api Model/allInquiryModel.dart';
+import '../Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
 import '../Model/category_Model.dart';
-import '../Model/followup_Model.dart';
 import '../Utils/Colors/app_Colors.dart';
 import '../Utils/Custom widgets/add_lead_Screen.dart';
 import '../Utils/Custom widgets/custom_buttons.dart';
-import '../Utils/Custom widgets/custom_dialog.dart';
-import '../Utils/Custom widgets/custom_search.dart';
-import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
 import '../Utils/Custom widgets/search_Screen.dart';
 import 'Filters/inquiry_Filter_Screen.dart';
-import 'Followup Screen/list_filter_Screen.dart';
 
 class AllInquiriesScreen extends StatefulWidget {
   const AllInquiriesScreen({Key? key});
@@ -28,6 +22,12 @@ class AllInquiriesScreen extends StatefulWidget {
 }
 
 class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
+
+  List<String> actionList = [];
+  List<Map<String, String>> employeeList = [];
+  String? selectedAction;
+  String? selectedEmployee;
+
   String selectedList = "All";
   String selectedValue = "0";
   int? selectedIndex;
@@ -38,15 +38,44 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   bool anySelected = false;
 
   late ScrollController _scrollController;
-  String? selectedAction = null;
-  String? selectedEmployee = null;
-  final List<String> actions = ['markAsComplete', 'assignToUser', 'delete'];
-  final List<String> employees = ['employee 1', 'employee 2', 'employee 3'];
+  // String? selectedAction = null;
+  // String? selectedEmployee = null;
+  // final List<String> actions = ['markAsComplete', 'assignToUser', 'delete'];
+  // final List<String> employees = ['employee 1', 'employee 2', 'employee 3'];
 
   bool isStatusFilterActive = false; // Flag to indicate if a status filter is active
   String? currentStage;
 
   int currentStatus = 1; // Default to 1 (Live) instead of 0
+
+  Future<void> loadData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.fetchTransferInquiryData();
+
+    try {
+      final data = userProvider.transferInquiryData;
+
+      if (data != null) {
+        // Parsing action data
+        String actionsString = data.action?.action ?? ''; // Accessing the action property safely
+        setState(() {
+          actionList = actionsString.isNotEmpty ? actionsString.split(',') : [];
+          selectedAction = actionList.isNotEmpty ? actionList.first : null;
+        });
+
+        // Parsing employee data
+        List<Employee> employees = data.employee ?? []; // Assuming `employee` is a List<Employee>
+        setState(() {
+          employeeList = employees
+              .map((e) => {'id': e.id ?? '', 'name': e.firstname ?? ''})
+              .toList();
+          selectedEmployee = employeeList.isNotEmpty ? employeeList.first['id'] : null;
+        });
+      }
+    } catch (e) {
+      print('Error fetching data: $e');
+    }
+  }
 
   @override
   void initState() {
@@ -233,10 +262,8 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       bool anySelected,
       Function(String, String) handleAction,
       List<String> actions,
-      List<String> employees,
+      List<String> employeeNames,
       ) {
-    if (!anySelected) return;
-
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -269,7 +296,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                         label: "Select Employee",
                         hint: "Choose Employee",
                         value: selectedEmployee,
-                        items: employees,
+                        items: employeeNames,
                         onChanged: (value) => setState(() => selectedEmployee = value),
                       ),
                     ],
@@ -313,36 +340,17 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.grey[800], fontSize: 16, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.shade100,
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton2<String>(
-              isExpanded: true,
-              hint: Text(hint, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-              value: value,
-              onChanged: onChanged,
-              items: items
-                  .map((item) => DropdownMenuItem(
-                value: item,
-                child: Text(item, style: const TextStyle(fontWeight: FontWeight.w400)),
-              ))
-                  .toList(),
-              buttonStyleData: const ButtonStyleData(height: 40),
-              iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700])),
-              dropdownStyleData: DropdownStyleData(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+        DropdownButtonFormField<String>(
+          value: value,
+          hint: Text(hint),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
         ),
       ],
     );
@@ -379,9 +387,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               backgroundColor: Colors.white,
               child: GestureDetector(
 
-                onTap: () {
-                  showActionDialog(context, anySelected, handleAction, actions, employees);
+                onTap: () async {
+                  await loadData(); // Ensure data is loaded
+                  List<String> employeeNames = employeeList.map((e) => e['name'] ?? '').toList();
+                  showActionDialog(context, anySelected, handleAction, actionList, employeeNames);
                 },
+
                 child: Image(
                   image: AssetImage("asset/Inquiry_module/fast-forward.png"),height: 25,width: 25,
 

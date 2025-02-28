@@ -9,14 +9,14 @@ import 'package:http/http.dart' as http;
 import '../Provider/UserProvider.dart';
 import '../bottom_navigation.dart';
 
-class weekOffScreen extends StatefulWidget {
-  const weekOffScreen({super.key});
+class timeOutScreen extends StatefulWidget {
+  const timeOutScreen({super.key});
 
   @override
-  State<weekOffScreen> createState() => _weekOffScreenState();
+  State<timeOutScreen> createState() => _timeOutScreenState();
 }
 
-class _weekOffScreenState extends State<weekOffScreen> {
+class _timeOutScreenState extends State<timeOutScreen> {
 
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   bool _isRequestSent = false;
@@ -31,8 +31,10 @@ class _weekOffScreenState extends State<weekOffScreen> {
 
     final profile = userProvider.profileData?.staffProfile;
     final bool isApproved = (profile?.accessRequestStatusToday ?? 0) == 1;
-    activeTimeFrom = profile?.activeFromTime;
-    activeTimeTo = profile?.activeToTime;
+    setState(() {
+      activeTimeFrom = profile?.activeFromTime;
+      activeTimeTo = profile?.activeToTime;
+    });
 
     if (mounted) {
 
@@ -134,7 +136,7 @@ class _weekOffScreenState extends State<weekOffScreen> {
                   child: Text(
                     "Access denied: You can only use your account during your official working hours from ${activeTimeFrom} to ${activeTimeTo}.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 17, fontFamily: "poppins_thin", color: Colors.black),
+                    style: TextStyle(fontSize: 16, fontFamily: "poppins_thin", color: Colors.black),
                   ),
                 ),
 

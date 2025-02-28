@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
 import 'package:hr_app/Week%20Off%20Or%20Holiday/week_Off_Screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,69 +63,112 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     await userProvider.fetchProfileData();
-
     if (!mounted) return;
 
     final profileData = userProvider.profileData?.staffProfile;
 
-    // If profile data is null, redirect to login
+    // Redirect to login if profile data is null
     if (profileData == null) {
-      print('❌ Error: Failed to fetch profile data');
-      Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
-      Navigator.pushReplacementNamed(context, '/login');
+      _showErrorToast('Failed to load profile. Please try again.');
+      _navigateToLogin();
       return;
     }
 
-    // If today is a holiday, week off, or vacation, go to the week-off screen
-    if (profileData.holidayToday == 1 || profileData.weekoffToday == 1 || profileData.vacationToday == 1) {
-      print('📅 Navigating to WeekOff Screen (Holiday/Weekoff/Vacation)');
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => weekOffScreen()));
+    final now = DateTime.now();
+    final activeFromTime = _parseTime(profileData.activeFromTime);
+    final activeToTime = _parseTime(profileData.activeToTime);
+
+    if (activeFromTime != null && activeToTime != null) {
+      if (now.isBefore(activeFromTime) || now.isAfter(activeToTime)) {
+        _navigateToScreen(timeOutScreen(), '⏰ Navigating to TimeoutScreen');
+        return;
+      }
+    } else {
+      print('⚠️ Warning: activeFromTime or activeToTime is null');
+    }
+
+    // Handle holidays, week-offs, or vacations
+    if (profileData.holidayToday == 1 ||
+        profileData.weekoffToday == 1 ||
+        profileData.vacationToday == 1) {
+      _navigateToScreen(weekOffScreen(), '📅 Navigating to WeekOffScreen');
       return;
     }
 
     final staffAttendanceMethod = profileData.staffAttendanceMethod;
-
-    // If staffAttendanceMethod is "0", go to the dashboard directly
     if (staffAttendanceMethod == "0") {
-      print('✅ Navigating to Dashboard (Staff_attendance_method = 0)');
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      _navigateToDashboard('✅ Navigating to Dashboard (Attendance not required)');
       return;
     }
 
-    // If staffAttendanceMethod is "1", check if attendance is already marked
     if (staffAttendanceMethod == "1") {
-      final prefs = await SharedPreferences.getInstance();
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
-
-      if (isAttendanceMarkedForToday) {
-        print('✅ Navigating to Dashboard (Attendance already marked for today)');
-        Navigator.pushReplacementNamed(context, '/dashboard');
+      final isAttendanceMarked = await _isAttendanceMarked();
+      if (isAttendanceMarked) {
+        _navigateToDashboard('✅ Navigating to Dashboard (Attendance already marked)');
         return;
       }
 
-      final attendanceMethod = profileData.attendanceMethod ?? "selfi_attendance";
-
-      print('📸 Navigating to Attendance Screen (Attendance not marked)');
-      Widget nextScreen;
-      switch (attendanceMethod) {
-        case "day_attendance":
-          nextScreen = mannualAttendanceScreen();
-          break;
-        case "qr_attendance":
-          nextScreen = qrOnboardingScreen();
-          break;
-        default:
-          nextScreen = FaceOnboarding();
-      }
-
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => nextScreen));
+      _navigateToAttendanceScreen(profileData.attendanceMethod);
       return;
     }
 
-    // If staffAttendanceMethod is invalid
-    print('❌ Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
-    Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
+    _showErrorToast('Invalid attendance method. Please contact support.');
+  }
+
+  Future<bool> _isAttendanceMarked() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    return prefs.getBool('attendanceMarked_$today') ?? false;
+  }
+
+  void _navigateToScreen(Widget screen, String logMessage) {
+    print(logMessage);
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  void _navigateToDashboard(String logMessage) {
+    print(logMessage);
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+
+  void _navigateToLogin() {
+    print('❌ Redirecting to login');
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  void _showErrorToast(String message) {
+    print('❌ Error: $message');
+    Fluttertoast.showToast(msg: message);
+  }
+
+  void _navigateToAttendanceScreen(String? method) {
+    final Widget nextScreen;
+    switch (method) {
+      case "day_attendance":
+        nextScreen = mannualAttendanceScreen();
+        break;
+      case "qr_attendance":
+        nextScreen = qrOnboardingScreen();
+        break;
+      default:
+        nextScreen = FaceOnboarding();
+    }
+    _navigateToScreen(nextScreen, '📸 Navigating to Attendance Screen');
+  }
+
+  /// Helper function to parse time strings (e.g., "09:00") into DateTime objects
+  DateTime? _parseTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) return null;
+
+    try {
+      final now = DateTime.now();
+      final formattedTime = DateFormat('hh:mm a').parse(timeString); // Parse '09:00 AM' format
+
+      return DateTime(now.year, now.month, now.day, formattedTime.hour, formattedTime.minute);
+    } catch (e) {
+      print('⚠️ Error parsing time: $e');
+      return null;
+    }
   }
 
   @override

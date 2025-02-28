@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/Mannual%20Day%20Start/mannual_Attendance_Screen.dart';
+import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -90,6 +91,34 @@ class _LoginScreenState extends State<LoginScreen> {
         Fluttertoast.showToast(msg: "Failed to load profile. Please try again.");
         Navigator.pushReplacementNamed(context, '/login');
         return;
+      }
+
+      DateTime? _parseTime(String? timeString) {
+        if (timeString == null || timeString.isEmpty) return null;
+
+        try {
+          final now = DateTime.now();
+          final formattedTime = DateFormat('hh:mm a').parse(timeString); // Parses '09:00 AM' format
+          return DateTime(now.year, now.month, now.day, formattedTime.hour, formattedTime.minute);
+        } catch (e) {
+          print('⚠️ Error parsing time: $e');
+          return null;
+        }
+      }
+
+      // Time comparison logic
+      final now = DateTime.now();
+      final activeFromTime = _parseTime(profileData.activeFromTime);
+      final activeToTime = _parseTime(profileData.activeToTime);
+
+      if (activeFromTime != null && activeToTime != null) {
+        if (now.isBefore(activeFromTime) || now.isAfter(activeToTime)) {
+          print("⏰ Navigating to TimeoutScreen (Outside Active Time)");
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => timeOutScreen()));
+          return;
+        }
+      } else {
+        print("⚠️ Warning: activeFromTime or activeToTime is null");
       }
 
       // Check if today is a holiday, week off, or vacation

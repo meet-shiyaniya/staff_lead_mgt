@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/fetch_Transfer_Inquiry_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
@@ -40,6 +41,9 @@ class UserProvider with ChangeNotifier {
 
   Realtoallstaffleavesmodel? _allStaffLeavesData;
   Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
+
+  fetchTransferInquiryModel? _transferInquiryData;
+  fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
 
   final ApiService _apiService = ApiService();
 
@@ -592,6 +596,15 @@ class UserProvider with ChangeNotifier {
   Future<void> fetchStaffAttendanceData () async {
     try {
       _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+    }
+  }
+
+  Future<void> fetchTransferInquiryData () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");

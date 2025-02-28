@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/fetch_Transfer_Inquiry_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
@@ -780,6 +781,55 @@ class ApiService{
         final data = jsonDecode(response.body);
 
         return Realtoallstaffleavesmodel.fromJson(data);
+
+      } else {
+
+        Fluttertoast.showToast(msg: "Data not fetched!");
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<fetchTransferInquiryModel?> fetchTransferInquiryData () async {
+
+    final url = Uri.parse('$baseUrl/sendallinquiry');
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        Fluttertoast.showToast(msg: "data fetched.");
+
+        final data = jsonDecode(response.body);
+
+        return fetchTransferInquiryModel.fromJson(data);
 
       } else {
 
