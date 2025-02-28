@@ -308,6 +308,140 @@ class ApiService{
 
   }
 
+  Future<List<NextSlot>> fetchNextSlots(String date) async {
+    final url = Uri.parse("$baseUrl/nxt_followup_slottime");
+    print("Step 1 - API URL: $url");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Step 2 - Token: $token");
+      if (token == null || token.isEmpty) {
+        throw Exception("Token is null or empty");
+      }
+
+      final formattedDate = DateFormat('dd-MM-yyyy')
+          .format(DateFormat('yyyy-MM-dd').parse(date));
+      print("Step 3 - Formatted Date: $formattedDate");
+
+      final requestBody = jsonEncode({
+        'token': token,
+        'nxt_follow_up': formattedDate,
+      });
+      print("Step 4 - Request Body: $requestBody");
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      );
+
+      print("Step 5 - Response Status Code: ${response.statusCode}");
+      print("Step 6 - Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = jsonDecode(response.body);
+        print("Step 7 - Parsed JSON: $jsonData");
+        return jsonData.map((json) => NextSlot.fromJson(json)).toList();
+      } else {
+        throw Exception("API Error: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("Step 8 - Error: $e");
+      rethrow;
+    }
+  }
+
+
+  Future<bool> addLead({
+    required String action,
+    required String nxt_follow_up,
+    required String time,
+    required String purpose_buy,
+    required String city,
+    required String country_code,
+    required String intrested_area,
+    required String full_name,
+    required String budget,
+    required String approx_buy,
+    required String area,
+    required String mobileno,
+    required String inquiry_type,
+    required String inquiry_source_type,
+    required String intrested_area_name,
+    required String intersted_site_name,
+    required String PropertyConfiguration,
+    required String society,
+    required String houseno,
+    required String altmobileno,
+    required String description
+
+
+  }) async {
+    final url = Uri.parse("$baseUrl/insert_Inquiry_data");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+
+      if (token == null) {
+        print("Token is null, aborting request");
+        return false;
+      }
+
+      Map<String, String> bodyData = {
+        "token": token,
+        "action": action,
+        "nxt_follow_up": nxt_follow_up,
+        "time": time,
+        "purpose_buy": purpose_buy,
+        "city": city,
+        "country_code": country_code,
+        "intrested_area": intrested_area,
+        "full_name": full_name,
+        "budget": budget,
+        "approx_buy": approx_buy,
+        "area": area,
+        "mobileno": mobileno,
+        "inquiry_type": inquiry_type,
+        "inquiry_source_type": inquiry_source_type,
+        "intrested_area_name": intrested_area_name,
+        "intersted_site_name": intersted_site_name,
+        "PropertyConfiguration":PropertyConfiguration,
+        "society":society,
+        "houseno":houseno,
+        "altmobileno":altmobileno,
+        "inquiry_description":description
+      };
+
+      print("Request URL: $url");
+      print("Request Body: ${jsonEncode(bodyData)}");
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(bodyData),
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        print("Lead added successfully");
+        return true;
+      } else {
+        print("Failed to add lead. Status Code: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      print("Error adding lead: $e");
+      return false;
+    }
+  }
+
 
   Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page, required String search}) async {
     

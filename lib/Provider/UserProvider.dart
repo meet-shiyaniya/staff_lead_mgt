@@ -527,7 +527,7 @@ class UserProvider with ChangeNotifier {
         altmobileno: altmobileno,
         houseno: houseno,
         PropertyConfiguration: PropertyConfiguration,
-        society: society
+        society: society, description: ''
 
       );
 
