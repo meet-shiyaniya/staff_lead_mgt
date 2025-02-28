@@ -11,6 +11,8 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendance
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 
 class UserProvider with ChangeNotifier {
 
@@ -473,7 +475,7 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno
+    required String altmobileno, required String description
 
   }) async {
     try {
@@ -511,6 +513,66 @@ class UserProvider with ChangeNotifier {
     } catch (e) {
       print("Error adding Lead  $e");
       return false;
+    }
+  }
+  InquiryTimeLineModel? _inquiryTimeline;
+  InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
+
+  Future<void> fetchInquiryTimeline({required String inquiryId}) async {
+    try {
+      _inquiryTimeline = await _apiService.fetchInquiryTimeline(inquiryId: inquiryId);
+      if (_inquiryTimeline != null) {
+        // Print the top-level fields
+        print("Inquiry Timeline Data:");
+        print("Result: ${_inquiryTimeline!.result}");
+        print("Inquiry ID: ${_inquiryTimeline!.inquiryId}");
+
+        // Print the list of Data objects
+        if (inquiryTimeline!.data != null && inquiryTimeline!.data!.isNotEmpty) {
+          print("Data List (${_inquiryTimeline!.data!.length} items):");
+          for (var i = 0; i < _inquiryTimeline!.data!.length; i++) {
+            final dataItem = _inquiryTimeline!.data![i];
+            print("  Item #$i:");
+            print("    Created At: ${dataItem.createdAt}");
+            print("    Username: ${dataItem.username}");
+            print("    Status Label: ${dataItem.statusLabel}");
+            print("    Next Follow Date: ${dataItem.nxtfollowdate}");
+            print("    Remark Text: ${dataItem.remarktext}");
+            print("    Condition Wise BG: ${dataItem.conditionWIseBG}");
+            print("    Stages ID: ${dataItem.stagesId}");
+            print("    Inquiry Log: ${dataItem.inquiryLog}");
+          }
+        } else {
+          print("No Data items available.");
+        }
+      } else {
+        print("No data returned from API");
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error in provider: $e");
+      _inquiryTimeline = null; // Reset on error
+      notifyListeners();
+    }
+
+  }
+  String? _error;
+  String? get error => _error;
+
+  VisitEntryModel? _visitData;
+  VisitEntryModel? get visitData => _visitData;
+  Future<void> fetchVisitData() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _visitData = await _apiService.fetchVisitData();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
