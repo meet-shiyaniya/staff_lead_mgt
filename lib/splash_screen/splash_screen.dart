@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hr_app/Week%20Off%20Or%20Holiday/week_Off_Screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +9,6 @@ import '../Provider/UserProvider.dart';
 import '../Staff Attendance Options/Mannual Day Start/mannual_Attendance_Screen.dart';
 import '../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
-import '../dashboard.dart';
 
 
 class SplashScreen extends StatefulWidget {
@@ -62,50 +62,69 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     await userProvider.fetchProfileData();
-    final profileData = userProvider.profileData;
 
     if (!mounted) return;
 
-    if (profileData != null && profileData.staffProfile != null) {
-      final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
+    final profileData = userProvider.profileData?.staffProfile;
 
-      if (staffAttendanceMethod == "0") {
-        print('Navigating to Dashboard (Staff_attendance_method = 0)');
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else if (staffAttendanceMethod == "1") {
-        final prefs = await SharedPreferences.getInstance();
-        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
-        final String staffAttendanceMethodStatus = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
-
-        if (isAttendanceMarkedForToday) {
-          print('Navigating to Dashboard (Attendance already marked for today)');
-          Navigator.pushReplacementNamed(context, '/dashboard');
-
-
-        } else {
-
-
-          print('Navigating to FaceOnboarding (Attendance not marked)');
-          if(staffAttendanceMethodStatus=="day_attendance"){
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>mannualAttendanceScreen()));
-          }else if(staffAttendanceMethodStatus=="qr_attendance"){
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>qrOnboardingScreen()));
-
-          }else{
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>FaceOnboarding()));
-          }
-
-        }
-      } else {
-        print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
-        Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
-      }
-    } else {
-      print('Error: Failed to fetch profile data');
+    // If profile data is null, redirect to login
+    if (profileData == null) {
+      print('❌ Error: Failed to fetch profile data');
       Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
       Navigator.pushReplacementNamed(context, '/login');
+      return;
     }
+
+    // If today is a holiday, week off, or vacation, go to the week-off screen
+    if (profileData.holidayToday == 1 || profileData.weekoffToday == 1 || profileData.vacationToday == 1) {
+      print('📅 Navigating to WeekOff Screen (Holiday/Weekoff/Vacation)');
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => weekOffScreen()));
+      return;
+    }
+
+    final staffAttendanceMethod = profileData.staffAttendanceMethod;
+
+    // If staffAttendanceMethod is "0", go to the dashboard directly
+    if (staffAttendanceMethod == "0") {
+      print('✅ Navigating to Dashboard (Staff_attendance_method = 0)');
+      Navigator.pushReplacementNamed(context, '/dashboard');
+      return;
+    }
+
+    // If staffAttendanceMethod is "1", check if attendance is already marked
+    if (staffAttendanceMethod == "1") {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+
+      if (isAttendanceMarkedForToday) {
+        print('✅ Navigating to Dashboard (Attendance already marked for today)');
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        return;
+      }
+
+      final attendanceMethod = profileData.attendanceMethod ?? "selfi_attendance";
+
+      print('📸 Navigating to Attendance Screen (Attendance not marked)');
+      Widget nextScreen;
+      switch (attendanceMethod) {
+        case "day_attendance":
+          nextScreen = mannualAttendanceScreen();
+          break;
+        case "qr_attendance":
+          nextScreen = qrOnboardingScreen();
+          break;
+        default:
+          nextScreen = FaceOnboarding();
+      }
+
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => nextScreen));
+      return;
+    }
+
+    // If staffAttendanceMethod is invalid
+    print('❌ Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
+    Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
   }
 
   @override

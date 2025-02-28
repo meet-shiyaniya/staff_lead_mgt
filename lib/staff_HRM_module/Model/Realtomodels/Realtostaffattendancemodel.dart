@@ -1,125 +1,134 @@
 class Realtostaffattendancemodel {
-  int? status;
-  String? message;
-  List<Data>? data;
+  String? status;
+  Data? data;
+  String? timestamp;
 
-  Realtostaffattendancemodel({this.status, this.message, this.data});
+  Realtostaffattendancemodel({this.status, this.data, this.timestamp});
 
   Realtostaffattendancemodel.fromJson(Map<String, dynamic> json) {
     status = json['status'];
-    message = json['message'];
-    if (json['data'] != null) {
-      data = <Data>[];
-      json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+    data = json['data'] != null ? new Data.fromJson(json['data']) : null;
+    timestamp = json['timestamp'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['status'] = this.status;
+    if (this.data != null) {
+      data['data'] = this.data!.toJson();
+    }
+    data['timestamp'] = this.timestamp;
+    return data;
+  }
+}
+
+class Data {
+  String? month;
+  int? year;
+  int? staffId;
+  List<Calendar>? calendar;
+
+  Data({this.month, this.year, this.staffId, this.calendar});
+
+  Data.fromJson(Map<String, dynamic> json) {
+    month = json['month'];
+    year = json['year'];
+    staffId = json['staff_id'];
+    if (json['calendar'] != null) {
+      calendar = <Calendar>[];
+      json['calendar'].forEach((v) {
+        calendar!.add(new Calendar.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this.status;
-    data['message'] = this.message;
-    if (this.data != null) {
-      data['data'] = this.data!.map((v) => v.toJson()).toList();
+    data['month'] = this.month;
+    data['year'] = this.year;
+    data['staff_id'] = this.staffId;
+    if (this.calendar != null) {
+      data['calendar'] = this.calendar!.map((v) => v.toJson()).toList();
     }
     return data;
   }
 }
 
-class Data {
-  String? id;
-  String? userId;
-  String? entryDateTime;
-  String? exitDateTime;
-  String? hourCount;
-  String? createdAt;
+class Calendar {
+  String? date;
   String? status;
-  String? isExitDay;
-  String? isStatus;
-  String? punchDate;
-  Null? punchTimeArray;
-  String? isDelete;
-  Null? deletedBy;
-  Null? deletedDate;
+  String? statusColor;
+  String? inTime;
+  String? outTime;
+  String? inStatusColor;
+  String? outStatusColor;
   String? workTime;
-  String? bioStatus;
-  String? workStatus;
-  String? intimeStatus;
-  String? intimeValue;
-  String? outtimeStatus;
-  String? outtimeValue;
+  int? isWeekoff;
+  int? isLeave;
+  Holiday? holiday;
 
-  Data(
-      {this.id,
-        this.userId,
-        this.entryDateTime,
-        this.exitDateTime,
-        this.hourCount,
-        this.createdAt,
+  Calendar(
+      {this.date,
         this.status,
-        this.isExitDay,
-        this.isStatus,
-        this.punchDate,
-        this.punchTimeArray,
-        this.isDelete,
-        this.deletedBy,
-        this.deletedDate,
+        this.statusColor,
+        this.inTime,
+        this.outTime,
+        this.inStatusColor,
+        this.outStatusColor,
         this.workTime,
-        this.bioStatus,
-        this.workStatus,
-        this.intimeStatus,
-        this.intimeValue,
-        this.outtimeStatus,
-        this.outtimeValue});
+        this.isWeekoff,
+        this.isLeave,
+        this.holiday});
 
-  Data.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    userId = json['user_id'];
-    entryDateTime = json['entry_date_time'];
-    exitDateTime = json['exit_date_time'];
-    hourCount = json['hour_count'];
-    createdAt = json['created_at'];
+  Calendar.fromJson(Map<String, dynamic> json) {
+    date = json['date'];
     status = json['status'];
-    isExitDay = json['is_exit_day'];
-    isStatus = json['is_status'];
-    punchDate = json['punch_date'];
-    punchTimeArray = json['punch_time_array'];
-    isDelete = json['is_delete'];
-    deletedBy = json['deleted_by'];
-    deletedDate = json['deleted_date'];
+    statusColor = json['status_color'];
+    inTime = json['in_time'];
+    outTime = json['out_time'];
+    inStatusColor = json['in_status_color'];
+    outStatusColor = json['out_status_color'];
     workTime = json['work_time'];
-    bioStatus = json['bio_status'];
-    workStatus = json['work_status'];
-    intimeStatus = json['intime_status'];
-    intimeValue = json['intime_value'];
-    outtimeStatus = json['outtime_status'];
-    outtimeValue = json['outtime_value'];
+    isWeekoff = json['is_weekoff'];
+    isLeave = json['is_leave'];
+    holiday =
+    json['holiday'] != null ? new Holiday.fromJson(json['holiday']) : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['user_id'] = this.userId;
-    data['entry_date_time'] = this.entryDateTime;
-    data['exit_date_time'] = this.exitDateTime;
-    data['hour_count'] = this.hourCount;
-    data['created_at'] = this.createdAt;
+    data['date'] = this.date;
     data['status'] = this.status;
-    data['is_exit_day'] = this.isExitDay;
-    data['is_status'] = this.isStatus;
-    data['punch_date'] = this.punchDate;
-    data['punch_time_array'] = this.punchTimeArray;
-    data['is_delete'] = this.isDelete;
-    data['deleted_by'] = this.deletedBy;
-    data['deleted_date'] = this.deletedDate;
+    data['status_color'] = this.statusColor;
+    data['in_time'] = this.inTime;
+    data['out_time'] = this.outTime;
+    data['in_status_color'] = this.inStatusColor;
+    data['out_status_color'] = this.outStatusColor;
     data['work_time'] = this.workTime;
-    data['bio_status'] = this.bioStatus;
-    data['work_status'] = this.workStatus;
-    data['intime_status'] = this.intimeStatus;
-    data['intime_value'] = this.intimeValue;
-    data['outtime_status'] = this.outtimeStatus;
-    data['outtime_value'] = this.outtimeValue;
+    data['is_weekoff'] = this.isWeekoff;
+    data['is_leave'] = this.isLeave;
+    if (this.holiday != null) {
+      data['holiday'] = this.holiday!.toJson();
+    }
+    return data;
+  }
+}
+
+class Holiday {
+  String? name;
+  String? status;
+
+  Holiday({this.name, this.status});
+
+  Holiday.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    status = json['status'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['name'] = this.name;
+    data['status'] = this.status;
     return data;
   }
 }

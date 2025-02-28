@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../../Provider/UserProvider.dart';
-import '../../../Model/Realtomodels/Realtostaffleavesmodel.dart';
+import '../../../Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import '../../Color/app_Color.dart';
+import 'package:http/http.dart' as http;
 
 class allStaffLeavesScreen extends StatefulWidget {
   const allStaffLeavesScreen({super.key});
@@ -15,14 +19,91 @@ class allStaffLeavesScreen extends StatefulWidget {
 
 class _allStaffLeavesScreenState extends State<allStaffLeavesScreen> {
 
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
   List<Data> leavesStaff = [];
 
   Future<void> _fetchLeavesData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.fetchStaffLeavesData();
+    await userProvider.fetchAllStaffLeavesData();
+
     setState(() {
-      leavesStaff = userProvider.staffLeavesData?.data?.reversed.toList() ?? [];
+      // Filter leaves where status == "0"
+      leavesStaff = userProvider.allStaffLeavesData?.data
+          ?.where((leave) => leave.status == "0")
+          .toList()
+          .reversed
+          .toList() ?? [];
     });
+  }
+
+  Future<void> _sendApproveReject({
+    required String leaveId,
+    required String action,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/leave_request_action");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) return;
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token, 'leave_id': leaveId, 'action': action}),
+      );
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(msg: "Send Success");
+
+        // Close the dialog before updating UI
+        Navigator.pop(context);
+
+        _fetchLeavesData();
+
+      } else {
+        Fluttertoast.showToast(msg: "Failed to update leave request.");
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Send not Success");
+    }
+  }
+
+  void _showDialog(BuildContext context,String title, String id, String action) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: appColor.subFavColor,
+          // contentPadding: EdgeInsets.symmetric(horizontal: 40),
+          title: Text("Confirm ${title}", style: TextStyle(fontSize: 20, color: Colors.black, fontFamily: "poppins_thin"),),
+          content: Text("Are you sure you want to\n${title} this Leave request?", textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.grey.shade700, fontFamily: "poppins_thin", fontWeight: FontWeight.w100),),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("Cancel", style: TextStyle(color: appColor.favColor, fontFamily: "poppins_thin", fontSize: 14)),
+            ),
+            ElevatedButton(
+              onPressed: (){
+
+                _sendApproveReject(leaveId: id, action: action);
+
+              },
+              child: Text("${title}", style: TextStyle(color: Colors.white, fontFamily: "poppins_thin", fontSize: 14)),
+              style: ElevatedButton.styleFrom(
+
+                  backgroundColor: appColor.favColor
+
+              ),
+            ),
+
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -164,7 +245,7 @@ class _allStaffLeavesScreenState extends State<allStaffLeavesScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
 
-                              Text("${leave.leaveFromDate} - ${leave.leaveToDate}", style: TextStyle(color: Colors.deepPurple.shade600, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
+                              Text("${leave.leaveFromDate} to ${leave.leaveToDate}", style: TextStyle(color: Colors.deepPurple.shade600, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13),),
 
                             ],
                           ),
@@ -274,7 +355,7 @@ class _allStaffLeavesScreenState extends State<allStaffLeavesScreen> {
 
                                   onPressed: (){
 
-                                    Fluttertoast.showToast(msg: "Leave Rejected");
+                                    _showDialog(context, "Reject", "${leave.id}", "reject");
 
                                   },
 
@@ -302,7 +383,7 @@ class _allStaffLeavesScreenState extends State<allStaffLeavesScreen> {
 
                                   onPressed: (){
 
-                                    Fluttertoast.showToast(msg: "Leave Approved");
+                                    _showDialog(context, "Approve", "${leave.id}", "approve");
 
                                   },
 

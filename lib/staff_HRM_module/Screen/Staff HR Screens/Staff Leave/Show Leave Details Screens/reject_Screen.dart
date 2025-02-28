@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:provider/provider.dart';
 import '../../../../../Provider/UserProvider.dart';
+import '../../../../Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import '../../../Color/app_Color.dart';
 
 class rejectScreen extends StatefulWidget {
@@ -26,7 +26,7 @@ class _rejectScreenState extends State<rejectScreen> {
 
       await userProvider.fetchStaffLeavesData();
 
-      List<Data> staffAllLeaves = userProvider.staffLeavesData?.data?.reversed.toList() ?? [];
+      List<Data> staffAllLeaves = userProvider.allStaffLeavesData?.data?.reversed.toList() ?? [];
 
       approveList.clear();
 

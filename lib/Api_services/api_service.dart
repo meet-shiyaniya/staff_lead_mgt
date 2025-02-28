@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
@@ -18,7 +19,7 @@ class ApiService{
   static const String baseUrl="https://admin.dev.ajasys.com/api";
   static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
-
+  final String updateProfilePicUrl = "$baseUrl/uploadProfileImage";
 
   Future<void> uploadSelfie(File imageFile) async {
     try {
@@ -58,6 +59,43 @@ class ApiService{
 
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e");
+    }
+  }
+
+  Future<bool> updateProfilePic(File imageFile) async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+        Fluttertoast.showToast(msg: "❌ Authentication error: Token not found");
+        return false;
+      }
+
+      var request = http.MultipartRequest("POST", Uri.parse(updateProfilePicUrl));
+
+      request.files.add(
+        await http.MultipartFile.fromPath('profile_image', imageFile.path),
+      );
+
+      request.fields['token'] = token;
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        print("Response Data: $responseData");
+        Fluttertoast.showToast(msg: "✅ Profile Picture updated successfully");
+        return true;
+      } else {
+        var errorData = await response.stream.bytesToString();
+        print("❌ Error Data: $errorData");
+        Fluttertoast.showToast(msg: "❌ Failed to update profile picture: $errorData");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Exception: $e");
+      Fluttertoast.showToast(msg: "❌ Error: $e");
+      return false;
     }
   }
 
@@ -453,7 +491,7 @@ class ApiService{
   }
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 
-    final url = Uri.parse("$baseUrl/Attendance");
+    final url = Uri.parse("$baseUrl/month_attendance");
 
     try {
 
@@ -485,6 +523,55 @@ class ApiService{
 
       } else {
 
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<Realtoallstaffleavesmodel?> fetchAllStaffLeavesData () async {
+
+    final url = Uri.parse('$baseUrl/child_leave_request');
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+        url,
+        headers: {
+
+          'Content-Type': 'application/json'
+
+        },
+        body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        // Fluttertoast.showToast(msg: "data fetched.");
+
+        final data = jsonDecode(response.body);
+
+        return Realtoallstaffleavesmodel.fromJson(data);
+
+      } else {
+
+        Fluttertoast.showToast(msg: "Data not fetched!");
         return null;
 
       }

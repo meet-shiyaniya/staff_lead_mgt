@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
+import '../../Color/app_Color.dart';
 
 class attendanceScreen extends StatefulWidget {
   @override
@@ -12,192 +16,173 @@ class attendanceScreen extends StatefulWidget {
 
 class _attendanceScreenState extends State<attendanceScreen> {
 
-  String selectedFilter = "Last 7 Days";
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
-  List<Data> staffAttendanceList = [];
-
+  String selectedFilter = "Last 7 Days"; // Default filter
+  List<Calendar> staffAttendanceList = [];
   List<Map<String, dynamic>> attendanceRecords = [];
+  bool isLoading = true;
 
-  final List<String> filters = ["Last 7 Days", "Last 30 Days", "Last Month"];
-
-  Future<void> _fetchStaffAttendanceData() async {
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    await userProvider.fetchStaffAttendanceData();
-
-    setState(() {
-
-      staffAttendanceList = userProvider.staffAttendanceData?.data ?? [];
-      _updateAttendanceRecords();
-
-    });
-
-  }
+  final List<String> filters = ["Last 7 Days", "Current Month", "Last Month"];
 
   @override
   void initState() {
     super.initState();
-    _fetchStaffAttendanceData();
+    _fetchCurrentMonthAttendance();
   }
 
+  /// Fetch current month's attendance data from backend
+  Future<void> _fetchCurrentMonthAttendance() async {
+    setState(() => isLoading = true);
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.fetchStaffAttendanceData(); // Fetch current month data
+
+    staffAttendanceList = userProvider.staffAttendanceData?.data?.calendar ?? [];
+    _updateAttendanceRecords();
+
+    setState(() => isLoading = false);
+  }
+
+  /// Fetch attendance for a specific year and month (for "Last Month" filter)
+  Future<void> _fetchLastMonthAttendance() async {
+    setState(() => isLoading = true);
+
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/month_attendance");
+    final String? token = await _secureStorage.read(key: 'token');
+
+    if (token == null) return;
+
+    DateTime lastMonth = DateTime.now().subtract(const Duration(days: 30));
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': token,
+          'selectedYear': lastMonth.year,
+          'selectedMonth': lastMonth.month
+        }),
+      );
+
+      print("API Response: ${response.body}");  // Debugging Line
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        staffAttendanceList = List<Calendar>.from(
+            jsonResponse['data']['calendar'].map((x) => Calendar.fromJson(x))
+        );
+        // Fluttertoast.showToast(msg: staffAttendanceList.length.toString());
+
+        print("Parsed Attendance List: $staffAttendanceList"); // Debugging Line
+
+        _updateAttendanceRecords();
+      }
+    } catch (e) {
+      print("Error fetching last month attendance: $e");
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  /// Update records based on selected filter
   void _updateAttendanceRecords() {
-    attendanceRecords = _filterAttendanceByPunchDate();
+    if (staffAttendanceList.isEmpty) {
+      print("Staff Attendance List is empty!"); // Debugging Line
+      setState(() {
+        attendanceRecords = [];
+        isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      attendanceRecords = _filterAttendanceByPunchDate();
+      print("Updated Attendance Records: $attendanceRecords"); // Debugging Line
+      isLoading = false; // Ensure the UI knows data is available
+    });
   }
 
+  /// Filter attendance data based on selected filter
   List<Map<String, dynamic>> _filterAttendanceByPunchDate() {
-
     DateTime now = DateTime.now();
     DateTime startDate;
     DateTime endDate = now;
 
-    // Determine the start date based on the selected filter
     switch (selectedFilter) {
-
       case 'Last 7 Days':
-
-        startDate = now.subtract(Duration(days: 7));
+        startDate = now.subtract(const Duration(days: 6)); // Include today
         break;
-
-      case 'Last 30 Days':
-
-        startDate = now.subtract(Duration(days: 30));
+      case 'Current Month':
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month + 1, 0);
         break;
-
       case 'Last Month':
-
-      // Calculate the start date for the previous month
-        startDate = DateTime(now.year, now.month - 1, 0); // First day of the previous month
-        endDate = DateTime(now.year, now.month, 0); // Last day of the previous month
+        startDate = DateTime(now.year, now.month - 1, 1);
+        endDate = DateTime(now.year, now.month, 0);
         break;
-
       default:
-
-        startDate = now.subtract(Duration(days: 7)); // Fallback to Last 7 Days
-
+        startDate = now.subtract(const Duration(days: 6));
     }
 
-    // Generate a set of expected dates within the range, starting from endDate to startDate
+    // Expected dates within the selected range in "dd-MM-yyyy" format
     Set<String> expectedDates = {};
-
-    for (int i = 0; i < endDate.difference(startDate).inDays; i++) {
-
-      expectedDates.add(DateFormat('dd-MM-yyyy').format(endDate.subtract(Duration(days: i))));
-
+    for (int i = 0; i <= endDate.difference(startDate).inDays; i++) {
+      expectedDates.add(DateFormat('dd-MM-yyyy').format(startDate.add(Duration(days: i))));
     }
 
-    // Convert the set to a list (already in descending order)
-    List<String> sortedDates = expectedDates.toList();
-
-    // Create a map of attendance records with punch dates as keys
+    // Create a map of attendance records from API data
     Map<String, Map<String, dynamic>> attendanceMap = {};
 
     for (var record in staffAttendanceList) {
+      if (record.date != null && record.date != '0000-00-00') {
+        String formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.date!));
 
-      // Check if punchDate is not null and not '0000-00-00'
-      if (record.punchDate != null && record.punchDate != '0000-00-00') {
-
-        // Convert punchDate to the same format as expectedDates (dd-MM-yyyy)
-        String formattedPunchDate;
-
-        try {
-
-          formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.punchDate!));
-
-        } catch (e) {
-
-          // Handle invalid date format
-          formattedPunchDate = 'Invalid Date';
-
+        if (expectedDates.contains(formattedPunchDate)) {
+          attendanceMap[formattedPunchDate] = {
+            'date': formattedPunchDate,
+            'checkIn': record.inTime ?? '00:00',
+            'checkOut': record.outTime ?? '00:00',
+            'status': record.status ?? 'Absent',
+          };
         }
-
-        // Extract time part (HH:mm) from entryDateTime
-        String checkInTime = '00:00'; // Default value
-
-        if (record.entryDateTime != null) {
-
-          try {
-
-            List<String> dateTimeParts = record.entryDateTime!.split(' ');
-
-            if (dateTimeParts.length > 1) {
-
-              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
-
-              checkInTime = timePart.substring(0, 5); // Extract HH:mm
-
-            }
-
-          } catch (e) {
-
-            // Handle invalid time format
-            checkInTime = '00:00';
-
-          }
-
-        }
-
-        // Extract time part (HH:mm) from exitDateTime
-        String checkOutTime = '00:00'; // Default value
-
-        if (record.exitDateTime != null) {
-
-          try {
-
-            List<String> dateTimeParts = record.exitDateTime!.split(' ');
-
-            if (dateTimeParts.length > 1) {
-
-              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
-
-              checkOutTime = timePart.substring(0, 5); // Extract HH:mm
-
-            }
-
-          } catch (e) {
-
-            // Handle invalid time format
-            checkOutTime = '00:00';
-
-          }
-
-        }
-
-        attendanceMap[formattedPunchDate] = {
-
-          'date': formattedPunchDate,
-          'checkIn': checkInTime, // Assign extracted time for check-in
-          'checkOut': checkOutTime, // Assign extracted time for check-out
-          'status': 'Present', // Mark as Present if punch date exists
-
-        };
-
       }
-
     }
 
-    // Generate the final list of attendance data in descending order
-    return sortedDates.map((date) {
-
-      if (attendanceMap.containsKey(date)) {
-
-        return attendanceMap[date]!; // Return the present record
-
-      } else {
-
-        return {
-
-          'date': date,
-          'checkIn': '00:00',
-          'checkOut': '00:00',
-          'status': 'Absent', // Mark as Absent if punch date does not exist
-
-        };
-
-      }
-
+    // Build final attendance list
+    List<Map<String, dynamic>> attendanceList = expectedDates.map((date) {
+      return attendanceMap.containsKey(date)
+          ? attendanceMap[date]!
+          : {'date': date, 'checkIn': '00:00', 'checkOut': '00:00', 'status': 'Absent'};
     }).toList();
 
+    // Sort the list by date in descending order
+    attendanceList.sort((a, b) {
+      DateTime dateA = DateFormat('dd-MM-yyyy').parse(a['date']);
+      DateTime dateB = DateFormat('dd-MM-yyyy').parse(b['date']);
+      return dateB.compareTo(dateA); // Descending order
+    });
+
+    return attendanceList;
+  }
+
+  /// Handle filter change
+  void _onFilterChanged(String newFilter) async {
+    setState(() {
+      selectedFilter = newFilter;
+      isLoading = true; // Ensure UI shows loading state
+    });
+
+    if (newFilter == "Last Month") {
+      await _fetchLastMonthAttendance();  // Fetch last month's data via API
+    } else {
+      await _fetchCurrentMonthAttendance();  // Fetch current month data
+    }
+
+    setState(() {
+      isLoading = false; // Refresh UI
+    });
   }
 
   @override
@@ -215,11 +200,11 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
         leading: Container(
 
-          margin: EdgeInsets.all(7),
+          margin: EdgeInsets.all(9),
 
           decoration: BoxDecoration(
 
-            color: Colors.grey.shade100,
+            color: appColor.subFavColor,
             shape: BoxShape.circle,
             boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 3, offset: Offset(1, 3)),],
 
@@ -231,7 +216,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
               Navigator.pop(context);
             },
 
-            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20,),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 16,),
 
           ),
         ),
@@ -239,32 +224,29 @@ class _attendanceScreenState extends State<attendanceScreen> {
         actions: [
 
           PopupMenuButton<String>(
-
-            icon: Icon(Icons.more_vert, color: Colors.black, size: 20,),
-
+            icon: const Icon(Icons.more_vert, color: Colors.black, size: 20),
             position: PopupMenuPosition.under,
-
-            offset: Offset(0, 8),
-
+            offset: const Offset(0, 8),
+            color: appColor.subFavColor,
             onSelected: (value) {
-
               setState(() {
-
                 selectedFilter = value;
-                _updateAttendanceRecords();
-
+                _onFilterChanged(value); // Call function to handle filter logic
               });
-
             },
-
             itemBuilder: (context) => filters.map((choice) => PopupMenuItem<String>(
-
               value: choice,
               height: 40,
-              child: Text(choice, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700),),
-
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                choice,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.grey.shade800,
+                ),
+              ),
             )).toList(),
-
           ),
 
         ],
@@ -336,6 +318,8 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
             child: PieChart(
 
+              key: ValueKey(selectedFilter),
+
               curve: Curves.linearToEaseOut,
               duration: Duration(seconds: 2),
 
@@ -343,8 +327,9 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
                 sections: [
 
-                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Present').length, Colors.green.shade700, "Present"),
-                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Absent').length, Colors.red.shade700, "Absent"),
+                  _chartSection(attendanceRecords.where((e) => e['status'] == 'present').length, Colors.green.shade700, "Present"),
+                  _chartSection(attendanceRecords.where((e) => e['status'] == 'absent').length, Colors.red.shade700, "Absent"),
+                  _chartSection(attendanceRecords.where((e) => e['status'] == 'half day').length, Colors.orange.shade600, "Half-Day"),
 
                 ],
 
@@ -476,7 +461,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
             child: Center(
 
-              child: Icon(status == 'Present' ? Icons.check_circle : Icons.cancel, color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900, size: 22,),
+              child: Icon(status == 'present' ? Icons.check_circle : status == 'half day' ? Icons.access_time : Icons.cancel, color: status == 'present' ? Colors.green.shade900 : status == 'half day' ? Colors.orange.shade700 : Colors.red.shade900, size: 22,),
 
             ),
 
@@ -538,7 +523,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
           Spacer(),
 
-          Text(status, style: TextStyle(fontSize: 12.5,  fontFamily: "poppins_thin", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
+          Text(status, style: TextStyle(fontSize: 12.5,  fontFamily: "poppins_thin", color: status == 'present' ? Colors.green.shade900 : status == 'half day' ? Colors.orange.shade700 : Colors.red.shade900)),
 
           SizedBox(width: 12,),
 

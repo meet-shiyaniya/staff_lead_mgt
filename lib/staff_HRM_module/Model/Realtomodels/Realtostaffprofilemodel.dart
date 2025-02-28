@@ -53,6 +53,10 @@ class StaffProfile {
   String? isAttendance;
   String? staffAttendanceMethod;
   String? attendanceMethod;
+  int? holidayToday;
+  int? weekoffToday;
+  int? vacationToday;
+  int? accessRequestStatusToday;
 
   StaffProfile(
       {this.employeeId,
@@ -82,7 +86,11 @@ class StaffProfile {
         this.status,
         this.isAttendance,
         this.staffAttendanceMethod,
-        this.attendanceMethod});
+        this.attendanceMethod,
+        this.holidayToday,
+        this.weekoffToday,
+        this.vacationToday,
+        this.accessRequestStatusToday});
 
   StaffProfile.fromJson(Map<String, dynamic> json) {
     employeeId = json['employee_id'];
@@ -113,6 +121,10 @@ class StaffProfile {
     isAttendance = json['is_attendance'];
     staffAttendanceMethod = json['Staff_attendance_method'];
     attendanceMethod = json['Attendance_method'];
+    holidayToday = json['holiday_today'];
+    weekoffToday = json['weekoff_today'];
+    vacationToday = json['vacation_today'];
+    accessRequestStatusToday = json['AccessRequestStatus_today'];
   }
 
   Map<String, dynamic> toJson() {
@@ -145,6 +157,10 @@ class StaffProfile {
     data['is_attendance'] = this.isAttendance;
     data['Staff_attendance_method'] = this.staffAttendanceMethod;
     data['Attendance_method'] = this.attendanceMethod;
+    data['holiday_today'] = this.holidayToday;
+    data['weekoff_today'] = this.weekoffToday;
+    data['vacation_today'] = this.vacationToday;
+    data['AccessRequestStatus_today'] = this.accessRequestStatusToday;
     return data;
   }
 }

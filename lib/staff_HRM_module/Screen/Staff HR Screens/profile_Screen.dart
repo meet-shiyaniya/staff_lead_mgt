@@ -80,7 +80,7 @@ class _profileScreenState extends State<profileScreen> {
           CircleAvatar(
             radius: 40,
             backgroundImage: (profile?.staffProfile?.profileImg?.isNotEmpty == true)
-                ? CachedNetworkImageProvider(profile!.staffProfile!.profileImg!)
+                ? CachedNetworkImageProvider("${profile?.staffProfile?.profileImg}")
                 : const NetworkImage("https://vertex-academy.com/en/images/reviews/5.jpg"),
           ),
 
