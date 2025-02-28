@@ -151,3 +151,23 @@ class ApxTime {
       apxTimeData: json['ApxTimeData'] ?? '' //provide a default value
   );
 }
+
+class NextSlot {
+  final String id;
+  final String source;
+  final bool disabled;
+
+  NextSlot({
+    required this.id,
+    required this.source,
+    required this.disabled,
+  });
+
+  factory NextSlot.fromJson(Map<String, dynamic> json) {
+    return NextSlot(
+      id: json['id'] as String,
+      source: json['source'] as String,
+      disabled: json['disabled'] == 'true', // Convert string "true" to bool
+    );
+  }
+}

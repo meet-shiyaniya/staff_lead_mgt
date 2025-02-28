@@ -197,9 +197,9 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
             itemCount: inquiryOptionList.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, // 2 columns
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2, // Adjusted for a good look
+              crossAxisSpacing: 3,
+              mainAxisSpacing: 14,
+              mainAxisExtent: 146, // Adjusted for a good look
             ),
             itemBuilder: (context, index) {
               return _buildCategoryCard(inquiryOptionList[index], context);
@@ -255,6 +255,7 @@ Widget _buildCategoryCard(inquiryOptionModel option, BuildContext context) {
       // Add other navigation cases if needed
     },
     child: Container(
+      margin: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: option.color,
         borderRadius: BorderRadius.circular(20),
@@ -262,7 +263,8 @@ Widget _buildCategoryCard(inquiryOptionModel option, BuildContext context) {
           BoxShadow(
             color: Colors.black12,
             blurRadius: 8,
-            offset: Offset(0, 3),
+            spreadRadius: 2,
+            offset: Offset(1, 3),
           ),
         ],
       ),
@@ -275,7 +277,7 @@ Widget _buildCategoryCard(inquiryOptionModel option, BuildContext context) {
             radius: 28,
             child: Icon(
               option.icon,
-              size: 26,
+              size: 25,
               color: Colors.deepPurple.shade500,
             ),
           ),

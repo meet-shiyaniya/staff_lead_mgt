@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../../Provider/UserProvider.dart';
 import '../../../Model/Realtomodels/Realtostaffleavesmodel.dart';
 import '../../Color/app_Color.dart';
-import 'add_Leave_Request_Screen.dart';
 
-class leaveRequestScreen extends StatefulWidget {
-  const leaveRequestScreen({super.key});
+class allStaffLeavesScreen extends StatefulWidget {
+  const allStaffLeavesScreen({super.key});
 
   @override
-  State<leaveRequestScreen> createState() => _leaveRequestScreenState();
+  State<allStaffLeavesScreen> createState() => _allStaffLeavesScreenState();
 }
 
-class _leaveRequestScreenState extends State<leaveRequestScreen> {
+class _allStaffLeavesScreenState extends State<allStaffLeavesScreen> {
 
   List<Data> leavesStaff = [];
 
@@ -53,11 +53,11 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
 
-                Icon(FontAwesomeIcons.calendarPlus, size: 20, color: appColor.bodymainTxtColor,),
+                Icon(FontAwesomeIcons.solidCalendarDays, size: 19, color: appColor.bodymainTxtColor,),
 
                 SizedBox(width: 10,),
 
-                Text("Requested Leave", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
+                Text("All Staff Leave Request", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
 
               ],
             ),
@@ -101,12 +101,6 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                         color: appColor.subPrimaryColor,
 
                         borderRadius: BorderRadius.circular(12),
-
-                        boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
-                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
-                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 3),),
-                        ],
 
                       ),
 
@@ -201,17 +195,16 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
 
-                                    Text("Status", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Reason", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
                                     Container(
 
                                         height: 17,
-                                        width: 70,
-                                        // color: Colors.blue,
+                                        width: 100,
 
-                                        child: Text(leave.status == "0" ? "Pending" : leave.status == "1" ? "Approved" : "Rejected", style: TextStyle(color: leave.status == "0" ? Colors.orange.shade700 : leave.status == "2" ? Colors.red.shade900 : Colors.green.shade900, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                                        child: Text("${leave.leaveReason}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
                                     ),
 
@@ -220,22 +213,19 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                 ),
 
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
 
-                                    Text("Leave Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
+                                    Text("Type", style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.w500,),),
 
                                     SizedBox(height: 2,),
 
                                     Container(
 
                                         height: 17,
-                                        width: 130,
-                                        // color: Colors.blue,
+                                        width: 100,
 
-                                        child: Center(
-                                          child: Text("${leave.typeOfLeave}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
-                                        ),
+                                        child: Text("${leave.typeOfLeave}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
                                     ),
 
@@ -253,10 +243,9 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
                                     Container(
 
                                         height: 17,
-                                        width: 70,
-                                        // color: Colors.blue,
+                                        width: 100,
 
-                                        child: Text("${leave.leaveApplyDays} Days", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,)
+                                        child: Text("${leave.leaveApplyDays}", style: TextStyle(color: Colors.black, fontSize: 12, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 1, overflow: TextOverflow.ellipsis,)
 
                                     ),
 
@@ -269,33 +258,74 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
                           ),
 
-                          SizedBox(height: 8,),
+                          SizedBox(height: 20,),
 
                           Padding(
 
                             padding: const EdgeInsets.symmetric(horizontal: 18.0),
 
-                            child: Container(
-
-                              height: 36,
-                              width: MediaQuery.of(context).size.width.toDouble(),
-                              // color: Colors.green,
-
-                              child: Text("Leave Reason : ${leave.leaveReason}", style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
-
-                            ),
-
-                          ),
-
-                          SizedBox(height: 6,),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18.0),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+
                               children: [
-                                Text("Approver : ${leave.reportingTo}", style: TextStyle(color: Colors.grey.shade800, fontSize: 13, fontFamily: "poppins_thin", fontWeight: FontWeight.bold,), maxLines: 2, overflow: TextOverflow.ellipsis),
+
+                                ElevatedButton(
+
+                                  onPressed: (){
+
+                                    Fluttertoast.showToast(msg: "Leave Rejected");
+
+                                  },
+
+                                  child: Text("Reject", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13.4,),),
+
+                                  style: ElevatedButton.styleFrom(
+
+                                    shape: RoundedRectangleBorder(
+
+                                      borderRadius: BorderRadius.circular(6),
+
+                                    ),
+
+                                    backgroundColor: Colors.red.shade900,
+
+                                    fixedSize: Size(150, 40),
+
+                                  ),
+
+                                ),
+
+                                // Spacer(),
+
+                                ElevatedButton(
+
+                                  onPressed: (){
+
+                                    Fluttertoast.showToast(msg: "Leave Approved");
+
+                                  },
+
+                                  child: Text("Approve", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", fontSize: 13,),),
+
+                                  style: ElevatedButton.styleFrom(
+
+                                    shape: RoundedRectangleBorder(
+
+                                      borderRadius: BorderRadius.circular(6),
+
+                                    ),
+
+                                    backgroundColor: Colors.green.shade900,
+
+                                    fixedSize: Size(150, 40),
+
+                                  ),
+
+                                ),
+
                               ],
+
                             ),
                           ),
 
@@ -319,34 +349,27 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-
-        backgroundColor: appColor.primaryColor,
-
-        child: Icon(Icons.add, color: appColor.appbarTxtColor, size: 26,),
-
-        onPressed: () {
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => addLeaveRequestScreen()),
-          ).then((value) {
-            if (value == true) {
-              _fetchLeavesData();  // Refresh data when returning
-            }
-          });
-
-        },
-
-        shape: RoundedRectangleBorder(
-
-          borderRadius: BorderRadius.circular(30),
-
-        ),
-
-        elevation: 4,
-
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //
+      //   backgroundColor: appColor.primaryColor,
+      //
+      //   child: Icon(Icons.add, color: appColor.appbarTxtColor, size: 26,),
+      //
+      //   onPressed: () {
+      //
+      //     Navigator.push(context, MaterialPageRoute(builder: (context) => addRequestScreen()));
+      //
+      //   },
+      //
+      //   shape: RoundedRectangleBorder(
+      //
+      //     borderRadius: BorderRadius.circular(30),
+      //
+      //   ),
+      //
+      //   elevation: 4,
+      //
+      // ),
 
     );
 

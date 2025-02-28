@@ -17,6 +17,7 @@ import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
 import '../Utils/Custom widgets/search_Screen.dart';
+import 'Filters/inquiry_Filter_Screen.dart';
 import 'Followup Screen/list_filter_Screen.dart';
 
 class AllInquiriesScreen extends StatefulWidget {
@@ -171,14 +172,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       selectedEmployee = null;
     });
   }
-
   void toggleSelection(int index) {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    selectedCards = List<bool>.generate(inquiryProvider.inquiries.length, (index) => false); // Reset all cards to false
-    selectedCards[index] = !selectedCards[index]; // Toggle only the selected card
-    anySelected = selectedCards.contains(true);
-    print("anySelected : $anySelected");
-    setState(() {});
+    setState(() {
+      selectedCards[index] = !selectedCards[index]; // Simply toggle the current card's state
+      anySelected = selectedCards.contains(true);   // Update the anySelected flag
+      print("anySelected : $anySelected");
+    });
   }
 
   Future<void> filterLeadsByStage(String stage) async {
@@ -295,6 +294,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               backgroundColor: Colors.white,
               child: IconButton(
                   onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => inquiryFilterScreen(),));
                     // showBottomModalSheet(context);
                   },
                   icon: Icon(
@@ -328,7 +328,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: false, // Prevent full width
+                        isExpanded: true, // Prevent full width
                         hint: Text(
                           'Select Action',
                           style: TextStyle(
@@ -401,7 +401,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton2<String>(
-                        isExpanded: false, // Prevent full width
+                        isExpanded: true, // Prevent full width
                         hint: Text(
                           'Select Employee',
                           style: TextStyle(
@@ -503,7 +503,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
                   Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
                   Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
-                  Categorymodel("Trial", stageCounts["Visited"] ?? 0),
+                  // Categorymodel("Trial", stageCounts["Visited"] ?? 0),
                   Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
                   Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
                   Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
@@ -767,7 +767,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     return ListView.builder(
                       controller: _scrollController,
                       itemCount: filteredLeads.length +
-                          (inquiryProvider.hasMore || inquiryProvider.isLoading
+                          (inquiryProvider.isLoading
                               ? 1
                               : 0),
                       itemBuilder: (BuildContext context, int index) {
@@ -791,26 +791,23 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                                 child: TestCard(
                                   id: inquiry.id,
                                   name: inquiry.fullName,
-                                  username: inquiry.mobileno,
+                                  username: inquiry.assign_id,
                                   label: getInquiryStageText(inquiry.InqStage),
                                   followUpDate: inquiry.createdAt,
                                   nextFollowUpDate: inquiry.nxtfollowup,
                                   inquiryType: inquiry.InqType,
                                   intArea: inquiry.InqArea,
                                   purposeBuy: inquiry.PurposeBuy,
-                                  daySkip: inquiry.dayskip,
-                                  hourSkip: inquiry.hourskip,
-                                  source: inquiry.mobileno,
+                                  daySkip: inquiry.day_skip,
+                                  hourSkip: inquiry.hour_skip,
+                                  source: inquiry.inquiry_source_type,
                                   isSelected: selectedCards[index],
-                                  onSelect: () {
-                                    toggleSelection(index);
-                                  },
+                                  onSelect: () => toggleSelection(index),
                                   callList: callList,
                                   selectedcallFilter: selectedcallFilter,
                                   data: inquiry,
                                   isTiming: true,
-                                  nextFollowupcontroller:
-                                  nextFollowupcontroller,
+                                  nextFollowupcontroller: nextFollowupcontroller,
                                 ),
                               );
                             },
@@ -840,6 +837,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => AddLeadScreen(
+                  isEdit: false,
 
                 ),
               ));
