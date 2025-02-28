@@ -520,7 +520,8 @@ class ApiService{
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno
+    required String altmobileno,
+    required String description
 
 
   }) async {
@@ -556,7 +557,8 @@ class ApiService{
         "PropertyConfiguration":PropertyConfiguration,
         "society":society,
         "houseno":houseno,
-        "altmobileno":altmobileno
+        "altmobileno":altmobileno,
+        "inquiry_description":description
       };
 
       print("Request URL: $url");
