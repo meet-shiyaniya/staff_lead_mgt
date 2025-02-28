@@ -12,7 +12,6 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemod
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
-import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
@@ -407,50 +406,6 @@ class ApiService{
 
   }
 
-
-  Future<InquiryTimeLineModel?> fetchInquiryTimeline({
-    required String inquiryId,
-  }) async {
-    final url = Uri.parse("$baseUrl/inquiry_log_show");
-    try {
-      // Fetch token from secure storage
-      String? token = await _secureStorage.read(key: 'token');
-      if (token == null) {
-        throw Exception('No authentication token found');
-      }
-
-      // Prepare request body
-      Map<String, String> bodyData = {
-        "token": token,
-        "inquiry_id": inquiryId,
-      };
-
-      // Make HTTP POST request with timeout
-      final response = await http
-          .post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(bodyData),
-      )
-          .timeout(const Duration(seconds: 15)); // 15-second timeout
-
-      // Check response status
-      if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body);
-          return InquiryTimeLineModel.fromJson(data);
-        } catch (e) {
-          throw Exception('Failed to parse JSON response: $e');
-        }
-      } else {
-        throw Exception('Server error: ${response.statusCode} - ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      print('Error fetching inquiry timeline: $e'); // Log for debugging
-      return null; // Indicate failure with null
-    }
-  }
-
   Future<AddLeadDataModel?> fetchAddLeadData() async {
     final url = Uri.parse("https://admin.dev.ajasys.com/api/InquiryDetails"); // Use your baseUrl
     print("Full API URL for dropdown options: $url");
@@ -545,7 +500,6 @@ class ApiService{
   }
 
 
-
   Future<bool> addLead({
     required String action,
     required String nxt_follow_up,
@@ -566,8 +520,7 @@ class ApiService{
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno,
-    required String description
+    required String altmobileno
 
 
   }) async {
@@ -603,8 +556,7 @@ class ApiService{
         "PropertyConfiguration":PropertyConfiguration,
         "society":society,
         "houseno":houseno,
-        "altmobileno":altmobileno,
-        "inquiry_description":description
+        "altmobileno":altmobileno
       };
 
       print("Request URL: $url");
@@ -633,8 +585,6 @@ class ApiService{
       return false;
     }
   }
-
-
   Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
 
     final url = Uri.parse("$baseUrl/Attendance");

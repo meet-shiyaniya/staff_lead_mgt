@@ -9,6 +9,7 @@ import '../../social_module/colors/colors.dart';
 import '../../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../dashboard2/dashboard2.dart';
 import '../main_dashboard/activity_screen.dart';
+import '../main_dashboard/pending_followUp.dart';
 
 class PersonalDashboardScreen extends StatefulWidget {
   @override
@@ -126,6 +127,14 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
     }
   }
 
+  final List<Map<String, dynamic>> performancedata = [
+    {'date': '2024-12', 'leads': 0, 'visits': 1, 'bookings': 0, 'visitChange': '(0.00%)', 'bookingChange': '(0.00%)'},
+    {'date': '2025-01', 'leads': 14, 'visits': 3, 'bookings': 4, 'visitChange': '(200.00%)', 'bookingChange': '(0.00%)'},
+    {'date': '2025-02', 'leads': 2, 'visits': 2, 'bookings': 0, 'visitChange': '(-33.33%)', 'bookingChange': '(0.00%)'},
+    {'date': 'Growth', 'leads': 0, 'visits': 0.00, 'bookings': 0.00, 'visitChange': '(0.00%)', 'bookingChange': '(0.00%)'},
+  ];
+
+
   String _getBottomTitle(String filter, double value) {
     final now = DateTime.now();
     switch (filter) {
@@ -192,6 +201,10 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
               _buildTabBar(),
               SizedBox(height: 12),
               _buildTabContent(),
+              SizedBox(height: 10),
+              _buildSecondTabBar(),
+              SizedBox(height: 12),
+              _buildSecondTabContent(),
             ],
           ),
         ),
@@ -205,7 +218,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
         Expanded(child: _buildSummaryCard('asset/Dashboard/leads.png', '120', Colors.blue.shade50)),
         Expanded(child: _buildSummaryCard('asset/Dashboard/visit.png', '45', Colors.yellow.shade50)),
         Expanded(child: _buildSummaryCard('asset/Dashboard/booking.png', '15', Colors.green.shade50)),
-        Expanded(child: _buildSummaryCard('asset/Dashboard/followUp.png', '12.5%', Colors.red.shade50)),
+        Expanded(child: _buildSummaryCard('asset/Dashboard/followUp.png', '12', Colors.red.shade50)),
       ],
     );
   }
@@ -232,7 +245,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
         child: Column(
           children: [
             SizedBox(height:10),
-            Image.asset(image,height:35,width:35),
+            Image.asset(image,height:35,width:30),
             Spacer(),
             Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
@@ -415,15 +428,158 @@ class _DashboardScreenState extends State<PersonalDashboardScreen> with SingleTi
 
   Widget _buildTabContent() {
     return Container(
-      height: MediaQuery.of(context).size.height / 1,
+      height: MediaQuery.of(context).size.height /2.5,
       child: TabBarView(
         controller: _tabController,
         children: [
-          PerformanceScreen(),
+          _buildPerformanceTab(),
           ReportScreen(),
           InquiryDashboard(),
         ],
       ),
     );
+  }
+
+  //second
+
+  Widget _buildSecondTabBar() {
+    return Container(
+      height: 45,
+      margin: EdgeInsets.only(left: 15, right: 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade300)],
+      ),
+      child: TabBar(
+        indicatorAnimation: TabIndicatorAnimation.elastic,
+        controller: _tabController,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: Colors.deepPurple.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.deepPurple[900],
+        tabs: [
+          Tab(text: 'Pending\nFollowUp'),
+          Tab(text: 'FollowUp'),
+          Tab(text: 'Status wise\nInquiry'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecondTabContent() {
+    return Container(
+      height: MediaQuery.of(context).size.height / 2.2,
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          PendingFollowUp(),
+          ReportScreen(),
+          InquiryDashboard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceTab(){
+     return Container(
+
+      // height:MediaQuery.of(context).size.height/2.7,
+      child: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Padding(
+              padding: const EdgeInsets.only(left:5.0,bottom: 10,right: 10),
+              child: Row(
+                children: [
+                  Text(
+                    'Performance',
+                    style: TextStyle(fontSize: 17,fontFamily: "poppins_thin",color: Colors.deepPurple[900]),
+                  ),
+                  Spacer(),
+                  Icon(Icons.leaderboard_outlined,color: Colors.deepPurple[900],)
+                ],
+              ),
+            ),
+
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 4,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: const [
+                      Text('Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                      Text('Leads', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                      Text('Visits', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                      Text('Bookings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                    ],
+                  ),
+                  const Divider(color: Colors.grey, thickness: 1),
+                  ...performancedata.map((data) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(data['date'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        Text(data['leads'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(data['visits'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                            const SizedBox(width: 4),
+                            Text(
+                              data['visitChange'].toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: data['visitChange'].toString().contains('-') ? Colors.red : Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(data['bookings'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                            const SizedBox(width: 4),
+                            Text(
+                              data['bookingChange'].toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: data['bookingChange'].toString().contains('-') ? Colors.red : Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+
+          ],
+        ),
+      ),
+    );
+
   }
 }

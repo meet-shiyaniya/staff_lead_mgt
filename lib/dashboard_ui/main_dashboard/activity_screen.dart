@@ -6,6 +6,7 @@ class InquiryDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SingleChildScrollView(
+        // physics: NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
         child: Container(
           height: MediaQuery.of(context).size.height/0.4,
@@ -167,6 +168,10 @@ class InquiryDashboard extends StatelessWidget {
       ),
     );
   }
+  
+  Widget _calender(){
+    return Container();
+}
 
   List<Widget> _buildFollowUps() {
     return [
