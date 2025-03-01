@@ -28,17 +28,20 @@ class fetchTransferInquiryModel {
 }
 
 class Action {
-  String? action;
+  String? assignFollowups;
+  String? transferOwnership;
 
-  Action({this.action});
+  Action({this.assignFollowups, this.transferOwnership});
 
   Action.fromJson(Map<String, dynamic> json) {
-    action = json['Action'];
+    assignFollowups = json['assign_followups'];
+    transferOwnership = json['transfer_ownership'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['Action'] = this.action;
+    data['assign_followups'] = this.assignFollowups;
+    data['transfer_ownership'] = this.transferOwnership;
     return data;
   }
 }
