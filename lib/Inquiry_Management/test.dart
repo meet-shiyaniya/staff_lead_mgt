@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
@@ -9,7 +8,7 @@ import 'package:toggle_switch/toggle_switch.dart';
 import '../Api_services/api_service.dart';
 import '../Provider/UserProvider.dart';
 
-// Helper class to store both ID and name for Int Site
+
 class IntSiteOption {
   final String id;
   final String name;
