@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,12 +13,15 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemod
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 
-class ApiService{
-  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
-  static const String baseUrl="https://admin.dev.ajasys.com/api";
-  static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
+class ApiService {
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  static const String baseUrl = "https://admin.dev.ajasys.com/api";
+  static const String childUrl = "https://admin.dev.ajasys.com/api/all_inquiry_data";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
+  static const String _baseUrl = "https://admin.dev.ajasys.com/api/visit_insert_data";
+  static const String _baseUrlB = 'https://admin.dev.ajasys.com/api/booking_insert';
 
 
   Future<void> uploadSelfie(File imageFile) async {
@@ -28,7 +32,7 @@ class ApiService{
       String latitude = position.latitude.toString();
       String longitude = position.longitude.toString();
 
-      // Get current date and time
+// Get current date and time
       String currentDateTime =
       DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
 
@@ -55,60 +59,174 @@ class ApiService{
         print("Error Data: $errorData");
         Fluttertoast.showToast(msg: "❌ Failed to upload selfie ($errorData)");
       }
-
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e");
     }
   }
 
-  Future<bool> login(String username,String password) async{
-    final url=Uri.parse("$baseUrl/stafflogin");
-    try{
-      final response=await http.post(
-        url,headers: {
-        'Content-Type':'application/json',
+  Future<bool> login(String username, String password) async {
+    final url = Uri.parse("$baseUrl/stafflogin");
+    try {
+      final response = await http.post(
+        url, headers: {
+        'Content-Type': 'application/json',
       },
         body: jsonEncode({
-          'username':username,
-          'password':password,
-          'product_id':'1',
-          'token':"zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
+          'username': username,
+          'password': password,
+          'product_id': '1',
+          'token': "zYPi153TmqFatXhJUOsrxyfgi79xhj8kQ6t9HXXr23mRcL4Sufvxdd3Y9Rmzq6DJ"
         }),
       );
-      if(response.statusCode==200){
-        final data=jsonDecode(response.body);
-        String token=data['token'];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String token = data['token'];
         print(token);
 
 
         await _secureStorage.write(key: 'token', value: token);
         return true;
-      }else{
+      } else {
         return false;
       }
-
-
     }
-    catch(e){
+    catch (e) {
       print(e);
       return false;
     }
   }
 
 
+  Future<Map<String, dynamic>> submitVisitData(Map<String, dynamic> data) async {
+    print("API Service - Data to be sent: ${jsonEncode(data)}"); // Log the data being sent
+
+    try {
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(data), // Data is encoded and sent in the body
+      );
+
+      print("API Service - Response Status: ${response.statusCode}"); // Log the status code
+      print("API Service - Response Body: ${response.body}"); // Log the raw response body
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": "Data submitted successfully",
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Failed to submit data: ${response.statusCode} - ${response.body}",
+        };
+      }
+    } catch (e) {
+      print("API Service - Error: $e"); // Log any exceptions
+      return {
+        "success": false,
+        "message": "Error: $e",
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> submitBookingData(Map<String, dynamic> bookingData) async {
+    String? token = await _secureStorage.read(key: 'token');
+
+    try {
+      // Prepare the full request body with token
+      final requestBody = {
+        'token': token,
+        ...bookingData,
+      };
+
+      // Log the full request body
+      debugPrint('=== Booking API Request Start ===');
+      debugPrint('Request URL: $_baseUrl');
+      debugPrint('Request Headers:');
+      debugPrint('  Content-Type: application/json');
+      debugPrint('  Authorization: Bearer $token');
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
+
+      // Send the API request
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      // Log the response details
+      debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('=== Booking API Request End ===');
+
+      // Parse and return the response
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        debugPrint('API Request Failed: Status Code ${response.statusCode}');
+        return {
+          'status': 0,
+          'message': 'Failed to submit booking. Status code: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      // Log any exceptions
+      debugPrint('Exception during API call: $e');
+      debugPrint('=== Booking API Request Failed ===');
+      return {
+        'status': 0,
+        'message': 'Error submitting booking: $e',
+      };
+    }
+  }
+
+  Future<VisitEntryModel> fetchVisitData() async {
+    String? token = await _secureStorage.read(key: 'token');
+    final body = {
+      "token": token,
+      "edit_id": 95560,
+    };
+    print(token);
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/fetch_visit_data'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: jsonEncode(body),
+
+    );
+    print(response.body);
+
+    if (response.statusCode == 200) {
+      print("Api Succefully worked");
+      return VisitEntryModel.fromJson(jsonDecode(response.body));
+
+      print(response.body);
+    } else {
+      throw Exception(
+          'Failed to load visit data: ${response.statusCode} - ${response
+              .body}');
+    }
+  }
+
 
   Future<Realtostaffprofilemodel?> fetchProfileData() async {
-
     final url = Uri.parse('$baseUrl/StaffProfile');
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return null;
-
       }
 
       final response = await http.post(
@@ -122,37 +240,25 @@ class ApiService{
       );
 
       if (response.statusCode == 200) {
-
         final data = jsonDecode(response.body);
 
         return Realtostaffprofilemodel.fromJson(data);
-
       } else {
-
         return null;
-
       }
-
-    } catch(e) {
-
+    } catch (e) {
       return null;
-
     }
-
   }
 
-  Future<Realtoofficelocationmodel?> fetchOfficeLocationData () async {
-
+  Future<Realtoofficelocationmodel?> fetchOfficeLocationData() async {
     final url = Uri.parse("$baseUrl/SelfiPunch_lati_logi");
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return null;
-
       }
 
       final response = await http.post(
@@ -161,44 +267,31 @@ class ApiService{
           headers: {
 
             'Content-Type': "application/json"
-
           },
           body: jsonEncode({'token': token})
 
       );
 
       if (response.statusCode == 200) {
-
         final data = jsonDecode(response.body);
 
         return Realtoofficelocationmodel.fromJson(data);
-
       } else {
-
         return null;
-
       }
-
     } catch (e) {
-
       return null;
-
     }
-
   }
 
-  Future<Realtostaffleavesmodel?> fetchStaffLeavesData () async {
-
+  Future<Realtostaffleavesmodel?> fetchStaffLeavesData() async {
     final url = Uri.parse("$baseUrl/Leave_list_status");
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return null;
-
       }
 
       final response = await http.post(
@@ -207,44 +300,31 @@ class ApiService{
           headers: {
 
             'Content-Type': "application/json"
-
           },
           body: jsonEncode({'token': token})
 
       );
 
       if (response.statusCode == 200) {
-
         final data = jsonDecode(response.body);
 
         return Realtostaffleavesmodel.fromJson(data);
-
       } else {
-
         return null;
-
       }
-
     } catch (e) {
-
       return null;
-
     }
-
   }
 
-  Future<Realtoleavetypesmodel?> fetchLeaveTypesData () async {
-
+  Future<Realtoleavetypesmodel?> fetchLeaveTypesData() async {
     final url = Uri.parse("$baseUrl/Leave_add_list");
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return null;
-
       }
 
       final response = await http.post(
@@ -253,30 +333,21 @@ class ApiService{
           headers: {
 
             'Content-Type': 'application/json'
-
           },
           body: jsonEncode({'token': token})
 
       );
 
       if (response.statusCode == 200) {
-
         final data = jsonDecode(response.body);
 
         return Realtoleavetypesmodel.fromJson(data);
-
       } else {
-
         return null;
-
       }
-
     } catch (e) {
-
       return null;
-
     }
-
   }
 
   Future<List<NextSlot>> fetchNextSlots(String date) async {
@@ -379,11 +450,11 @@ class ApiService{
         "inquiry_source_type": inquiry_source_type,
         "intrested_area_name": intrested_area_name,
         "intersted_site_name": intersted_site_name,
-        "PropertyConfiguration":PropertyConfiguration,
-        "society":society,
-        "houseno":houseno,
-        "altmobileno":altmobileno,
-        "inquiry_description":description
+        "PropertyConfiguration": PropertyConfiguration,
+        "society": society,
+        "houseno": houseno,
+        "altmobileno": altmobileno,
+        "inquiry_description": description
       };
 
       print("Request URL: $url");
@@ -414,9 +485,10 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page, required String search}) async {
-    
-    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page&search=$search");
+  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,
+      {required int page, required String search}) async {
+    final url = Uri.parse(
+        "$childUrl?limit=$limit&status=$status&page=$page&search=$search");
     print("API URL: $url"); //
 
 
@@ -437,14 +509,12 @@ class ApiService{
           body: jsonEncode({'token': token})
 
 
-
-
       );
 
       if (response.statusCode == 200) {
         print("resoponse json${response.body}");
         print("Response Status Code: ${response.statusCode}");
-        // Ensure response is valid JSON before parsing
+// Ensure response is valid JSON before parsing
         if (response.body.startsWith('{') || response.body.startsWith('[')) {
           final Map<String, dynamic> jsonData = jsonDecode(response.body);
           return PaginatedInquiries.fromJson(jsonData);
@@ -464,7 +534,7 @@ class ApiService{
   }
 
 
-  Future<bool> sendLeaveRequest ({
+  Future<bool> sendLeaveRequest({
 
     required String head_name,
     required String full_name,
@@ -479,17 +549,13 @@ class ApiService{
     required String leave_type_id,
 
   }) async {
-
     final url = Uri.parse("$baseUrl/Leave_Add");
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return false;
-
       }
 
       Map<String, String> bodyData = {
@@ -506,7 +572,6 @@ class ApiService{
         "leave_reason": leave_reason,
         "type_of_leave": leave_type,
         "type_of_leave_id": leave_type_id
-
       };
 
       final response = await http.post(
@@ -515,7 +580,6 @@ class ApiService{
           headers: {
 
             'Content-Type': 'application/json'
-
           },
           body: jsonEncode(bodyData)
 
@@ -525,23 +589,17 @@ class ApiService{
         print(response.body);
 
         return true;
-
       } else {
-
         return false;
-
       }
-
     } catch (e) {
-
       return false;
-
     }
-
   }
 
   Future<AddLeadDataModel?> fetchAddLeadData() async {
-    final url = Uri.parse("https://admin.dev.ajasys.com/api/InquiryDetails"); // Use your baseUrl
+    final url = Uri.parse(
+        "https://admin.dev.ajasys.com/api/InquiryDetails"); // Use your baseUrl
     print("Full API URL for dropdown options: $url");
 
     try {
@@ -552,14 +610,18 @@ class ApiService{
         return null;
       }
 
-      // Send token in the body instead of header
+// Send token in the body instead of header
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'token': token, // Adjust this key if API expects something else (e.g., "auth_token")
+          'token': token,
+
+          // Adjust this key if API expects something else (e.g., "auth_token")
+          'token': token,
+          // Adjust this key if API expects something else (e.g., "auth_token")
         }),
       );
 
@@ -570,15 +632,17 @@ class ApiService{
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         print("Parsed JSON Data: $jsonData");
 
-        // Check for success status (adjust based on API convention)
-        if (jsonData['status'] == null || jsonData['status'] == 1) { // Assuming 1 is success
+// Check for success status (adjust based on API convention)
+        if (jsonData['status'] == null ||
+            jsonData['status'] == 1) { // Assuming 1 is success
           return AddLeadDataModel.fromJson(jsonData);
         } else {
           print("API Error: ${jsonData['message']}");
           return null;
         }
       } else {
-        print("Error fetching dropdown options: Status ${response.statusCode}, Body: ${response.body}");
+        print("Error fetching dropdown options: Status ${response
+            .statusCode}, Body: ${response.body}");
         return null;
       }
     } catch (e) {
@@ -588,149 +652,14 @@ class ApiService{
   }
 
 
-  Future<List<NextSlot>> fetchNextSlots(String date) async {
-    final url = Uri.parse("$baseUrl/nxt_followup_slottime");
-    print("Step 1 - API URL: $url");
-
-    try {
-      String? token = await _secureStorage.read(key: 'token');
-      print("Step 2 - Token: $token");
-      if (token == null || token.isEmpty) {
-        throw Exception("Token is null or empty");
-      }
-
-      final formattedDate = DateFormat('dd-MM-yyyy')
-          .format(DateFormat('yyyy-MM-dd').parse(date));
-      print("Step 3 - Formatted Date: $formattedDate");
-
-      final requestBody = jsonEncode({
-        'token': token,
-        'nxt_follow_up': formattedDate,
-      });
-      print("Step 4 - Request Body: $requestBody");
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: requestBody,
-      );
-
-      print("Step 5 - Response Status Code: ${response.statusCode}");
-      print("Step 6 - Response Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        print("Step 7 - Parsed JSON: $jsonData");
-        return jsonData.map((json) => NextSlot.fromJson(json)).toList();
-      } else {
-        throw Exception("API Error: ${response.statusCode} - ${response.body}");
-      }
-    } catch (e) {
-      print("Step 8 - Error: $e");
-      rethrow;
-    }
-  }
-
-
-  Future<bool> addLead({
-    required String action,
-    required String nxt_follow_up,
-    required String time,
-    required String purpose_buy,
-    required String city,
-    required String country_code,
-    required String intrested_area,
-    required String full_name,
-    required String budget,
-    required String approx_buy,
-    required String area,
-    required String mobileno,
-    required String inquiry_type,
-    required String inquiry_source_type,
-    required String intrested_area_name,
-    required String intersted_site_name,
-    required String PropertyConfiguration,
-    required String society,
-    required String houseno,
-    required String altmobileno
-
-
-  }) async {
-    final url = Uri.parse("$baseUrl/insert_Inquiry_data");
-
-    try {
-      String? token = await _secureStorage.read(key: 'token');
-      print("Token: $token");
-
-      if (token == null) {
-        print("Token is null, aborting request");
-        return false;
-      }
-
-      Map<String, String> bodyData = {
-        "token": token,
-        "action": action,
-        "nxt_follow_up": nxt_follow_up,
-        "time": time,
-        "purpose_buy": purpose_buy,
-        "city": city,
-        "country_code": country_code,
-        "intrested_area": intrested_area,
-        "full_name": full_name,
-        "budget": budget,
-        "approx_buy": approx_buy,
-        "area": area,
-        "mobileno": mobileno,
-        "inquiry_type": inquiry_type,
-        "inquiry_source_type": inquiry_source_type,
-        "intrested_area_name": intrested_area_name,
-        "intersted_site_name": intersted_site_name,
-        "PropertyConfiguration":PropertyConfiguration,
-        "society":society,
-        "houseno":houseno,
-        "altmobileno":altmobileno
-      };
-
-      print("Request URL: $url");
-      print("Request Body: ${jsonEncode(bodyData)}");
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(bodyData),
-      );
-
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        print("Lead added successfully");
-        return true;
-      } else {
-        print("Failed to add lead. Status Code: ${response.statusCode}");
-        return false;
-      }
-    } catch (e) {
-      print("Error adding lead: $e");
-      return false;
-    }
-  }
-  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
-
+  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData() async {
     final url = Uri.parse("$baseUrl/Attendance");
 
     try {
-
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-
         return null;
-
       }
 
       final response = await http.post(
@@ -739,30 +668,20 @@ class ApiService{
           headers: {
 
             'Content-Type': 'application/json'
-
           },
           body: jsonEncode({'token': token})
 
       );
 
       if (response.statusCode == 200) {
-
         final data = jsonDecode(response.body);
 
         return Realtostaffattendancemodel.fromJson(data);
-
       } else {
-
         return null;
-
       }
-
     } catch (e) {
-
       return null;
-
     }
-
   }
-
 }

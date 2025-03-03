@@ -1,8 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
-import 'package:dropdown_button2/dropdown_button2.dart'; // Import the new package
+import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../../Api_services/api_service.dart';
+import '../../../Provider/UserProvider.dart';
+import '../../Model/Api Model/add_Lead_Model.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -12,6 +18,8 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final ApiService _apiService = ApiService();
 
   // Form data variables
   DateTime? nextFollowUp;
@@ -23,8 +31,6 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _amountError;
 
   // Text Editing Controllers
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _followUpDateController = TextEditingController();
   final TextEditingController _mobileNoController = TextEditingController();
   final TextEditingController _partyNameController = TextEditingController();
   final TextEditingController _houseNoController = TextEditingController();
@@ -45,34 +51,34 @@ class _BookingScreenState extends State<BookingScreen> {
   final TextEditingController _totalAmountOfPurchaseController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _loanAmountController = TextEditingController();
-  final TextEditingController _afterVisitStatus = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _contactPersonController = TextEditingController();
   final TextEditingController _tokenAmountController = TextEditingController();
   final TextEditingController _tokenAmountInWordsController = TextEditingController();
   final TextEditingController _tokenDateController = TextEditingController();
-  final TextEditingController _bookingDateController = TextEditingController(); // New controller for booking date
-  final TextEditingController _hastakController = TextEditingController(); // New controller for hastak
+  final TextEditingController _bookingDateController = TextEditingController();
+  final TextEditingController _hastakController = TextEditingController();
 
-  // Dropdown values
-  String? _selectedArea;
+  // Dropdown values with IDs
+  String? _selectedAreaId; // Stores full string like "Area 1 (1)"
   String? _selectedPropertySubType;
   String? _selectedPurposeOfBuying;
   String? _selectedApproxBuyingTime;
-  String? _selectedTime;
-  String? _selectedStatus;
   String? _selectedTokenBy;
   String? _selectedHastakSource;
+  String? _selectedManager;
+  String? _selectedStaff;
+  String? _selectedChannelPartner;
+  String? _selectedCustomer;
 
   @override
   void initState() {
     super.initState();
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    provider.fetchVisitData();
+    provider.fetchAddLeadData();
     _addCashField();
     _addLoanField();
     _selectedHastakSource = 'Walk In';
-
-    // Set today's date as default for booking date
-    _bookingDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _bookingDateController.text = DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now());
 
     _priceController.addListener(_updatePrices);
     _extraWorkController.addListener(_updatePrices);
@@ -83,13 +89,14 @@ class _BookingScreenState extends State<BookingScreen> {
     _tokenAmountController.addListener(_updateTokenAmountInWords);
 
     _updatePrices();
+
+    // Log initial state
+    debugPrint('initState: Fetching visitData and addLeadData');
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _dateController.dispose();
-    _followUpDateController.dispose();
     _mobileNoController.dispose();
     _partyNameController.dispose();
     _houseNoController.dispose();
@@ -110,27 +117,22 @@ class _BookingScreenState extends State<BookingScreen> {
     _totalAmountOfPurchaseController.dispose();
     _amountController.dispose();
     _loanAmountController.dispose();
-    _afterVisitStatus.dispose();
-    _notesController.dispose();
-    _contactPersonController.dispose();
     _tokenAmountController.dispose();
     _tokenAmountInWordsController.dispose();
     _tokenDateController.dispose();
-    _bookingDateController.dispose(); // Dispose new controller
-    _hastakController.dispose(); // Dispose new controller
+    _bookingDateController.dispose();
+    _hastakController.dispose();
 
     for (var field in cashFields) {
       field['amount']?.dispose();
       field['date']?.dispose();
       field['duration']?.dispose();
     }
-
     for (var field in loanFields) {
       field['amount']?.dispose();
       field['date']?.dispose();
       field['duration']?.dispose();
     }
-
     super.dispose();
   }
 
@@ -147,6 +149,8 @@ class _BookingScreenState extends State<BookingScreen> {
     _finalPriceController.text = finalPrice.toStringAsFixed(2);
     _totalAmountOfPurchaseController.text = finalPrice.toStringAsFixed(2);
 
+    debugPrint('Updated Prices: Total = $total, Final Price = $finalPrice');
+
     _updateRemainingAmount();
   }
 
@@ -155,18 +159,18 @@ class _BookingScreenState extends State<BookingScreen> {
     double totalPaid = 0;
 
     if (isLoanSelected) {
-      totalPaid = loanFields.fold(0, (sum, field) =>
-      sum + (double.tryParse(field['amount']!.text) ?? 0));
+      totalPaid = loanFields.fold(0, (sum, field) => sum + (double.tryParse(field['amount']!.text) ?? 0));
       totalPaid += double.tryParse(_loanAmountController.text) ?? 0;
     } else {
-      totalPaid = cashFields.fold(0, (sum, field) =>
-      sum + (double.tryParse(field['amount']!.text) ?? 0));
+      totalPaid = cashFields.fold(0, (sum, field) => sum + (double.tryParse(field['amount']!.text) ?? 0));
       totalPaid += double.tryParse(_amountController.text) ?? 0;
     }
 
     double remaining = finalPrice - totalPaid;
 
     _remainingTotalAmountController.text = remaining.toStringAsFixed(2);
+
+    debugPrint('Updated Remaining Amount: Final Price = $finalPrice, Total Paid = $totalPaid, Remaining = $remaining');
 
     setState(() {
       if (remaining < 0) {
@@ -180,20 +184,14 @@ class _BookingScreenState extends State<BookingScreen> {
         _amountError = 'Amount is not equal to 0 amount is : ${remaining.toStringAsFixed(2)}';
         _isPaymentValid = false;
       }
+      debugPrint('Payment Valid: $_isPaymentValid, Amount Error: $_amountError');
     });
   }
 
   String _numberToWords(double number) {
     if (number == 0) return "Zero";
-
-    final units = [
-      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-      'Seventeen', 'Eighteen', 'Nineteen'
-    ];
-    final tens = [
-      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
-    ];
+    final units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    final tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     double whole = number.floorToDouble();
     String words = '';
@@ -242,15 +240,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
   String _numberToWordsHelper(double number) {
     if (number == 0) return "";
-
-    final units = [
-      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-      'Seventeen', 'Eighteen', 'Nineteen'
-    ];
-    final tens = [
-      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
-    ];
+    final units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    final tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     double whole = number.floorToDouble();
     String words = '';
@@ -273,12 +264,14 @@ class _BookingScreenState extends State<BookingScreen> {
   void _updateTokenAmountInWords() {
     double amount = double.tryParse(_tokenAmountController.text) ?? 0;
     _tokenAmountInWordsController.text = _numberToWords(amount);
+    debugPrint('Token Amount in Words: ${_tokenAmountInWordsController.text}');
   }
 
   void _nextPage() {
     if (_currentPage < 3) {
       setState(() => _currentPage++);
       _pageController.nextPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
+      debugPrint('Navigated to page: $_currentPage');
     }
   }
 
@@ -286,86 +279,127 @@ class _BookingScreenState extends State<BookingScreen> {
     if (_currentPage > 0) {
       setState(() => _currentPage--);
       _pageController.previousPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
+      debugPrint('Navigated to page: $_currentPage');
     }
   }
 
-  void _submitForm() {
-    final formData = {
-      'mobileNo': _mobileNoController.text,
-      'partyName': _partyNameController.text,
-      'houseNo': _houseNoController.text,
-      'society': _societyController.text,
-      'area': _selectedArea,
-      'landMark': _landMarkController.text,
-      'city': _cityController.text,
-      'pincode': _pincodeController.text,
-      'intArea': _intAreaController.text,
-      'propertySubType': _selectedPropertySubType,
-      'propertyType': _propertyTypeController.text,
-      'budget': _budgetController.text,
-      'purposeOfBuying': _selectedPurposeOfBuying,
-      'approxBuyingTime': _selectedApproxBuyingTime,
-      'expensesIncluded': isIncludeSelected,
-      'price': _priceController.text,
-      'extraWork': _extraWorkController.text,
-      'extraExpense': _extraExpenseController.text,
-      'totalPrice': _totalPriceController.text,
-      'discount': _discountController.text,
-      'finalPrice': _finalPriceController.text,
-      'followUpDate': _followUpDateController.text,
-      'selectedTime': _selectedTime,
-      'paymentCondition': isLoanSelected ? 'Loan' : 'Cash',
-      'remainingTotalAmount': _remainingTotalAmountController.text,
-      'totalAmountOfPurchase': _totalAmountOfPurchaseController.text,
-      'afterVisitStatus': _afterVisitStatus.text,
-      'amount': _amountController.text,
-      'loanAmount': _loanAmountController.text,
-      'notes': _notesController.text,
-      'contactPerson': _contactPersonController.text,
-      'status': _selectedStatus,
-      'tokenAmount': _tokenAmountController.text,
-      'tokenAmountInWords': _tokenAmountInWordsController.text,
-      'tokenDate': _tokenDateController.text,
-      'tokenBy': _selectedTokenBy,
-      'bookingDate': _bookingDateController.text,
-      'hastak': _hastakController.text,
-      'hastakSource': _selectedHastakSource,
+  Future<void> _submitForm() async {
+    if (_mobileNoController.text.isEmpty ||
+        _partyNameController.text.isEmpty ||
+        _houseNoController.text.isEmpty ||
+        _societyController.text.isEmpty ||
+        _selectedAreaId == null ||
+        _landMarkController.text.isEmpty ||
+        _cityController.text.isEmpty ||
+        _pincodeController.text.isEmpty ||
+        _intAreaController.text.isEmpty ||
+        _selectedPropertySubType == null ||
+        _propertyTypeController.text.isEmpty ||
+        _budgetController.text.isEmpty ||
+        _selectedPurposeOfBuying == null ||
+        _selectedApproxBuyingTime == null ||
+        _priceController.text.isEmpty ||
+        _extraWorkController.text.isEmpty ||
+        _totalPriceController.text.isEmpty ||
+        _discountController.text.isEmpty ||
+        _finalPriceController.text.isEmpty ||
+        _remainingTotalAmountController.text.isEmpty ||
+        _totalAmountOfPurchaseController.text.isEmpty ||
+        _tokenAmountController.text.isEmpty ||
+        _tokenDateController.text.isEmpty ||
+        _selectedTokenBy == null ||
+        _bookingDateController.text.isEmpty ||
+        _selectedHastakSource == null) {
+      debugPrint('Validation Failed: Missing required fields');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    // Parse the area ID from _selectedAreaId
+    String areaId = '0';
+    if (_selectedAreaId != null) {
+      final RegExp idRegex = RegExp(r'\((\d+)\)');
+      final match = idRegex.firstMatch(_selectedAreaId!);
+      areaId = match != null ? match.group(1)! : '0';
+      debugPrint('Parsed Area ID for submission: $areaId');
+    }
+
+    final Map<String, dynamic> requestBody = {
+      "inquiry_id": 95557,
+      "booking_date": _bookingDateController.text,
+      "product_name": 1,
+      "unitno": int.tryParse(_houseNoController.text) ?? 0,
+      "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
+      "payment_date": _tokenDateController.text.isNotEmpty
+          ? _tokenDateController.text
+          : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
+      "duration_day": 3,
+      "remaining_amount": double.tryParse(_remainingTotalAmountController.text) ?? 0,
+      "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
+      "token_amount_date": _tokenDateController.text.isNotEmpty
+          ? _tokenDateController.text
+          : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
+      "token_by": _selectedTokenBy ?? "",
+      "booking_by_ssm": "",
+      "booking_by_sse": "",
+      "booking_by_broker": "",
+      "booking_by_customer": "",
+      "mobileno": _mobileNoController.text,
+      "partyname": _partyNameController.text,
+      "houseno": int.tryParse(_houseNoController.text) ?? 0,
+      "societyname": _societyController.text,
+      "area": int.tryParse(areaId) ?? 0,
+      "landmark": _landMarkController.text,
+      "city": _cityController.text,
+      "pincode": int.tryParse(_pincodeController.text) ?? 0,
+      "unitsize": "345",
+      "construction": 2,
+      "price": double.tryParse(_priceController.text) ?? 0,
+      "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
+      "total_price": double.tryParse(_totalPriceController.text) ?? 0,
+      "discount_price": double.tryParse(_discountController.text) ?? 0,
+      "switcher_amount": isLoanSelected ? "loan" : "cash",
+      "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
     };
 
-    if (!isLoanSelected) {
-      for (int i = 0; i < cashFields.length; i++) {
-        formData['cashAmount_$i'] = cashFields[i]['amount']?.text;
-        formData['cashDate_$i'] = cashFields[i]['date']?.text;
-        formData['cashDuration_$i'] = cashFields[i]['duration']?.text;
+    debugPrint('=== Submit Form Start ===');
+    debugPrint('Form Data Prepared: ${jsonEncode(requestBody)}');
+
+    try {
+      final result = await _apiService.submitBookingData(requestBody);
+      debugPrint('API Call Result: ${jsonEncode(result)}');
+
+      if (result['status'] == 1) {
+        debugPrint('Booking Success: ${result['message']}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking submitted successfully!')),
+        );
+        Navigator.pop(context);
+      } else {
+        debugPrint('Booking Failed: ${result['message']}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${result['message']}')),
+        );
       }
-    }
-    if (isLoanSelected) {
-      for (int i = 0; i < loanFields.length; i++) {
-        formData['loanAmount_$i'] = loanFields[i]['amount']?.text;
-        formData['loanDate_$i'] = loanFields[i]['date']?.text;
-        formData['loanDuration_$i'] = loanFields[i]['duration']?.text;
-      }
+    } catch (e) {
+      debugPrint('Exception in Submit Form: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting booking: $e')),
+      );
     }
 
-    print('Form Data: $formData');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Form submitted successfully!')),
-    );
-    Navigator.pop(context);
+    debugPrint('=== Submit Form End ===');
   }
 
   void _addCashField() {
     TextEditingController amountController = TextEditingController()..addListener(_updateRemainingAmount);
     TextEditingController dateController = TextEditingController();
     TextEditingController durationController = TextEditingController();
-
     setState(() {
-      cashFields.add({
-        'amount': amountController,
-        'date': dateController,
-        'duration': durationController,
-      });
+      cashFields.add({'amount': amountController, 'date': dateController, 'duration': durationController});
+      debugPrint('Added cash field: ${cashFields.length} total');
     });
   }
 
@@ -373,13 +407,9 @@ class _BookingScreenState extends State<BookingScreen> {
     TextEditingController amountController = TextEditingController()..addListener(_updateRemainingAmount);
     TextEditingController dateController = TextEditingController();
     TextEditingController durationController = TextEditingController();
-
     setState(() {
-      loanFields.add({
-        'amount': amountController,
-        'date': dateController,
-        'duration': durationController,
-      });
+      loanFields.add({'amount': amountController, 'date': dateController, 'duration': durationController});
+      debugPrint('Added loan field: ${loanFields.length} total');
     });
   }
 
@@ -390,6 +420,7 @@ class _BookingScreenState extends State<BookingScreen> {
       cashFields[index]['duration']?.dispose();
       cashFields.removeAt(index);
       _updateRemainingAmount();
+      debugPrint('Removed cash field at index $index, remaining: ${cashFields.length}');
     });
   }
 
@@ -400,13 +431,13 @@ class _BookingScreenState extends State<BookingScreen> {
       loanFields[index]['duration']?.dispose();
       loanFields.removeAt(index);
       _updateRemainingAmount();
+      debugPrint('Removed loan field at index $index, remaining: ${loanFields.length}');
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         title: Text('Add New Booking', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
         backgroundColor: AppColor.Buttoncolor,
@@ -416,22 +447,72 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
       ),
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            _buildCustomerInformationPage(),
-            _buildInterestSuggestionPage(),
-            _buildAdditionalPage(),
-            _buildFollowUpPage(),
-          ],
-        ),
+      body: Consumer<UserProvider>(
+        builder: (context, provider, child) {
+          if (provider.error != null) {
+            debugPrint('Provider Error: ${provider.error}');
+            return Center(child: Text('Error: ${provider.error}'));
+          }
+
+          debugPrint('Visit Data: ${provider.visitData != null ? "Available" : "Null"}');
+          debugPrint('Dropdown Data: ${provider.dropdownData != null ? "Available" : "Null"}');
+
+          if (provider.visitData != null && _mobileNoController.text.isEmpty) {
+            final inquiries = provider.visitData!.inquiries;
+            _mobileNoController.text = inquiries.mobileno;
+            _partyNameController.text = inquiries.fullName;
+            _houseNoController.text = inquiries.unitNo;
+            _budgetController.text = inquiries.budget;
+            _propertyTypeController.text = inquiries.propertyType;
+            _intAreaController.text = inquiries.intrestedProduct;
+
+            _selectedPropertySubType = inquiries.propertySubType.isNotEmpty &&
+                provider.dropdownData?.propertyConfiguration.any((p) => p.propertyType == inquiries.propertySubType) == true
+                ? inquiries.propertySubType
+                : null;
+            _selectedPurposeOfBuying = inquiries.purposeBuy.isNotEmpty && provider.dropdownData?.purposeOfBuying != null &&
+                (provider.dropdownData!.purposeOfBuying!.investment == inquiries.purposeBuy ||
+                    provider.dropdownData!.purposeOfBuying!.personalUse == inquiries.purposeBuy)
+                ? inquiries.purposeBuy
+                : null;
+
+            debugPrint('Pre-filled from visitData: Mobile: ${_mobileNoController.text}, Party: ${_partyNameController.text}, House: ${_houseNoController.text}');
+            debugPrint('Property Sub Type: $_selectedPropertySubType, Purpose: $_selectedPurposeOfBuying');
+          }
+
+          return SafeArea(
+            child: PageView(
+              controller: _pageController,
+              physics: NeverScrollableScrollPhysics(),
+              children: [
+                _buildCustomerInformationPage(provider),
+                _buildInterestSuggestionPage(provider),
+                _buildAdditionalPage(),
+                _buildFollowUpPage(),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildCustomerInformationPage() {
+  Widget _buildCustomerInformationPage(UserProvider provider) {
+    debugPrint('Building Customer Information Page');
+    debugPrint('Provider dropdownData: ${provider.dropdownData != null}');
+    debugPrint('AreaCityCountry: ${provider.dropdownData?.areaCityCountry?.map((area) => "${area.area} (${area.id})").toList()}');
+
+    // Ensure unique items using a Set
+    final areaItems = (provider.dropdownData?.areaCityCountry?.map((area) => "${area.area} (${area.id})")?.toSet().toList()) ?? ['Area 1 (1)', 'Area 2 (2)', 'Area 3 (3)'];
+    debugPrint('Area Items: $areaItems');
+    debugPrint('Current _selectedAreaId: $_selectedAreaId');
+
+    // Validate _selectedAreaId against areaItems
+    if (_selectedAreaId != null && !areaItems.contains(_selectedAreaId)) {
+      debugPrint('Warning: _selectedAreaId ($_selectedAreaId) not in areaItems, resetting to null');
+      _selectedAreaId = null;
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -442,15 +523,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   children: [
                     Icon(Icons.person),
-                    SizedBox(width: 10,),
+                    SizedBox(width: 10),
                     Text('Customer Information', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
-
                   ],
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color:Colors.grey.shade200,
-                    borderRadius:BorderRadius.circular(16),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -460,9 +540,18 @@ class _BookingScreenState extends State<BookingScreen> {
                         _buildTextField('Party Name', controller: _partyNameController),
                         _buildTextField('House No.', controller: _houseNoController),
                         _buildTextField('Society', controller: _societyController),
-                        _buildDropdown2("Area",
-                            items: ['Area 1', 'Area 2', 'Area 3'],
-                            onChanged: (value) => setState(() => _selectedArea = value)),
+                        _buildDropdown2(
+                          label: "Area",
+                          items: areaItems,
+                          selectedValue: _selectedAreaId,
+                          onChanged: (value) {
+                            debugPrint('Area Dropdown onChanged: $value');
+                            setState(() {
+                              _selectedAreaId = value; // Store the full string
+                              debugPrint('Updated _selectedAreaId: $_selectedAreaId');
+                            });
+                          },
+                        ),
                         _buildTextField('Land Mark', controller: _landMarkController),
                         _buildTextField('City', controller: _cityController),
                         _buildTextField('Pincode', controller: _pincodeController),
@@ -488,7 +577,20 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildInterestSuggestionPage() {
+  Widget _buildInterestSuggestionPage(UserProvider provider) {
+    debugPrint('Building Interest Suggestion Page');
+    final propertySubTypeItems = provider.dropdownData?.propertyConfiguration.map((config) => config.propertyType).toList() ?? ['Type 1', 'Type 2', 'Type 3'];
+    final purposeBuyingItems = provider.dropdownData?.purposeOfBuying != null
+        ? [provider.dropdownData!.purposeOfBuying!.investment, provider.dropdownData!.purposeOfBuying!.personalUse]
+        : ['Purpose 1', 'Purpose 2', 'Purpose 3'];
+    final approxBuyingTimeItems = provider.dropdownData?.apxTime != null
+        ? provider.dropdownData!.apxTime!.apxTimeData.split(',').map((time) => time.trim()).toList()
+        : ['Time 1', 'Time 2', 'Time 3'];
+
+    debugPrint('Property Sub Type Items: $propertySubTypeItems');
+    debugPrint('Purpose Buying Items: $purposeBuyingItems');
+    debugPrint('Approx Buying Time Items: $approxBuyingTimeItems');
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -499,16 +601,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   children: [
                     Icon(Icons.person),
-                    SizedBox(width: 10,),
+                    SizedBox(width: 10),
                     Text('Project Detail', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
-
                   ],
                 ),
-                // Text('Project Details', style: TextStyle(fontSize: 20, fontFamily: "poppins_thin")),
                 Container(
                   decoration: BoxDecoration(
-                    color:Colors.grey.shade200,
-                    borderRadius:BorderRadius.circular(16),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -516,17 +616,26 @@ class _BookingScreenState extends State<BookingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildTextField('Int Area*', controller: _intAreaController),
-                        _buildDropdown2('Property Sub Type*',
-                            items: ['Type 1', 'Type 2', 'Type 3'],
-                            onChanged: (value) => setState(() => _selectedPropertySubType = value)),
+                        _buildDropdown2(
+                          label: 'Property Sub Type*',
+                          items: propertySubTypeItems,
+                          selectedValue: _selectedPropertySubType,
+                          onChanged: (value) => setState(() => _selectedPropertySubType = value),
+                        ),
                         _buildTextField('Property Type*', controller: _propertyTypeController),
                         _buildTextField('Budget*', controller: _budgetController),
-                        _buildDropdown2('Purpose of Buying*',
-                            items: ['Purpose 1', 'Purpose 2', 'Purpose 3'],
-                            onChanged: (value) => setState(() => _selectedPurposeOfBuying = value)),
-                        _buildDropdown2('Approx Buying Time*',
-                            items: ['Time 1', 'Time 2', 'Time 3'],
-                            onChanged: (value) => setState(() => _selectedApproxBuyingTime = value)),
+                        _buildDropdown2(
+                          label: 'Purpose of Buying*',
+                          items: purposeBuyingItems,
+                          selectedValue: _selectedPurposeOfBuying,
+                          onChanged: (value) => setState(() => _selectedPurposeOfBuying = value),
+                        ),
+                        _buildDropdown2(
+                          label: 'Approx Buying Time*',
+                          items: approxBuyingTimeItems,
+                          selectedValue: _selectedApproxBuyingTime,
+                          onChanged: (value) => setState(() => _selectedApproxBuyingTime = value),
+                        ),
                         Text(
                           "Expenses",
                           style: TextStyle(fontFamily: "poppins_thin", color: Colors.black, fontSize: 18),
@@ -586,6 +695,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildAdditionalPage() {
+    debugPrint('Building Additional Page');
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -596,15 +706,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   children: [
                     Icon(Icons.person),
-                    SizedBox(width: 10,),
+                    SizedBox(width: 10),
                     Text('Payment Condition', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
-
                   ],
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color:Colors.grey.shade200,
-                    borderRadius:BorderRadius.circular(16),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -648,8 +757,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                           _buildTextField('Loan Amount', controller: _loanAmountController),
-                          _buildTextField('Remaining Total Amount',
-                              controller: _remainingTotalAmountController, readOnly: true),
+                          _buildTextField('Remaining Total Amount', controller: _remainingTotalAmountController, readOnly: true),
                           if (_amountError != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 5),
@@ -658,8 +766,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                 style: TextStyle(color: Colors.red, fontFamily: "poppins_thin"),
                               ),
                             ),
-                          _buildTextField('Total Amount of Purchase',
-                              controller: _totalAmountOfPurchaseController, readOnly: true),
+                          _buildTextField('Total Amount of Purchase', controller: _totalAmountOfPurchaseController, readOnly: true),
                         ] else ...[
                           for (int i = 0; i < cashFields.length; i++)
                             Column(
@@ -688,8 +795,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                           _buildTextField('Amount', controller: _amountController),
-                          _buildTextField('Remaining Total Amount',
-                              controller: _remainingTotalAmountController, readOnly: true),
+                          _buildTextField('Remaining Total Amount', controller: _remainingTotalAmountController, readOnly: true),
                           if (_amountError != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
@@ -698,8 +804,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                 style: TextStyle(color: Colors.red, fontFamily: "poppins_thin"),
                               ),
                             ),
-                          _buildTextField('Total Amount of Purchase',
-                              controller: _totalAmountOfPurchaseController, readOnly: true),
+                          _buildTextField('Total Amount of Purchase', controller: _totalAmountOfPurchaseController, readOnly: true),
                         ],
                       ],
                     ),
@@ -730,6 +835,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildFollowUpPage() {
+    debugPrint('Building Follow Up Page');
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -740,33 +846,26 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   children: [
                     Icon(Icons.person),
-                    SizedBox(width: 10,),
+                    SizedBox(width: 10),
                     Text('Token Payment Status', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
-
                   ],
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color:Colors.grey.shade200,
-                    borderRadius:BorderRadius.circular(20),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
                       children: [
-                        _buildTextField(
-                          'Token Amount',
-                          controller: _tokenAmountController,
-                        ),
-                        _buildTextField(
-                          'Token Amount in Words',
-                          controller: _tokenAmountInWordsController,
-                          readOnly: true,
-                        ),
+                        _buildTextField('Token Amount', controller: _tokenAmountController),
+                        _buildTextField('Token Amount in Words', controller: _tokenAmountInWordsController, readOnly: true),
                         _buildDatePickerField('Token Amount Date', controller: _tokenDateController),
                         _buildDropdown2(
-                          'Token By',
+                          label: 'Token By',
                           items: ['Cash', 'Cheque', 'Transfer'],
+                          selectedValue: _selectedTokenBy,
                           onChanged: (value) => setState(() => _selectedTokenBy = value),
                         ),
                       ],
@@ -774,7 +873,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                 ),
                 SizedBox(height: 16),
-                Text('Booking Date', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),// Spacing between cards
+                Text('Booking Date', style: TextStyle(fontSize: 18, fontFamily: "poppins_thin")),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -793,9 +892,10 @@ class _BookingScreenState extends State<BookingScreen> {
                     child: Column(
                       children: [
                         _buildDropdown2(
-                          'Manager',
-                          items: ['Select Manager', 'Manager 1', 'Manager 2', 'Manager 3'], // Add your manager list here
-                          onChanged: (value) => setState(() {}), // You can add logic here if needed
+                          label: 'Manager',
+                          items: ['Select Manager', 'Manager 1', 'Manager 2', 'Manager 3'],
+                          selectedValue: _selectedManager,
+                          onChanged: (value) => setState(() => _selectedManager = value),
                         ),
                         Column(
                           children: [
@@ -835,21 +935,24 @@ class _BookingScreenState extends State<BookingScreen> {
                         ),
                         if (_selectedHastakSource == 'Staff')
                           _buildDropdown2(
-                            'Staff Select',
-                            items: ['Select Staff', 'Staff 1', 'Staff 2', 'Staff 3'], // Add your staff list here
-                            onChanged: (value) => setState(() {}), // You can add logic here if needed
+                            label: 'Staff Select',
+                            items: ['Select Staff', 'Staff 1', 'Staff 2', 'Staff 3'],
+                            selectedValue: _selectedStaff,
+                            onChanged: (value) => setState(() => _selectedStaff = value),
                           ),
                         if (_selectedHastakSource == 'Channel Partner')
                           _buildDropdown2(
-                            'Channel Partner Select',
-                            items: ['Select Channel Partner', 'Partner 1', 'Partner 2', 'Partner 3'], // Add your channel partner list here
-                            onChanged: (value) => setState(() {}), // You can add logic here if needed
+                            label: 'Channel Partner Select',
+                            items: ['Select Channel Partner', 'Partner 1', 'Partner 2', 'Partner 3'],
+                            selectedValue: _selectedChannelPartner,
+                            onChanged: (value) => setState(() => _selectedChannelPartner = value),
                           ),
                         if (_selectedHastakSource == 'Customer')
                           _buildDropdown2(
-                            'Customer Select',
-                            items: ['Select Customer', 'Customer 1', 'Customer 2', 'Customer 3'], // Add your customer list here
-                            onChanged: (value) => setState(() {}), // You can add logic here if needed
+                            label: 'Customer Select',
+                            items: ['Select Customer', 'Customer 1', 'Customer 2', 'Customer 3'],
+                            selectedValue: _selectedCustomer,
+                            onChanged: (value) => setState(() => _selectedCustomer = value),
                           ),
                       ],
                     ),
@@ -883,15 +986,9 @@ class _BookingScreenState extends State<BookingScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Container(
-
         decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                offset: Offset(1,3),
-                color: Colors.grey.shade400,
-              )
-            ]
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade400)],
         ),
         child: TextFormField(
           controller: controller,
@@ -899,18 +996,16 @@ class _BookingScreenState extends State<BookingScreen> {
           maxLines: maxLines,
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: TextStyle(fontFamily: "poppins_thin",fontSize: 15),
+            labelStyle: TextStyle(fontFamily: "poppins_thin", fontSize: 15),
             prefixText: prefix != null ? '$prefix ' : null,
             filled: true,
-            fillColor: Colors.white, // White background
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
           keyboardType: (label.contains('Amount') && !label.contains('Words')) || label.contains('Price') || label.contains('Discount')
               ? TextInputType.numberWithOptions(decimal: true)
               : TextInputType.text,
+          onChanged: (value) => debugPrint('$label changed: $value'),
         ),
       ),
     );
@@ -926,7 +1021,7 @@ class _BookingScreenState extends State<BookingScreen> {
           labelStyle: const TextStyle(fontFamily: "poppins_thin"),
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16),borderSide: BorderSide(color: Colors.grey)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey)),
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         readOnly: true,
@@ -938,18 +1033,23 @@ class _BookingScreenState extends State<BookingScreen> {
             lastDate: DateTime(2100),
           );
           if (picked != null) {
-            controller!.text = DateFormat('yyyy-MM-dd').format(picked);
+            controller!.text = DateFormat('dd-MM-yyyy hh:mm a').format(picked);
+            debugPrint('$label selected: ${controller.text}');
           }
         },
       ),
     );
   }
 
-  // New method for DropdownButton2
-  Widget _buildDropdown2(String label,
-      {required List<String> items, required Function(String?) onChanged}) {
+  Widget _buildDropdown2({
+    required String label,
+    required List<String> items,
+    required String? selectedValue,
+    required Function(String?) onChanged,
+  }) {
+    debugPrint('Building Dropdown: $label, Items: $items, Selected Value: $selectedValue');
     return Padding(
-      padding: const EdgeInsets.only(top: 10,bottom: 10),
+      padding: const EdgeInsets.only(top: 10, bottom: 10),
       child: Container(
         height: 55,
         width: double.infinity,
@@ -958,60 +1058,29 @@ class _BookingScreenState extends State<BookingScreen> {
           color: Colors.white,
           border: Border.all(color: Colors.grey),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 4,
-              spreadRadius: 2,
-            ),
+            BoxShadow(color: Colors.grey.shade300, blurRadius: 4, spreadRadius: 2),
           ],
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton2<String>(
-            hint: Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontFamily: "poppins_thin",
-              ),
-            ),
+            hint: Text(label, style: TextStyle(fontSize: 15, fontFamily: "poppins_thin")),
             items: items.map((String item) => DropdownMenuItem<String>(
               value: item,
-              child: Text(
-                item,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: "poppins_thin",
-                ),
-              ),
+              child: Text(item, style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
             )).toList(),
-            value: items.contains(_selectedArea) ? _selectedArea :
-            items.contains(_selectedPropertySubType) ? _selectedPropertySubType :
-            items.contains(_selectedPurposeOfBuying) ? _selectedPurposeOfBuying :
-            items.contains(_selectedApproxBuyingTime) ? _selectedApproxBuyingTime :
-            items.contains(_selectedTime) ? _selectedTime :
-            items.contains(_selectedStatus) ? _selectedStatus :
-            items.contains(_selectedTokenBy) ? _selectedTokenBy :
-            null,
-            onChanged: (value) => onChanged(value),
+            value: selectedValue,
+            onChanged: onChanged,
             buttonStyleData: ButtonStyleData(
               height: 40,
               padding: const EdgeInsets.only(left: 14, right: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
               elevation: 0,
             ),
-            iconStyleData: const IconStyleData(
-              icon: Icon(Icons.arrow_drop_down),
-              iconSize: 24,
-            ),
+            iconStyleData: const IconStyleData(icon: Icon(Icons.arrow_drop_down), iconSize: 24),
             dropdownStyleData: DropdownStyleData(
               maxHeight: 200,
               padding: null,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white,
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white),
               elevation: 8,
               offset: const Offset(0, -4),
               scrollbarTheme: ScrollbarThemeData(
@@ -1020,15 +1089,13 @@ class _BookingScreenState extends State<BookingScreen> {
                 thumbVisibility: MaterialStateProperty.all<bool>(true),
               ),
             ),
-            menuItemStyleData: const MenuItemStyleData(
-              height: 40,
-              padding: EdgeInsets.only(left: 14, right: 14),
-            ),
+            menuItemStyleData: const MenuItemStyleData(height: 40, padding: EdgeInsets.only(left: 14, right: 14)),
           ),
         ),
       ),
     );
   }
+
   Widget _buildToggleSwitch({
     required List<String> labels,
     required int initialIndex,

@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await prefs.setBool('isFirstLaunch', false);
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
-        // Handle subsequent navigation in the LoginScreen instead of here
+
       }
     } else {
       _handleAuthenticatedFlow();

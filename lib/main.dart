@@ -27,7 +27,7 @@ void main() {
         initialRoute: "/",
         routes: {
            // "/":(context)=> BottomNavScreen(),
-          "/":(context)=> BottomNavScreen(),
+          "/":(context)=> SplashScreen(),
           '/login': (context) => LoginScreen(),
           '/dashboard': (context) => BottomNavScreen(),
           '/attandance':(context)=>StaffAttendanceScreen()
