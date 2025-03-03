@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/fetch_Transfer_Inquiry_Model.dart';
+import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
@@ -12,13 +14,14 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmode
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 
 class UserProvider with ChangeNotifier {
 
   bool _isLoggedIn=false;
   bool get isLoggedIn=> _isLoggedIn;
 
-// final ApiService _apiService=ApiService();
+  // final ApiService _apiService=ApiService();
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
   Realtostaffprofilemodel? _profileData;
@@ -36,17 +39,11 @@ class UserProvider with ChangeNotifier {
   Realtostaffattendancemodel? _staffAttendanceData;
   Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
 
-  bool _isLoadingg = false; // Changed to _isLoadingVisits for clarity
-  bool _isLoadingDropdowns = false;
-  String? _error;
+  Realtoallstaffleavesmodel? _allStaffLeavesData;
+  Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
 
-  VisitEntryModel? _visitData;
-  // bool _isLoadingg = false;
-  // String? _error;
-
-  VisitEntryModel? get visitData => _visitData;
-  bool get isLoadingg => _isLoadingg;
-  String? get error => _error;
+  fetchTransferInquiryModel? _transferInquiryData;
+  fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
 
   final ApiService _apiService = ApiService();
 
@@ -111,7 +108,7 @@ class UserProvider with ChangeNotifier {
         _hasMore = _currentPage < response.totalPages!;
         if (_hasMore) _currentPage++;
 
-// Update stage counts
+        // Update stage counts
         _stageCounts = {
           "Fresh": getStageCount(status, "Fresh", response),
           "Contacted": getStageCount(status, "Contacted", response),
@@ -290,26 +287,6 @@ class UserProvider with ChangeNotifier {
     _hasMore = true;
   }
 
-
-  Future<void> fetchVisitData() async {
-    _isLoadingg = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _visitData = await _apiService.fetchVisitData();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoadingg = false;
-      notifyListeners();
-    }
-  }
-
-
-
-
-
   Future<void> fetchAddLeadData() async {
     _isLoadingDropdown = true;
     _errorMessage = null;
@@ -319,7 +296,6 @@ class UserProvider with ChangeNotifier {
       final response = await _apiService.fetchAddLeadData();
       if (response != null) {
         _dropdownData = response;
-
       } else {
         _errorMessage = "Failed to fetch dropdown data from API";
         print("Provider: $_errorMessage");
@@ -365,8 +341,8 @@ class UserProvider with ChangeNotifier {
   }
 
 
-// Map<String, int> _stageCounts = {};
-// Map<String, int> get stageCounts => _stageCounts;
+  // Map<String, int> _stageCounts = {};
+  // Map<String, int> get stageCounts => _stageCounts;
 
 
   Future<bool> login(String username,String password) async{
@@ -401,9 +377,9 @@ class UserProvider with ChangeNotifier {
 
         fetchInquiries();
 
-// ✅ Run first (waits for completion)
+        // ✅ Run first (waits for completion)
 
-// Run remaining API calls in the background (parallel)
+        // Run remaining API calls in the background (parallel)
         Future.wait([
 
         ]);
@@ -442,6 +418,15 @@ class UserProvider with ChangeNotifier {
   Future<void> fetchStaffLeavesData () async {
     try {
       _staffLeavesData = await _apiService.fetchStaffLeavesData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff leaves data: $e");
+    }
+  }
+
+  Future<void> fetchAllStaffLeavesData () async {
+    try {
+      _allStaffLeavesData = await _apiService.fetchAllStaffLeavesData();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff leaves data: $e");
@@ -507,7 +492,7 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno
+    required String altmobileno, required String description
 
   }) async {
     try {
@@ -528,10 +513,10 @@ class UserProvider with ChangeNotifier {
           inquiry_source_type:inquiry_source_type,
           intrested_area_name:intrested_area_name,
           intersted_site_name:intersted_site_name,
-          altmobileno: altmobileno,
-          houseno: houseno,
-          PropertyConfiguration: PropertyConfiguration,
-          society: society, description: '',
+        altmobileno: altmobileno,
+        houseno: houseno,
+        PropertyConfiguration: PropertyConfiguration,
+        society: society, description: ''
 
       );
 
@@ -547,10 +532,79 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+  InquiryTimeLineModel? _inquiryTimeline;
+  InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
+
+  Future<void> fetchInquiryTimeline({required String inquiryId}) async {
+    try {
+      _inquiryTimeline = await _apiService.fetchInquiryTimeline(inquiryId: inquiryId);
+      if (_inquiryTimeline != null) {
+        // Print the top-level fields
+        print("Inquiry Timeline Data:");
+        print("Result: ${_inquiryTimeline!.result}");
+        print("Inquiry ID: ${_inquiryTimeline!.inquiryId}");
+
+        // Print the list of Data objects
+        if (inquiryTimeline!.data != null && inquiryTimeline!.data!.isNotEmpty) {
+          print("Data List (${_inquiryTimeline!.data!.length} items):");
+          for (var i = 0; i < _inquiryTimeline!.data!.length; i++) {
+            final dataItem = _inquiryTimeline!.data![i];
+            print("  Item #$i:");
+            print("    Created At: ${dataItem.createdAt}");
+            print("    Username: ${dataItem.username}");
+            print("    Status Label: ${dataItem.statusLabel}");
+            print("    Next Follow Date: ${dataItem.nxtfollowdate}");
+            print("    Remark Text: ${dataItem.remarktext}");
+            print("    Condition Wise BG: ${dataItem.conditionWIseBG}");
+            print("    Stages ID: ${dataItem.stagesId}");
+            print("    Inquiry Log: ${dataItem.inquiryLog}");
+          }
+        } else {
+          print("No Data items available.");
+        }
+      } else {
+        print("No data returned from API");
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error in provider: $e");
+      _inquiryTimeline = null; // Reset on error
+      notifyListeners();
+    }
+
+  }
+  String? _error;
+  String? get error => _error;
+
+  VisitEntryModel? _visitData;
+  VisitEntryModel? get visitData => _visitData;
+  Future<void> fetchVisitData() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _visitData = await _apiService.fetchVisitData();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> fetchStaffAttendanceData () async {
     try {
       _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+    }
+  }
+
+  Future<void> fetchTransferInquiryData () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");
@@ -565,3 +619,4 @@ class UserProvider with ChangeNotifier {
 }
 
 // Add a getValue function to access the pagination data as a string and parse to int
+

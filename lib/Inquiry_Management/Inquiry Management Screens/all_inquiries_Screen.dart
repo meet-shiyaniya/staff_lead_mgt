@@ -1,24 +1,20 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/lead_Detail_Screen.dart';
-import 'package:hr_app/social_module/colors/colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-
 import '../../Provider/UserProvider.dart';
 import '../Model/Api Model/allInquiryModel.dart';
 import '../Model/category_Model.dart';
-import '../Model/followup_Model.dart';
 import '../Utils/Colors/app_Colors.dart';
 import '../Utils/Custom widgets/add_lead_Screen.dart';
 import '../Utils/Custom widgets/custom_buttons.dart';
-import '../Utils/Custom widgets/custom_dialog.dart';
-import '../Utils/Custom widgets/custom_search.dart';
-import '../Utils/Custom widgets/filter_Bottomsheet.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
 import '../Utils/Custom widgets/search_Screen.dart';
 import 'Filters/inquiry_Filter_Screen.dart';
-import 'Followup Screen/list_filter_Screen.dart';
 
 class AllInquiriesScreen extends StatefulWidget {
   const AllInquiriesScreen({Key? key});
@@ -28,6 +24,13 @@ class AllInquiriesScreen extends StatefulWidget {
 }
 
 class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  List<Map<String, String>> actionList = []; // Stores key-value pairs for actions
+  List<Map<String, String>> employeeList = []; // Stores key-value pairs for employees
+  String? selectedAction; // Stores selected action value
+  String? selectedEmployee; // Stores selected employee name
+
   String selectedList = "All";
   String selectedValue = "0";
   int? selectedIndex;
@@ -38,20 +41,110 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   bool anySelected = false;
 
   late ScrollController _scrollController;
-  String? selectedAction = null;
-  String? selectedEmployee = null;
-  final List<String> actions = ['markAsComplete', 'assignToUser', 'delete'];
-  final List<String> employees = ['employee 1', 'employee 2', 'employee 3'];
 
-  bool isStatusFilterActive = false; // Flag to indicate if a status filter is active
+  bool isStatusFilterActive = false;
   String? currentStage;
 
-  int currentStatus = 1; // Default to 1 (Live) instead of 0
+  int currentStatus = 1; // Default to 1 (Live)
+
+  Future<void> loadData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    try {
+      await userProvider.fetchTransferInquiryData();
+      final data = userProvider.transferInquiryData;
+
+      if (data == null) {
+        print('No data received');
+        return;
+      }
+
+      setState(() {
+        actionList = [];
+        selectedAction = null;
+
+        if (data.action != null) {
+          actionList = [
+            if (data.action!.assignFollowups != null)
+              {'key': 'assign_followups', 'value': data.action!.assignFollowups!},
+            if (data.action!.transferOwnership != null)
+              {'key': 'transfer_ownership', 'value': data.action!.transferOwnership!},
+          ];
+          selectedAction = actionList.isNotEmpty ? actionList.first['value'] : null;
+        } else {
+          print('No action data available');
+        }
+
+        print('Actions Loaded: $actionList');
+        print('Selected Action: $selectedAction');
+
+        employeeList = (data.employee ?? [])
+            .where((e) => e.id != null && e.firstname != null)
+            .map((e) => {'id': e.id!, 'name': e.firstname!})
+            .toList();
+        selectedEmployee = employeeList.isNotEmpty ? employeeList.first['name'] : null;
+
+        print('Employees Loaded: $employeeList');
+        print('Selected Employee: $selectedEmployee');
+      });
+    } catch (e) {
+      print('Error fetching data: $e');
+    }
+  }
+
+  Future<void> _sendTransferInquiry({
+    required List<String> inqIds, // Changed to accept a list of IDs
+    required String actionKey,
+    required String employeeId,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/people_assign_bulkapi");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+        Fluttertoast.showToast(msg: "No authentication token found");
+        return;
+      }
+
+      // Join the inquiry IDs into a comma-separated string
+      String inquiryIdsString = inqIds.join(',');
+
+      Map<String, String> bodyData = {
+        "token": token,
+        "inquiry_id": inquiryIdsString, // Send as "123,456,789"
+        "action_name": actionKey,
+        "action": "assign",
+        "assign_id": employeeId
+      };
+
+      print('Sending to backend: $bodyData'); // Debug print
+
+      final response = await http.post(
+        url,
+        body: bodyData,
+      );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Fluttertoast.showToast(msg: inqIds.toString());
+        Fluttertoast.showToast(msg: "Inquiries transferred successfully");
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to transfer inquiries: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Something went wrong: $e");
+      rethrow;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    // Load Live data immediately with status 1
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await loadAllInquiries();
     });
@@ -61,19 +154,19 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
   Future<void> loadAllInquiries() async {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    await inquiryProvider.fetchInquiries(status: currentStatus); // Use currentStatus (default 1 for Live)
+    await inquiryProvider.fetchInquiries(status: currentStatus);
     setState(() {
       filteredLeads = _applyStageFilter(inquiryProvider.inquiries);
       selectedValue = filteredLeads.length.toString();
       isStatusFilterActive = currentStatus != 0 || currentStage != null;
-      selectedMainFilter = "Live"; // Ensure the UI reflects "Live" as selected
+      selectedMainFilter = "Live";
     });
   }
 
   void _onScroll() {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300 && // Reduced threshold
+        _scrollController.position.maxScrollExtent - 300 &&
         !inquiryProvider.isLoading &&
         inquiryProvider.hasMore) {
       inquiryProvider
@@ -90,11 +183,9 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
   List<Inquiry> _applyStageFilter(List<Inquiry> inquiries) {
     if (currentStage == null) {
-      return List.from(inquiries); // Return all if no stage filter
+      return List.from(inquiries);
     }
-    return inquiries
-        .where((inquiry) => inquiry.InqStage == currentStage)
-        .toList();
+    return inquiries.where((inquiry) => inquiry.InqStage == currentStage).toList();
   }
 
   @override
@@ -116,12 +207,10 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     super.dispose();
   }
 
-  void filterLeads(String category) {}
-
   Future<void> filterLeadsByStatus(int status) async {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
-      currentStatus = status; // Update the current status
+      currentStatus = status;
       currentStage = null;
     });
     await inquiryProvider.fetchInquiries(status: status);
@@ -130,12 +219,17 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       selectedValue = filteredLeads.length.toString();
       selectedList = "All";
       isStatusFilterActive = true;
-      selectedMainFilter = status == 1 ? "Live" :
-      status == 2 ? "Dismiss" :
-      status == 3 ? "Dismissed Request" :
-      status == 4 ? "Conversion Request" :
-      status == 5 ? "Due Appo" :
-      "CNR"; // Update selectedMainFilter based on status
+      selectedMainFilter = status == 1
+          ? "Live"
+          : status == 2
+          ? "Dismiss"
+          : status == 3
+          ? "Dismissed Request"
+          : status == 4
+          ? "Conversion Request"
+          : status == 5
+          ? "Due Appo"
+          : "CNR";
     });
   }
 
@@ -171,18 +265,19 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       selectedAction = null;
       selectedEmployee = null;
     });
+    print('Action: $action, Employee: $employee');
   }
+
   void toggleSelection(int index) {
     setState(() {
-      selectedCards[index] = !selectedCards[index]; // Simply toggle the current card's state
-      anySelected = selectedCards.contains(true);   // Update the anySelected flag
-      print("anySelected : $anySelected");
+      selectedCards[index] = !selectedCards[index];
+      anySelected = selectedCards.contains(true);
+      print("anySelected: $anySelected");
     });
   }
 
   Future<void> filterLeadsByStage(String stage) async {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    // Fetch all inquiries for the current status if not already loaded
     if (inquiryProvider.inquiries.isEmpty) {
       await inquiryProvider.fetchInquiries(status: currentStatus);
     }
@@ -206,12 +301,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
   Map<String, dynamic> appliedFilters = {};
 
-  void _updateSearchResults(List<Inquiry> results) {
-    setState(() {
-      filteredLeads = results;
-    });
-  }
-
   void resetFilters() {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
@@ -226,54 +315,56 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
   String? filteredMobile;
   List<String> filteredStatus = [];
 
-
-
   void showActionDialog(
       BuildContext context,
       bool anySelected,
       Function(String, String) handleAction,
       List<String> actions,
-      List<String> employees,
+      List<String> employeeNames,
       ) {
-    if (!anySelected) return;
-
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        String? selectedAction;
-        String? selectedEmployee;
+        String? dialogSelectedAction = actions.isNotEmpty ? actions.first : null;
+        String? dialogSelectedEmployee =
+        employeeNames.isNotEmpty ? employeeNames.first : null;
 
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: const Text('Perform Action', style: TextStyle(fontWeight: FontWeight.w600)),
-              content: SingleChildScrollView(
-                child: Container(
-                  height: 200,
-                  width: 400,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 20,),
-                      _buildDropdown(
-                        label: "Select Action",
-                        hint: "Choose Action",
-                        value: selectedAction,
-                        items: actions,
-                        onChanged: (value) => setState(() => selectedAction = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDropdown(
-                        label: "Select Employee",
-                        hint: "Choose Employee",
-                        value: selectedEmployee,
-                        items: employees,
-                        onChanged: (value) => setState(() => selectedEmployee = value),
-                      ),
-                    ],
-                  ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildDropdown(
+                      label: "Select Action",
+                      hint: "Choose Action",
+                      value: dialogSelectedAction,
+                      items: actions,
+                      onChanged: (value) {
+                        setState(() {
+                          dialogSelectedAction = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDropdown(
+                      label: "Select Employee",
+                      hint: "Choose Employee",
+                      value: dialogSelectedEmployee,
+                      items: employeeNames,
+                      onChanged: (value) {
+                        setState(() {
+                          dialogSelectedEmployee = value;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ),
               actions: [
@@ -282,18 +373,64 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   child: const Text("Cancel"),
                 ),
                 GradientButton(
-                  onPressed: () {
-                    if (selectedAction == null || selectedEmployee == null) {
+                  onPressed: () async {
+                    if (dialogSelectedAction == null || dialogSelectedEmployee == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Please select both action and employee")),
                       );
-                    } else {
-                      handleAction(selectedAction!, selectedEmployee!);
+                      return;
+                    }
+
+                    // Get selected inquiry IDs
+                    List<String> selectedInquiryIds = [];
+                    for (int i = 0; i < selectedCards.length; i++) {
+                      if (selectedCards[i]) {
+                        selectedInquiryIds.add(filteredLeads[i].id ?? '');
+                      }
+                    }
+                    print('Selected Inquiry IDs: $selectedInquiryIds');
+
+                    if (selectedInquiryIds.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("No inquiries selected")),
+                      );
+                      return;
+                    }
+
+                    // Get the action key from the selected action value
+                    String actionKey = actionList
+                        .firstWhere((action) => action['value'] == dialogSelectedAction)['key'] ??
+                        '';
+
+                    // Get the employee ID from the selected employee name
+                    String employeeId = employeeList
+                        .firstWhere((e) => e['name'] == dialogSelectedEmployee)['id'] ??
+                        '';
+
+                    try {
+                      // Send all IDs in a single request
+                      await _sendTransferInquiry(
+                        inqIds: selectedInquiryIds, // Pass the list of IDs
+                        actionKey: actionKey,
+                        employeeId: employeeId,
+                      );
+                      handleAction(dialogSelectedAction!, dialogSelectedEmployee!);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Inquiries transferred successfully")),
+                      );
+                      setState(() {
+                        selectedCards = List<bool>.filled(filteredLeads.length, false);
+                        anySelected = false;
+                      });
                       Navigator.of(dialogContext).pop();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Failed to transfer inquiries: $e")),
+                      );
                     }
                   },
                   width: 100,
-                  buttonText:("Submit"),
+                  buttonText: "Submit",
                 ),
               ],
             );
@@ -310,10 +447,12 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     required List<String> items,
     required Function(String?) onChanged,
   }) {
+    print('Building Dropdown: $label, Value: $value, Items: $items');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.grey[800], fontSize: 16, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: TextStyle(color: Colors.grey[800], fontSize: 16, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -326,16 +465,18 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               isExpanded: true,
               hint: Text(hint, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
               value: value,
-              onChanged: onChanged,
-              items: items
-                  .map((item) => DropdownMenuItem(
+              onChanged: items.isEmpty ? null : onChanged,
+              items: items.map((item) => DropdownMenuItem<String>(
                 value: item,
-                child: Text(item, style: const TextStyle(fontWeight: FontWeight.w400)),
-              ))
-                  .toList(),
-              buttonStyleData: const ButtonStyleData(height: 40),
-              iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700])),
+                child: Text(item,
+                    style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 13)),
+              )).toList(),
+              buttonStyleData: const ButtonStyleData(height: 40, width: double.infinity),
+              iconStyleData:
+              IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700])),
               dropdownStyleData: DropdownStyleData(
+                maxHeight: 200,
+                width: MediaQuery.of(context).size.width.toDouble() / 1.65,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: Colors.white,
@@ -347,6 +488,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
       ],
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final inquiryProvider = Provider.of<UserProvider>(context);
@@ -360,69 +502,78 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-            "All Inquiries",
-            style: TextStyle(fontFamily: "poppins_thin", color: Colors.white),
+        title: Text(
+          "All Inquiries",
+          style: TextStyle(fontFamily: "poppins_thin", color: Colors.white),
+        ),
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.white,
           ),
-          leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: Icon(
-                Icons.arrow_back_ios,
-                color: Colors.white,
-              )),
-          backgroundColor: Colors.deepPurple.shade300,
-          actions: [
-
-            if(anySelected)CircleAvatar(
+        ),
+        backgroundColor: Colors.deepPurple.shade300,
+        actions: [
+          if (anySelected)
+            CircleAvatar(
               backgroundColor: Colors.white,
               child: GestureDetector(
-
-                onTap: () {
-                  showActionDialog(context, anySelected, handleAction, actions, employees);
+                onTap: () async {
+                  await loadData();
+                  List<String> actionValues = actionList.map((action) => action['value']!).toList();
+                  List<String> employeeNames = employeeList.map((e) => e['name']!).toList();
+                  print(
+                      'Calling showActionDialog with Actions: $actionValues, Employees: $employeeNames');
+                  showActionDialog(
+                    context,
+                    anySelected,
+                    handleAction,
+                    actionValues,
+                    employeeNames,
+                  );
                 },
                 child: Image(
-                  image: AssetImage("asset/Inquiry_module/fast-forward.png"),height: 25,width: 25,
-
+                  image: AssetImage("asset/Inquiry_module/fast-forward.png"),
+                  height: 25,
+                  width: 25,
                 ),
               ),
             ),
-            SizedBox(width: 10,),
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              child: IconButton(
-                icon: Icon(Icons.search),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SearchPage()),
-                  );
-                },
+          SizedBox(width: 10),
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SearchPage()),
+                );
+              },
+            ),
+          ),
+          SizedBox(width: 10),
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => inquiryFilterScreen()));
+              },
+              icon: Icon(
+                Icons.filter_list_outlined,
+                color: Colors.black,
               ),
             ),
-            SizedBox(
-              width: 10,
-            ),
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              child: IconButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => inquiryFilterScreen(),));
-                    // showBottomModalSheet(context);
-                  },
-                  icon: Icon(
-                    Icons.filter_list_outlined,
-                    color: Colors.black,
-                  )),
-            ),
-            SizedBox(
-              width: 10,
-            )
-          ]),
+          ),
+          SizedBox(width: 10),
+        ],
+      ),
       body: Column(
         children: [
-
           _buildMainButtonGroup(),
           GestureDetector(
             onTap: () async {
@@ -432,16 +583,13 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                 selectedIndex = 0;
               });
 
-              final inquiryProvider = Provider.of<UserProvider>(context,
-                  listen: false);
-
+              final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
               final paginatedInquiries = inquiryProvider.paginatedInquiries;
 
               List<Categorymodel> filteredOptions = [
                 Categorymodel("All", paginatedInquiries?.totalRecords ?? 0),
               ];
 
-              // Access stageCounts directly from the provider
               Map<String, int> stageCounts = inquiryProvider.stageCounts;
 
               if (selectedMainFilter == "Live") {
@@ -449,7 +597,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
                   Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
                   Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
-                  // Categorymodel("Trial", stageCounts["Visited"] ?? 0),
                   Categorymodel("Negotiation", stageCounts["Negotiation"] ?? 0),
                   Categorymodel("Feedback", stageCounts["Feedback"] ?? 0),
                   Categorymodel("Reappointment", stageCounts["Re-Appointment"] ?? 0),
@@ -528,11 +675,9 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                 ),
               );
               if (result != null) {
-                final selectedCategory =
-                result["selectedCategory"] as Categorymodel;
+                final selectedCategory = result["selectedCategory"] as Categorymodel;
                 if (selectedCategory.title != "All") {
-                  final stage =
-                  getInquiryStageFromCategory(selectedCategory.title);
+                  final stage = getInquiryStageFromCategory(selectedCategory.title);
                   if (stage != null) {
                     await filterLeadsByStage(stage);
                   }
@@ -540,8 +685,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                   setState(() {
                     currentStage = null;
                     filteredLeads = inquiryProvider.inquiries
-                        .where((inquiry) =>
-                    inquiry.InqStatus == currentStatus.toString())
+                        .where((inquiry) => inquiry.InqStatus == currentStatus.toString())
                         .toList();
                     selectedValue = filteredLeads.length.toString();
                     selectedList = "All";
@@ -550,8 +694,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               }
             },
             child: Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
               child: Container(
                 height: 60,
                 padding: EdgeInsets.symmetric(horizontal: 26.0, vertical: 8.0),
@@ -568,8 +711,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                       children: [
                         Icon(Icons.group, color: Colors.black),
                         SizedBox(width: 8.0),
-                        Text(selectedValue,
-                            style: TextStyle(fontFamily: "poppins_thin")),
+                        Text(selectedValue, style: TextStyle(fontFamily: "poppins_thin")),
                         Icon(Icons.arrow_drop_down, color: Colors.black),
                       ],
                     ),
@@ -580,109 +722,96 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    if (filteredId != null && filteredId!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18)),
-                        label: Text('ID: $filteredId'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredId = null;
-                            appliedFilters.remove('Id');
-                            loadAllInquiries(); // Reload all inquiries
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    if (filteredName != null && filteredName!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18)),
-                        label: Text('Name: $filteredName'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredName = null;
-                            appliedFilters.remove('Name');
-                            loadAllInquiries(); // Reload all inquiries
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    if (filteredPhone != null && filteredPhone!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18)),
-                        label: Text('Phone: $filteredPhone'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredPhone = null;
-                            appliedFilters.remove('Mobile');
-                            loadAllInquiries();
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    if (filteredStatus.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18)),
-                        label: Text('Status: ${filteredStatus.join(', ')}'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredStatus.clear();
-                            appliedFilters.remove('Status');
-                            loadAllInquiries(); // Reload all inquiries
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                  ],
-                ),
-              ),
-              if (filteredId != null ||
-                  filteredName != null ||
-                  filteredPhone != null ||
-                  filteredStatus.isNotEmpty)
-                ElevatedButton(
-                  onPressed: resetFilters,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade300,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22)),
+            child: Column(
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      if (filteredId != null && filteredId!.isNotEmpty)
+                        FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          label: Text('ID: $filteredId'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredId = null;
+                              appliedFilters.remove('Id');
+                              loadAllInquiries();
+                            });
+                          },
+                          onSelected: (bool value) {},
+                        ),
+                      SizedBox(width: 5),
+                      if (filteredName != null && filteredName!.isNotEmpty)
+                        FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          label: Text('Name: $filteredName'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredName = null;
+                              appliedFilters.remove('Name');
+                              loadAllInquiries();
+                            });
+                          },
+                          onSelected: (bool value) {},
+                        ),
+                      SizedBox(width: 5),
+                      if (filteredPhone != null && filteredPhone!.isNotEmpty)
+                        FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          label: Text('Phone: $filteredPhone'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredPhone = null;
+                              appliedFilters.remove('Mobile');
+                              loadAllInquiries();
+                            });
+                          },
+                          onSelected: (bool value) {},
+                        ),
+                      SizedBox(width: 5),
+                      if (filteredStatus.isNotEmpty)
+                        FilterChip(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          label: Text('Status: ${filteredStatus.join(', ')}'),
+                          onDeleted: () {
+                            setState(() {
+                              filteredStatus.clear();
+                              appliedFilters.remove('Status');
+                              loadAllInquiries();
+                            });
+                          },
+                          onSelected: (bool value) {},
+                        ),
+                      SizedBox(width: 5),
+                    ],
                   ),
-                  child: const Text('Clear All',
-                      style: TextStyle(fontFamily: 'poppins_thin', color: Colors.white)),
                 ),
-            ]),
+                if (filteredId != null ||
+                    filteredName != null ||
+                    filteredPhone != null ||
+                    filteredStatus.isNotEmpty)
+                  ElevatedButton(
+                    onPressed: resetFilters,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade300,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                    ),
+                    child: const Text('Clear All',
+                        style: TextStyle(fontFamily: 'poppins_thin', color: Colors.white)),
+                  ),
+              ],
+            ),
           ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                await loadAllInquiries(); // Reload ALL inquiries on refresh
+                await loadAllInquiries();
               },
               child: Builder(
                 builder: (context) {
-                  if (inquiryProvider.isLoading &&
-                      inquiryProvider.inquiries.isEmpty) {
+                  if (inquiryProvider.isLoading && inquiryProvider.inquiries.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (filteredLeads.isEmpty) {
                     return Column(
@@ -712,10 +841,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                     }
                     return ListView.builder(
                       controller: _scrollController,
-                      itemCount: filteredLeads.length +
-                          (inquiryProvider.isLoading
-                              ? 1
-                              : 0),
+                      itemCount: filteredLeads.length + (inquiryProvider.isLoading ? 1 : 0),
                       itemBuilder: (BuildContext context, int index) {
                         if (index < filteredLeads.length) {
                           Inquiry inquiry = filteredLeads[index];
@@ -762,9 +888,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                           return inquiryProvider.isLoading
                               ? Center(
                               child: Lottie.asset('asset/loader.json',
-                                  fit: BoxFit.contain,
-                                  width: 100,
-                                  height: 100))
+                                  fit: BoxFit.contain, width: 100, height: 100))
                               : SizedBox();
                         }
                       },
@@ -784,7 +908,6 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
               MaterialPageRoute(
                 builder: (context) => AddLeadScreen(
                   isEdit: false,
-
                 ),
               ));
         },
@@ -894,6 +1017,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     }
   }
 }
+
 class ListSelectionscreen extends StatefulWidget {
   final int? initialSelectedIndex;
   final List<Categorymodel> optionList;
@@ -953,9 +1077,8 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
                   ),
                 ),
                 leading: CircleAvatar(
-                  backgroundColor: isSelected
-                      ? Colors.deepPurple.shade300
-                      : Colors.grey.shade200,
+                  backgroundColor:
+                  isSelected ? Colors.deepPurple.shade300 : Colors.grey.shade200,
                   child: Text(
                     widget.optionList[index].title[0],
                     style: TextStyle(

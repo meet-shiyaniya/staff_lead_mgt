@@ -49,7 +49,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
           Container(
             height: 60,
             width: double.infinity,
-            color: Colors.grey.shade100,
+            color: Colors.blueGrey.shade50,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SingleChildScrollView(
