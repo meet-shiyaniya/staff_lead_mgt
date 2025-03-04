@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,8 +15,10 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemod
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
@@ -23,6 +26,43 @@ class ApiService{
   static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
   final String updateProfilePicUrl = "$baseUrl/uploadProfileImage";
+  final String _baseUrl = "https://admin.dev.ajasys.com/api/visit_insert_data";
+  final String _baseUrlB = 'https://admin.dev.ajasys.com/api/booking_insert';
+
+
+
+
+  Future<InquiryFilter> fetchFilterData() async {
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      final response = await http.post(
+        Uri.parse('https://admin.dev.ajasys.com/api/fetch_filter_data'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return inquiryFilterFromJson(response.body);
+      } else {
+        throw Exception('Failed to load filter data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching filter data: $e');
+    }
+  }
+
+
+
+
+
+
+
+
 
   Future<void> uploadSelfie(File imageFile) async {
     try {
@@ -136,7 +176,24 @@ class ApiService{
     }
   }
 
+  Future<Map<String, dynamic>> postBookingData(Map<String, dynamic> data) async {
+    try {
+      final url = Uri.parse('https://admin.dev.ajasys.com/api/booking_insert'); // Replace with your actual API endpoint
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
 
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to submit booking data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error posting booking data: $e');
+    }
+  }
 
   Future<Realtostaffprofilemodel?> fetchProfileData() async {
 
@@ -365,6 +422,43 @@ class ApiService{
     }
   }
 
+  Future<FetchBookingData2> fetchBookingData(String editId) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/fetch_booking_data");
+    print("Fetching booking data - API URL: $url");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+      if (token == null || token.isEmpty) {
+        throw Exception("Token is null or empty");
+      }
+
+      final requestBody = jsonEncode({
+        'token': token,
+        'edit_id': int.parse(editId),
+      });
+      print("Request Body: $requestBody");
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return FetchBookingData2.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception("API Error: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching booking data: $e");
+      rethrow;
+    }
+  }
+
 
   Future<bool> addLead({
     required String action,
@@ -392,6 +486,7 @@ class ApiService{
 
   }) async {
     final url = Uri.parse("$baseUrl/insert_Inquiry_data");
+
 
     try {
       String? token = await _secureStorage.read(key: 'token');
@@ -504,6 +599,95 @@ class ApiService{
     }
   }
 
+  Future<Map<String, dynamic>> submitVisitData(Map<String, dynamic> data) async {
+    print("API Service - Data to be sent: ${jsonEncode(data)}"); // Log the data being sent
+
+    try {
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(data), // Data is encoded and sent in the body
+      );
+
+      print("API Service - Response Status: ${response.statusCode}"); // Log the status code
+      print("API Service - Response Body: ${response.body}"); // Log the raw response body
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": "Data submitted successfully",
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Failed to submit data: ${response.statusCode} - ${response.body}",
+        };
+      }
+    } catch (e) {
+      print("API Service - Error: $e"); // Log any exceptions
+      return {
+        "success": false,
+        "message": "Error: $e",
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> submitBookingData(Map<String, dynamic> bookingData) async {
+    String? token = await _secureStorage.read(key: 'token');
+
+    try {
+
+      final requestBody = {
+        'token': token,
+        ...bookingData,
+      };
+
+      // Log the full request body
+      debugPrint('=== Booking API Request Start ===');
+      debugPrint('Request URL: $_baseUrl');
+      debugPrint('Request Headers:');
+      debugPrint('  Content-Type: application/json');
+      debugPrint('  Authorization: Bearer $token');
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
+
+      // Send the API request
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      // Log the response details
+      debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('=== Booking API Request End ===');
+
+      // Parse and return the response
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        debugPrint('API Request Failed: Status Code ${response.statusCode}');
+        return {
+          'status': 0,
+          'message': 'Failed to submit booking. Status code: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      // Log any exceptions
+      debugPrint('Exception during API call: $e');
+      debugPrint('=== Booking API Request Failed ===');
+      return {
+        'status': 0,
+        'message': 'Error submitting booking: $e',
+      };
+    }
+  }
 
   Future<bool> sendLeaveRequest ({
 
@@ -672,31 +856,26 @@ class ApiService{
     }
   }
 
-  Future<VisitEntryModel> fetchVisitData() async {
+  Future<VisitEntryModel> fetchVisitData(String inquiryId) async {
     String? token = await _secureStorage.read(key: 'token');
     final body = {
-      "token": token ,
-      "edit_id": 95560,
+      "token": token,
+      "edit_id": int.parse(inquiryId), // Convert inquiryId to int if API expects it as a number
     };
-    print(token);
+    print('Fetching visit data with body: $body');
 
     final response = await http.post(
       Uri.parse('$baseUrl/fetch_visit_data'),
       headers: {
         'Content-Type': 'application/json',
       },
-
       body: jsonEncode(body),
-
     );
-    print(response.body);
+    print('Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      print("Api Successfully worked");
+      print("API Successfully worked");
       return VisitEntryModel.fromJson(jsonDecode(response.body));
-
-      print(response.body);
-
     } else {
       throw Exception('Failed to load visit data: ${response.statusCode} - ${response.body}');
     }

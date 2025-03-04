@@ -561,7 +561,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
             child: IconButton(
               onPressed: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => inquiryFilterScreen()));
+                    context, MaterialPageRoute(builder: (context) => InquiryFilterScreen()));
               },
               icon: Icon(
                 Icons.filter_list_outlined,

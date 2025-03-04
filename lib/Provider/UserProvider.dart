@@ -12,9 +12,12 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationm
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import 'package:http/http.dart' as http;
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 
 class UserProvider with ChangeNotifier {
 
@@ -51,7 +54,10 @@ class UserProvider with ChangeNotifier {
   int _currentPage = 1;
   bool _isLoading = false;
   bool _hasMore = true;
-  final int _limit = 20;  // Number of items per API call
+  final int _limit = 20;
+
+  FetchBookingData2? _bookingData; // Made nullable and properly declared
+  FetchBookingData2? get bookingData => _bookingData;
 
   List<Inquiry> get inquiries => _inquiries;
   bool get isLoading => _isLoading;
@@ -73,6 +79,33 @@ class UserProvider with ChangeNotifier {
 
   List<NextSlot> _nextSlots = [];
   List<NextSlot> get nextSlots => _nextSlots;
+
+  InquiryFilter? _filterData;
+  // bool _isLoading = false;
+  String? _error;
+
+  InquiryFilter? get filterData => _filterData;
+  // bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  Future<void> fetchFilterData() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _filterData = await _apiService.fetchFilterData();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
@@ -133,6 +166,8 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+
 
 
   int getStageCount(int status, String stage, PaginatedInquiries data) {
@@ -287,27 +322,86 @@ class UserProvider with ChangeNotifier {
     _hasMore = true;
   }
 
-  Future<void> fetchAddLeadData() async {
-    _isLoadingDropdown = true;
-    _errorMessage = null;
-    notifyListeners();
 
+  Future<void> fetchVisitData(String inquiryId) async {
     try {
-      final response = await _apiService.fetchAddLeadData();
-      if (response != null) {
-        _dropdownData = response;
+      String? token = await _secureStorage.read(key: 'token');
+      final body = {
+        "token": token,
+        "edit_id": int.parse(inquiryId), // Convert to int if needed
+      };
+      print('Fetching visit data with body: $body');
+
+      final response = await http.post(
+        Uri.parse('https://admin.dev.ajasys.com/api/fetch_visit_data'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      print('Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        _visitData = VisitEntryModel.fromJson(jsonDecode(response.body));
+        notifyListeners();
       } else {
-        _errorMessage = "Failed to fetch dropdown data from API";
-        print("Provider: $_errorMessage");
+        _error = 'Failed to load visit data: ${response.statusCode} - ${response.body}';
+        notifyListeners();
+        throw Exception(_error);
       }
     } catch (e) {
-      _errorMessage = "Error fetching dropdown options: $e";
-      print("Provider Error: $_errorMessage");
-    } finally {
-      _isLoadingDropdown = false;
+      _error = e.toString();
       notifyListeners();
+      throw e;
     }
   }
+
+
+  Future<void> fetchBookingData(String editId) async {
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _bookingData = await _apiService.fetchBookingData(editId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      throw e;
+    }
+  }
+
+  Future<void> fetchAddLeadData() async {
+    try {
+      _isLoadingDropdown = true;
+      notifyListeners();
+
+      String? token = await _secureStorage.read(key: 'token');
+      final response = await http.post(
+        Uri.parse('https://admin.dev.ajasys.com/api/InquiryDetails'), // Replace with actual endpoint
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"token": token}),
+      );
+
+      if (response.statusCode == 200) {
+        _dropdownData = AddLeadDataModel.fromJson(jsonDecode(response.body));
+        _isLoadingDropdown = false;
+        notifyListeners();
+      } else {
+        _error = 'Failed to load dropdown data: ${response.statusCode} - ${response.body}';
+        _isLoadingDropdown = false;
+        notifyListeners();
+        throw Exception(_error);
+      }
+    } catch (e) {
+      _error = e.toString();
+      _isLoadingDropdown = false;
+      notifyListeners();
+      throw e;
+    }
+  }
+
+
   Future<void> fetchNextSlots(String date) async {
     _isLoading = true;
     _errorMessage = null;
@@ -573,25 +667,13 @@ class UserProvider with ChangeNotifier {
     }
 
   }
-  String? _error;
-  String? get error => _error;
+  // String? _error;
+  // String? get error => _error;
 
   VisitEntryModel? _visitData;
   VisitEntryModel? get visitData => _visitData;
-  Future<void> fetchVisitData() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
 
-    try {
-      _visitData = await _apiService.fetchVisitData();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+
 
   Future<void> fetchStaffAttendanceData () async {
     try {
