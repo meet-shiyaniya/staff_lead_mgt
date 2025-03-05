@@ -65,6 +65,32 @@ class ApiService{
     }
   }
 
+  Future<int> sendMemberAttendance({required String qrAttendance}) async {
+    final url = Uri.parse('$baseUrl/memberAttendanceInsert');
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      // String token = "ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGcllYTm9JaXdpY0dGemMzZHZjbVFpT2lJeE1qTWlMQ0pwWkNJNklqSXpNU0lzSW5CeWIyUjFZM1JmYVdRaU9pSXhJbjA9";
+
+      if (token == null) return 0;
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token, 'qrAttendance': qrAttendance}),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        Fluttertoast.showToast(msg: responseData['status'] == 1
+            ? 'Attendance recorded successfully.'
+            : 'Wrong QR code.');
+        return responseData['status'] ?? 2;
+      }
+    } catch (_) {}
+    Fluttertoast.showToast(msg: 'Failed to add attendance.');
+    return 2;
+  }
+
   Future<bool> updateProfilePic(File imageFile) async {
     try {
       String? token = await _secureStorage.read(key: 'token');
@@ -362,6 +388,33 @@ class ApiService{
     } catch (e) {
       print("Step 8 - Error: $e");
       rethrow;
+    }
+  }
+
+  Future<void> sendApproveReject({
+    required String leaveId,
+    required String action,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/leave_request_action");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) return;
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token, 'leave_id': leaveId, 'action': action}),
+      );
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(msg: "Send Success");
+
+      } else {
+        Fluttertoast.showToast(msg: "Failed to update leave request.");
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Send not Success");
     }
   }
 
@@ -702,52 +755,6 @@ class ApiService{
     }
   }
 
-  Future<Realtostaffattendancemodel?> fetchStaffAttendanceData () async {
-
-    final url = Uri.parse("$baseUrl/month_attendance");
-
-    try {
-
-      String? token = await _secureStorage.read(key: 'token');
-
-      if (token == null) {
-
-        return null;
-
-      }
-
-      final response = await http.post(
-
-          url,
-          headers: {
-
-            'Content-Type': 'application/json'
-
-          },
-          body: jsonEncode({'token': token})
-
-      );
-
-      if (response.statusCode == 200) {
-
-        final data = jsonDecode(response.body);
-
-        return Realtostaffattendancemodel.fromJson(data);
-
-      } else {
-
-        return null;
-
-      }
-
-    } catch (e) {
-
-      return null;
-
-    }
-
-  }
-
   Future<Realtoallstaffleavesmodel?> fetchAllStaffLeavesData () async {
 
     final url = Uri.parse('$baseUrl/child_leave_request');
@@ -844,6 +851,117 @@ class ApiService{
 
     }
 
+  }
+
+  Future<void> sendTransferInquiry({
+    required List<String> inqIds, // Changed to accept a list of IDs
+    required String actionKey,
+    required String employeeId,
+  }) async {
+    final url = Uri.parse("$baseUrl/people_assign_bulkapi");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+        Fluttertoast.showToast(msg: "No authentication token found");
+        return;
+      }
+
+      // Join the inquiry IDs into a comma-separated string
+      String inquiryIdsString = inqIds.join(',');
+
+      Map<String, String> bodyData = {
+        "token": token,
+        "inquiry_id": inquiryIdsString, // Send as "123,456,789"
+        "action_name": actionKey,
+        "action": "assign",
+        "assign_id": employeeId
+      };
+
+      print('Sending to backend: $bodyData'); // Debug print
+
+      final response = await http.post(
+        url,
+        body: bodyData,
+      );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Fluttertoast.showToast(msg: inqIds.toString());
+        Fluttertoast.showToast(msg: "Inquiries transferred successfully");
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to transfer inquiries: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Something went wrong: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<Realtostaffattendancemodel>> fetchTwoMonthsAttendance() async {
+    final url = Uri.parse("$baseUrl/month_attendance");
+    final String? token = await _secureStorage.read(key: 'token');
+
+    if (token == null) {
+      throw Exception('No token found');
+    }
+
+    DateTime now = DateTime.now();
+    DateTime currentMonth = DateTime(now.year, now.month, 1);
+    DateTime lastMonth = DateTime(now.year, now.month - 1, 1);
+
+    try {
+      // Fetch current month data
+      final currentMonthResponse = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': token,
+          'selectedYear': currentMonth.year,
+          'selectedMonth': currentMonth.month,
+        }),
+      );
+
+      // Fetch last month data
+      final lastMonthResponse = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': token,
+          'selectedYear': lastMonth.year,
+          'selectedMonth': lastMonth.month,
+        }),
+      );
+
+      List<Realtostaffattendancemodel> attendanceData = [];
+
+      // Process current month response
+      if (currentMonthResponse.statusCode == 200) {
+        final currentJsonResponse = json.decode(currentMonthResponse.body);
+        attendanceData.add(Realtostaffattendancemodel.fromJson(currentJsonResponse));
+      } else {
+        throw Exception('Failed to load current month data: ${currentMonthResponse.statusCode}');
+      }
+
+      // Process last month response
+      if (lastMonthResponse.statusCode == 200) {
+        final lastJsonResponse = json.decode(lastMonthResponse.body);
+        attendanceData.add(Realtostaffattendancemodel.fromJson(lastJsonResponse));
+      } else {
+        throw Exception('Failed to load last month data: ${lastMonthResponse.statusCode}');
+      }
+
+      return attendanceData;
+
+    } catch (e) {
+      print("Error fetching attendance data: $e");
+      rethrow; // Allow the caller to handle the error
+    }
   }
 
 }

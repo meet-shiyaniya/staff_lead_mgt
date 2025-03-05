@@ -92,55 +92,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
     }
   }
 
-  Future<void> _sendTransferInquiry({
-    required List<String> inqIds, // Changed to accept a list of IDs
-    required String actionKey,
-    required String employeeId,
-  }) async {
-    final url = Uri.parse("https://admin.dev.ajasys.com/api/people_assign_bulkapi");
 
-    try {
-      String? token = await _secureStorage.read(key: 'token');
-
-      if (token == null) {
-        Fluttertoast.showToast(msg: "No authentication token found");
-        return;
-      }
-
-      // Join the inquiry IDs into a comma-separated string
-      String inquiryIdsString = inqIds.join(',');
-
-      Map<String, String> bodyData = {
-        "token": token,
-        "inquiry_id": inquiryIdsString, // Send as "123,456,789"
-        "action_name": actionKey,
-        "action": "assign",
-        "assign_id": employeeId
-      };
-
-      print('Sending to backend: $bodyData'); // Debug print
-
-      final response = await http.post(
-        url,
-        body: bodyData,
-      );
-
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        // Fluttertoast.showToast(msg: inqIds.toString());
-        Fluttertoast.showToast(msg: "Inquiries transferred successfully");
-      } else {
-        Fluttertoast.showToast(
-          msg: "Failed to transfer inquiries: ${response.statusCode}",
-        );
-      }
-    } catch (e) {
-      Fluttertoast.showToast(msg: "Something went wrong: $e");
-      rethrow;
-    }
-  }
 
   @override
   void initState() {
@@ -409,11 +361,8 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
 
                     try {
                       // Send all IDs in a single request
-                      await _sendTransferInquiry(
-                        inqIds: selectedInquiryIds, // Pass the list of IDs
-                        actionKey: actionKey,
-                        employeeId: employeeId,
-                      );
+                      final userProvider = Provider.of<UserProvider>(context, listen: false);
+                      await userProvider.sendTransferInquiry(inqIds: selectedInquiryIds, actionKey: selectedAction.toString(), employeeId: selectedEmployee.toString());
                       handleAction(dialogSelectedAction!, dialogSelectedEmployee!);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Inquiries transferred successfully")),

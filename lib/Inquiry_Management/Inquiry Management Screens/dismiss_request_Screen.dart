@@ -257,7 +257,7 @@ class _DismissRequestScreenState extends State<DismissRequestScreen> {
                       ),
                     ),
                   ),
-                  const   SizedBox(height: 8.0),
+                  const SizedBox(height: 8.0),
                   Center(
                     child: SizedBox(
                       child: GradientButton(

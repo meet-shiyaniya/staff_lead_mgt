@@ -27,6 +27,9 @@ class UserProvider with ChangeNotifier {
   Realtostaffprofilemodel? _profileData;
   Realtostaffprofilemodel? get profileData => _profileData;
 
+  Realtostaffprofilemodel? _sendTransferInqData;
+  Realtostaffprofilemodel? get sendTransferInqData => _sendTransferInqData;
+
   Realtoofficelocationmodel? _officeLocationData;
   Realtoofficelocationmodel? get officeLocationData => _officeLocationData;
 
@@ -36,8 +39,8 @@ class UserProvider with ChangeNotifier {
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
 
-  Realtostaffattendancemodel? _staffAttendanceData;
-  Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
+  List<Realtostaffattendancemodel>? _staffAttendanceData;
+  List<Realtostaffattendancemodel>? get staffAttendanceData => _staffAttendanceData;
 
   Realtoallstaffleavesmodel? _allStaffLeavesData;
   Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
@@ -381,7 +384,7 @@ class UserProvider with ChangeNotifier {
 
         // Run remaining API calls in the background (parallel)
         Future.wait([
-
+          fetchTwoMonthsAttendance()
         ]);
 
       } else {
@@ -593,12 +596,14 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchStaffAttendanceData () async {
+  Future<void> fetchTwoMonthsAttendance() async {
     try {
-      _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+      _staffAttendanceData = await _apiService.fetchTwoMonthsAttendance();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");
+      _staffAttendanceData = null; // Optional: Reset data on error
+      notifyListeners();
     }
   }
 
@@ -610,6 +615,54 @@ class UserProvider with ChangeNotifier {
       print("Error fetching staff attendance data: $e");
     }
   }
+  Future<void> fetch () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+    }
+  }
+
+  Future<void> sendTransferInquiry ({
+    required List<String> inqIds, // Changed to accept a list of IDs
+    required String actionKey,
+    required String employeeId,
+  }) async {
+    try {
+      await _apiService.sendTransferInquiry(inqIds: inqIds, actionKey: actionKey, employeeId: employeeId);
+      notifyListeners();
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return null;
+    }
+  }
+
+  Future<bool> sendApproveReject({
+    required String leaveId,
+    required String action,
+  }) async {
+    try {
+      await _apiService.sendApproveReject(leaveId: leaveId, action: action);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
+  Future<bool> sendMemberAttendance({required String qrAttendance}) async {
+    try {
+      await _apiService.sendMemberAttendance(qrAttendance: qrAttendance);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
 
 //   void resetPagination() {
 //     _currentPage = 1;
