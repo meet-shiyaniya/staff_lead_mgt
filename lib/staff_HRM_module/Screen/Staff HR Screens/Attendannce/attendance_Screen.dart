@@ -1,11 +1,11 @@
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
+// import 'package:hr_app/staff_HRM_module/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import '../../../../Provider/UserProvider.dart';
+import '../../../../../Provider/UserProvider.dart';
+// import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../../Color/app_Color.dart';
 
@@ -15,10 +15,7 @@ class attendanceScreen extends StatefulWidget {
 }
 
 class _attendanceScreenState extends State<attendanceScreen> {
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
-
   String selectedFilter = "Last 7 Days"; // Default filter
-  List<Calendar> staffAttendanceList = [];
   List<Map<String, dynamic>> attendanceRecords = [];
   bool isLoading = true;
 
@@ -27,59 +24,21 @@ class _attendanceScreenState extends State<attendanceScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchTwoMonthsAttendance();
+    // Fetch data from UserProvider when the screen initializes
+    _fetchAttendanceData();
   }
 
-  /// Fetch both current and previous month's attendance data from backend
-  Future<void> _fetchTwoMonthsAttendance() async {
-    setState(() => isLoading = true);
-
-    final url = Uri.parse("https://admin.dev.ajasys.com/api/month_attendance");
-    final String? token = await _secureStorage.read(key: 'token');
+  Future<void> _fetchAttendanceData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    if (token == null) return;
-
-    DateTime now = DateTime.now();
-    DateTime lastMonth = DateTime(now.year, now.month - 1, 1);
-
-    try {
-      // Fetch current month data
-      await userProvider.fetchStaffAttendanceData();
-      List<Calendar> currentMonthData = userProvider.staffAttendanceData?.data?.calendar ?? [];
-
-      // Fetch last month data
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'token': token,
-          'selectedYear': lastMonth.year,
-          'selectedMonth': lastMonth.month,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        List<Calendar> lastMonthData = List<Calendar>.from(
-          jsonResponse['data']['calendar'].map((x) => Calendar.fromJson(x)),
-        );
-
-        // Combine both months' data
-        staffAttendanceList = [...currentMonthData, ...lastMonthData];
-        _updateAttendanceRecords();
-      }
-    } catch (e) {
-      print("Error fetching attendance data: $e");
-    }
-
-    setState(() => isLoading = false);
+    setState(() => isLoading = true);
+    await userProvider.fetchTwoMonthsAttendance();
+    _updateAttendanceRecords(userProvider.staffAttendanceData);
   }
 
-  /// Update records based on selected filter
-  void _updateAttendanceRecords() {
-    if (staffAttendanceList.isEmpty) {
-      print("Staff Attendance List is empty!");
+  /// Update records based on selected filter and provider data
+  void _updateAttendanceRecords(List<Realtostaffattendancemodel>? attendanceData) {
+    if (attendanceData == null || attendanceData.isEmpty) {
+      print("No attendance data available from provider!");
       setState(() {
         attendanceRecords = [];
         isLoading = false;
@@ -87,15 +46,23 @@ class _attendanceScreenState extends State<attendanceScreen> {
       return;
     }
 
+    // Combine calendar data from both months
+    List<Calendar> staffAttendanceList = [];
+    for (var monthData in attendanceData) {
+      if (monthData.data?.calendar != null) {
+        staffAttendanceList.addAll(monthData.data!.calendar!);
+      }
+    }
+
     setState(() {
-      attendanceRecords = _filterAttendanceByPunchDate();
+      attendanceRecords = _filterAttendanceByPunchDate(staffAttendanceList);
       print("Updated Attendance Records: $attendanceRecords");
       isLoading = false;
     });
   }
 
   /// Filter attendance data based on selected filter
-  List<Map<String, dynamic>> _filterAttendanceByPunchDate() {
+  List<Map<String, dynamic>> _filterAttendanceByPunchDate(List<Calendar> staffAttendanceList) {
     DateTime now = DateTime.now();
     DateTime startDate;
     DateTime endDate = now;
@@ -118,8 +85,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
     // Expected dates within the selected range in "dd-MM-yyyy" format
     Set<String> expectedDates = {};
     for (int i = 0; i <= endDate.difference(startDate).inDays; i++) {
-      expectedDates
-          .add(DateFormat('dd-MM-yyyy').format(startDate.add(Duration(days: i))));
+      expectedDates.add(DateFormat('dd-MM-yyyy').format(startDate.add(Duration(days: i))));
     }
 
     // Create a map of attendance records from API data
@@ -127,8 +93,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
     for (var record in staffAttendanceList) {
       if (record.date != null && record.date != '0000-00-00') {
-        String formattedPunchDate =
-        DateFormat('dd-MM-yyyy').format(DateTime.parse(record.date!));
+        String formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.date!));
 
         if (expectedDates.contains(formattedPunchDate)) {
           attendanceMap[formattedPunchDate] = {
@@ -170,7 +135,8 @@ class _attendanceScreenState extends State<attendanceScreen> {
       isLoading = true;
     });
 
-    _updateAttendanceRecords(); // Simply filter the already fetched data
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    _updateAttendanceRecords(userProvider.staffAttendanceData); // Use already fetched data
 
     setState(() {
       isLoading = false;
@@ -179,92 +145,99 @@ class _attendanceScreenState extends State<attendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Attendance Dashboard',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontFamily: "poppins_thin",
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        leading: Container(
-          margin: const EdgeInsets.all(9),
-          decoration: BoxDecoration(
-            color: appColor.subFavColor,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade400,
-                blurRadius: 3,
-                offset: const Offset(1, 3),
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Attendance Dashboard',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontFamily: "poppins_thin",
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Colors.black,
-              size: 16,
             ),
-          ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.black, size: 20),
-            position: PopupMenuPosition.under,
-            offset: const Offset(0, 8),
-            color: appColor.subFavColor,
-            onSelected: (value) {
-              _onFilterChanged(value);
-            },
-            itemBuilder: (context) => filters
-                .map(
-                  (choice) => PopupMenuItem<String>(
-                value: choice,
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  choice,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: Colors.grey.shade800,
+            backgroundColor: Colors.white,
+            centerTitle: true,
+            leading: Container(
+              margin: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: appColor.subFavColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade400,
+                    blurRadius: 3,
+                    offset: const Offset(1, 3),
                   ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                  size: 16,
                 ),
               ),
-            )
-                .toList(),
+            ),
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.black, size: 20),
+                position: PopupMenuPosition.under,
+                offset: const Offset(0, 8),
+                color: appColor.subFavColor,
+                onSelected: (value) {
+                  _onFilterChanged(value);
+                },
+                itemBuilder: (context) => filters
+                    .map(
+                      (choice) => PopupMenuItem<String>(
+                    value: choice,
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      choice,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                )
+                    .toList(),
+              ),
+            ],
+            flexibleSpace: Container(color: Colors.white),
           ),
-        ],
-        flexibleSpace: Container(color: Colors.white),
-      ),
-      backgroundColor: Colors.white,
-      body: isLoading
-          ? Center(
-        child: CircularProgressIndicator(
-          color: Colors.deepPurple.shade700,
-        ),
-      )
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildChart(),
-            const SizedBox(height: 20),
-            _buildAttendanceList(),
-          ],
-        ),
-      ),
+          backgroundColor: Colors.white,
+          body: isLoading
+              ? Center(
+            child: CircularProgressIndicator(
+              color: Colors.deepPurple.shade700,
+            ),
+          )
+              : SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildChart(),
+                const SizedBox(height: 20),
+                _buildAttendanceList(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
+
+  // Rest of your widgets (buildChart, chartSection, buildAttendanceList, attendanceCard) remain unchanged
+  // Just copy them from your original code as they are still valid
 
   Widget _buildChart() {
     return Container(

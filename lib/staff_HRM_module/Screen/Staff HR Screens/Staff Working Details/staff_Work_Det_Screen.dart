@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../Provider/UserProvider.dart';
+// import '../../../../Provider/UserProvider.dart';
+import '../../../../../Provider/UserProvider.dart';
+// import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
+// import '../../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
+import '../../Color/app_Color.dart';
 
 class staffWorkDetScreen extends StatelessWidget {
   @override

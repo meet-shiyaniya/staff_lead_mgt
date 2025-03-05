@@ -1,17 +1,22 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:hr_app/social_module/login_screen/login_screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Attendannce/attendance_Screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Notification/notification_Screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Profile/staff_Profile_Screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/staff_Leave_Home_Screen.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Working%20Details/staff_Work_Det_Screen.dart';
+
 import 'package:provider/provider.dart';
 
-import '../../../Provider/UserProvider.dart';
+// import '../../../Provider/UserProvider.dart';
+// import '../../../social_module/login_screen/login_screen.dart';
+import '../../../../Provider/UserProvider.dart';
+// import '../../Model/Realtomodels/Realtostaffprofilemodel.dart';
+import '../../../../social_module/login_screen/login_screen.dart';
+// import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../../Model/Realtomodels/Realtostaffprofilemodel.dart';
+import '../Color/app_Color.dart';
+import 'Attendannce/attendance_Screen.dart';
+import 'Notification/notification_Screen.dart';
+import 'Profile/staff_Profile_Screen.dart';
+import 'Staff Leave/staff_Leave_Home_Screen.dart';
+import 'Staff Working Details/staff_Work_Det_Screen.dart';
 
 class profileScreen extends StatefulWidget {
   @override

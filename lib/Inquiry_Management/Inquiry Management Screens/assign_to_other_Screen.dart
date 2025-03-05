@@ -129,30 +129,31 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
       filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty ? List.from(filters['Status']) : [];
     });
   }
+  //
+  // void showBottomModalSheet(BuildContext context) {
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+  //     shape: RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+  //     ),
+  //     builder: (context) => FractionallySizedBox(
+  //       heightFactor: 0.6,
+  //       child:
+  //       FilterModal(
+  //         onFilterApplied: (List<LeadModel> filteredList, Map<String, dynamic> filters) {
+  //           _updateSearchResults(filteredList); // Pass the filtered list
+  //           _updateAppliedFilters(filters); // Update the applied filters in the parent
+  //         },
+  //         appliedFilters: appliedFilters,
+  //       ),
+  //     ),
+  //   );
+  //
 
-  void showBottomModalSheet(BuildContext context) {
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.6,
-        child: FilterModal(
-          onFilterApplied: (List<LeadModel> filteredList, Map<String, dynamic> filters) {
-            _updateSearchResults(filteredList); // Pass the filtered list
-            _updateAppliedFilters(filters); // Update the applied filters in the parent
-          },
-          appliedFilters: appliedFilters,
-        ),
-      ),
-    );
-
-
-  }
+  // }
 
   // Track the applied filters
   String? filteredId;
@@ -189,7 +190,7 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
             // backgroundColor: Colors.deepPurple.shade300,
             child: IconButton(
                 onPressed: () {
-                  showBottomModalSheet(context);
+                  // showBottomModalSheet(context);
 
                 }, icon: Icon(Icons.filter_list_outlined,color: Colors.black,)),
           ),

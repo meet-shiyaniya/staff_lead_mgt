@@ -2,14 +2,15 @@ import 'dart:convert';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../Api_services/api_service.dart';
 import '../Provider/UserProvider.dart';
+
+// import 'Model/add_Lead_Model.dart';
 import 'Model/Api Model/add_Lead_Model.dart';
-import 'Model/Api Model/fetch_visit_Model.dart';
+import 'Utils/Colors/app_Colors.dart';
 
 class IntSiteOption {
   final String id;

@@ -95,7 +95,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                                   itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                                     PopupMenuItem<String>(
                                       onTap: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: true,),));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: true,leadId:"95577",),));
                                       },
                                       value: 'edit',
                                       height: 30, // Reduces item height
