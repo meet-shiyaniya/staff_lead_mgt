@@ -68,6 +68,7 @@ dependencies:
   toggle_switch: ^2.3.0
   syncfusion_flutter_charts: ^28.2.7
   timelines_plus: ^1.0.6
+  table_calendar:
 
 dev_dependencies:
   flutter_test:
