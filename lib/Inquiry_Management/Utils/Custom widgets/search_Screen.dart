@@ -79,14 +79,14 @@ class _SearchPageState extends State<SearchPage> {
             Inquiry inquiry = inquiryProvider.inquiries[index];
             return GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LeadDetailScreen(
-                      InquiryInfoList: inquiry,
-                    ),
-                  ),
-                );
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => LeadDetailScreen(
+                //       InquiryInfoList: inquiry,
+                //     ),
+                //   ),
+                // );
               },
               child: TestCard(
                 id: inquiry.id,
