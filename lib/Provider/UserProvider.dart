@@ -4,15 +4,32 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
-import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/dismiss_Model.dart';
+// import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import '../Inquiry_Management/Model/Api Model/add_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/dismiss_Model.dart';
+import '../Inquiry_Management/Model/Api Model/dismiss_dropdown_Model.dart';
+import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
+import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
+import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 
 class UserProvider with ChangeNotifier {
 
@@ -33,9 +50,6 @@ class UserProvider with ChangeNotifier {
 
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
-
-  Realtostaffattendancemodel? _staffAttendanceData;
-  Realtostaffattendancemodel? get staffAttendanceData => _staffAttendanceData;
 
   final ApiService _apiService = ApiService();
 
@@ -65,10 +79,147 @@ class UserProvider with ChangeNotifier {
 
   List<NextSlot> _nextSlots = [];
   List<NextSlot> get nextSlots => _nextSlots;
+
+  DashboardpermissionModel? _dashboardpermission;
+  DashboardpermissionModel? get dashboardpermissionModel => _dashboardpermission;
+  RealtosmartdashboardModel? _DashBoarddata;
+  RealtosmartdashboardModel? get DashBoarddata => _DashBoarddata;
+
+  Realtoallstaffleavesmodel? _allStaffLeavesData;
+  Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
+
+  List<Realtostaffattendancemodel>? _staffAttendanceData;
+  List<Realtostaffattendancemodel>? get staffAttendanceData => _staffAttendanceData;
+
+
+  InquiryFilter? _filterData;
+  // String? _error;
+
+  InquiryFilter? get filterData => _filterData;
+  // String? get _error => _error;
+
+  FetchBookingData2? _bookingData;
+  FetchBookingData2? get bookingData => _bookingData;
+
+  VisitEntryModel? _visitData;
+  VisitEntryModel? get visitData => _visitData;
+
+  Future<void> fetchDashboardpermission() async {
+    try {
+      _dashboardpermission = await _apiService.fetchDashboardpermission();
+      if (_dashboardpermission != null) {
+        // Print the top-level fields
+        print("fetchDashboardpermission");
+        print("ok: ${_dashboardpermission!.allDashboard}");
+        print("ok ID: ${_dashboardpermission!.appointmentCalender}");
+
+
+      } else {
+        print("No data returned from API");
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error in provider: $e");
+      _inquiryTimeline = null; // Reset on error
+      notifyListeners();
+    }
+
+  }
+  Future<void> fetchDashboard({required String countwise}) async {
+    try {
+      debugPrint('Fetching dashboard with countwise: $countwise');
+
+      _DashBoarddata = await _apiService.fetchDashboard(countwise:countwise );
+
+
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error in provider: $e");
+      _DashBoarddata = null; // Changed from inquiryTimeline to _DashBoarddata
+      notifyListeners();
+    }
+  }
+
+
+  Future<void> fetchTwoMonthsAttendance() async {
+    try {
+      _staffAttendanceData = await _apiService.fetchTwoMonthsAttendance();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+      _staffAttendanceData = null; // Optional: Reset data on error
+      notifyListeners();
+    }
+  }
+  Future<void> fetchAllStaffLeavesData () async {
+    try {
+      _allStaffLeavesData = await _apiService.fetchAllStaffLeavesData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff leaves data: $e");
+    }
+  }
+  Future<bool> sendMemberAttendance({required String qrAttendance}) async {
+    try {
+      await _apiService.sendMemberAttendance(qrAttendance: qrAttendance);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+  Future<bool> sendLeaveRequest ({
+    required String head_name,
+    required String full_name,
+    required String under_team,
+    required String date,
+    required String reporting_to,
+    required String apply_days,
+    required String from_date,
+    required String to_date,
+    required String leave_reason,
+    required String leave_type,
+    required String leave_type_id,
+  }) async {
+    try {
+      bool success = await _apiService.sendLeaveRequest(
+        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id,
+      );
+
+      if (success) {
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
+  Future<bool> sendApproveReject({
+    required String leaveId,
+    required String action,
+  }) async {
+    try {
+      await _apiService.sendApproveReject(leaveId: leaveId, action: action);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
+
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
     String search = '',
+    String stages = '', // Added stages parameter
   }) async {
     if (!isLoadMore) {
       _currentPage = 1;
@@ -82,40 +233,44 @@ class UserProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.fetchInquiries(
-        _limit,
         status,
-        search: search,
         page: _currentPage,
+        search: search,
+        stages: stages, // Pass stages to API
       );
 
-      if (response != null) {
+      if (response != null && response.inquiries.isNotEmpty) {
         paginatedInquiries = response;
 
+        final newInquiries = response.inquiries.where((newInquiry) =>
+        !_inquiries.any((existing) => existing.id == newInquiry.id)).toList();
+
         if (isLoadMore) {
-          _inquiries.addAll(response.inquiries);
+          _inquiries.addAll(newInquiries);
         } else {
-          _inquiries = List.from(response.inquiries);
+          _inquiries = List.from(newInquiries);
         }
 
-        _hasMore = _currentPage < response.totalPages!;
-        if (_hasMore) _currentPage++;
+        _hasMore = _currentPage < response.totalPages! && newInquiries.isNotEmpty;
+        if (hasMore) _currentPage++;
 
-        // Update stage counts
         _stageCounts = {
+          "Total_Sum": getStageCount(status, "Total_Sum", response), // Add Total_Sum
           "Fresh": getStageCount(status, "Fresh", response),
           "Contacted": getStageCount(status, "Contacted", response),
           "Appointment": getStageCount(status, "Appointment", response),
-          "Trial": getStageCount(status, "Visited", response),
+          "Visited": getStageCount(status, "Visited", response),
           "Negotiation": getStageCount(status, "Negotiation", response),
           "Feedback": getStageCount(status, "Feedback", response),
-          "Re-Appointment": getStageCount(status, "Re-Appointment", response),
-          "Re-Visited": getStageCount(status, "Re-Visited", response),
+          "Re_Appointment": getStageCount(status, "Re_Appointment", response),
+          "reVisited": getStageCount(status, "reVisited", response),
           "Converted": getStageCount(status, "Converted", response),
         };
 
-        print("Stage Counts: $_stageCounts");
+        print("Fetched ${_inquiries.length} unique inquiries, HasMore: $_hasMore, Page: $_currentPage");
       } else {
         _hasMore = false;
+        print("No new inquiries to fetch");
       }
     } catch (e) {
       print("Error fetching inquiries: $e");
@@ -126,153 +281,49 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-
   int getStageCount(int status, String stage, PaginatedInquiries data) {
-    switch (status) {
-      case 1: // Live
-        switch (stage) {
-          case "Fresh":
-            return data.liveFresh ?? 0; // Now uses data.liveFresh
-          case "Contacted":
-            return data.liveContacted ?? 0; // Now uses data.liveContacted
-          case "Appointment":
-            return data.liveAppointment ?? 0;
-          case "Visited":
-            return data.liveVisited ?? 0;
-          case "Negotiation":
-            return data.liveNegotiation ?? 0;
-          case "Feedback":
-            return data.liveFeedback ?? 0;
-          case "Re-Appointment":
-            return data.liveReAppointment ?? 0;
-          case "Re-Visited":
-            return data.liveReVisited ?? 0;
-          case "Converted":
-            return data.liveConverted ?? 0;
-          default:
-            return 0;
-        }
-      case 2: // Dismiss
-        switch (stage) {
-          case "Fresh":
-            return data.dismissFresh ?? 0; // Now uses data.dismissFresh
-          case "Contacted":
-            return data.dismissContacted ?? 0; // Now uses data.dismissContacted
-          case "Appointment":
-            return data.dismissAppointment ?? 0;
-          case "Visited":
-            return data.dismissVisited ?? 0;
-          case "Negotiation":
-            return data.dismissNegotiation ?? 0;
-          case "Feedback":
-            return data.dismissFeedback ?? 0;
-          case "Re-Appointment":
-            return data.dismissReAppointment ?? 0;
-          case "Re-Visited":
-            return data.dismissReVisited ?? 0;
-          case "Converted":
-            return data.dismissConverted ?? 0;
-          default:
-            return 0;
-        }
+    InquiryStatus? statusData = data.inquiryStatus.firstWhere(
+          (s) => s.inquiryStatus == status.toString(),
+      orElse: () => InquiryStatus(
+        inquiryStatus: status.toString(),
+        fresh: '0',
+        contacted: '0',
+        appointment: '0',
+        visited: '0',
+        negotiations: '0',
+        feedBack: '0',
+        reAppointment: '0',
+        reVisited: '0',
+        converted: '0',
+        Total_Sum: '0', // Default to '0' as string
+      ),
+    );
 
-      case 3: // Dismissed Request
-        switch (stage) {
-          case "Fresh":
-            return data.dismissRequestFresh ?? 0;
-          case "Contacted":
-            return data.dismissRequestContacted ?? 0;
-          case "Appointment":
-            return data.dismissRequestAppointment ?? 0;
-          case "Visited":
-            return data.dismissRequestVisited ?? 0;
-          case "Negotiation":
-            return data.dismissRequestNegotiation ?? 0;
-          case "Feedback":
-            return data.dismissRequestFeedback ?? 0;
-          case "Re-Appointment":
-            return data.dismissRequestReAppointment ?? 0;
-          case "Re-Visited":
-            return data.dismissRequestReVisited ?? 0;
-          case "Converted":
-            return data.dismissRequestConverted ?? 0;
-          default:
-            return 0;
-        }
-      case 4: // Conversion Request
-        switch (stage) {
-          case "Fresh":
-            return data.conversionRequestFresh ?? 0;
-          case "Contacted":
-            return data.conversionRequestContacted ?? 0;
-          case "Appointment":
-            return data.conversionRequestAppointment ?? 0;
-          case "Visited":
-            return data.conversionRequestVisited ?? 0;
-          case "Negotiation":
-            return data.conversionRequestNegotiation ?? 0;
-          case "Feedback":
-            return data.conversionRequestFeedback ?? 0;
-          case "Re-Appointment":
-            return data.conversionRequestReAppointment ?? 0;
-          case "Re-Visited":
-            return data.conversionRequestReVisited ?? 0;
-          case "Converted":
-            return data.conversionRequestConverted ?? 0;
-          default:
-            return 0;
-        }
-      case 5: // Due Appo
-        switch (stage) {
-          case "Fresh":
-            return data.dueAppoFresh ?? 0;
-          case "Contacted":
-            return data.dueAppoContacted ?? 0;
-          case "Appointment":
-            return data.dueAppoAppointment ?? 0;
-          case "Visited":
-            return data.dueAppoVisited ?? 0;
-          case "Negotiation":
-            return data.dueAppoNegotiation ?? 0;
-          case "Feedback":
-            return data.dueAppoFeedback ?? 0;
-          case "Re-Appointment":
-            return data.dueAppoReAppointment ?? 0;
-          case "Re-Visited":
-            return data.dueAppoReVisited ?? 0;
-          case "Converted":
-            return data.dueAppoConverted ?? 0;
-          default:
-            return 0;
-        }
-      case 6: // CNR
-        switch (stage) {
-          case "Fresh":
-            return data.CNRFresh ?? 0;
-          case "Contacted":
-            return data.CNRContacted ?? 0;
-          case "Appointment":
-            return data.CNRAppointment ?? 0;
-          case "Visited":
-            return data.CNRVisited ?? 0;
-          case "Negotiation":
-            return data.CNRNegotiation ?? 0;
-          case "Feedback":
-            return data.CNRFeedback ?? 0;
-          case "Re-Appointment":
-            return data.CNRReAppointment ?? 0;
-          case "Re-Visited":
-            return data.CNRReVisited ?? 0;
-          case "Converted":
-            return data.CNRConverted ?? 0;
-          default:
-            return 0;
-        }
+    switch (stage) {
+      case "Total_Sum":
+        return int.parse(statusData.Total_Sum);
+      case "Fresh":
+        return int.parse(statusData.fresh);
+      case "Contacted":
+        return int.parse(statusData.contacted);
+      case "Appointment":
+        return int.parse(statusData.appointment);
+      case "Visited":
+        return int.parse(statusData.visited);
+      case "Negotiation":
+        return int.parse(statusData.negotiations);
+      case "Feedback":
+        return int.parse(statusData.feedBack);
+      case "Re_Appointment":
+        return int.parse(statusData.reAppointment);
+      case "reVisited":
+        return int.parse(statusData.reVisited);
+      case "Converted":
+        return int.parse(statusData.converted);
       default:
         return 0;
     }
   }
-
   void resetPagination() {
     _currentPage = 1;
     _inquiries.clear();
@@ -407,6 +458,29 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  InquiryStatusModel? _inquiryStatus;
+  InquiryStatusModel? get inquiryStatus => _inquiryStatus;
+
+  Future<void> fetchInquiryStatus() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _apiService.fetchInquiryStatus();
+      if (data != null) {
+        _inquiryStatus = data;
+      } else {
+        _errorMessage = "Failed to load data";
+      }
+    } catch (e) {
+      _errorMessage = "Error: ${e.toString()}";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchStaffLeavesData () async {
     try {
       _staffLeavesData = await _apiService.fetchStaffLeavesData();
@@ -425,34 +499,145 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendLeaveRequest ({
-    required String head_name,
-    required String full_name,
-    required String under_team,
-    required String date,
-    required String reporting_to,
-    required String apply_days,
-    required String from_date,
-    required String to_date,
-    required String leave_reason,
-    required String leave_type,
-    required String leave_type_id,
-  }) async {
+
+  Future<EditLeadData?> fetchEditLeadData(String leadId) async {
     try {
-      bool success = await _apiService.sendLeaveRequest(
-        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id,
+      final editData = await _apiService.fetchEditLeadData(leadId);
+      if (editData == null) {
+        throw Exception('Failed to fetch edit lead data');
+      }
+      return editData;
+    } catch (e) {
+      print('Error in provider fetching edit lead data: $e');
+      return null;
+    }
+  }
+  Future<bool> updateInquiryStatus({
+    required String inquiryId,
+    required String selectedTab,
+    required Map<String, dynamic> formData,
+    String? interestedProduct,
+    int? isSiteVisit,
+    int? interest,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _apiService.updateInquiryStatus(
+        inquiryId: inquiryId,
+        selectedTab: selectedTab,
+        formData: formData,
+        interestedProduct: interestedProduct,
+        isSiteVisit: isSiteVisit,
+        interest: interest,
       );
 
-      if (success) {
+      _isLoading = false;
+
+      if (result['success']) {
+        _error = 'Inquiry status updated successfully';
         notifyListeners();
         return true;
       } else {
+        _error = result['message'];
+        notifyListeners();
         return false;
       }
     } catch (e) {
-      print("Error sending leave request: $e");
+      _isLoading = false;
+      _error = 'Unexpected error: $e';
+      notifyListeners();
       return false;
     }
+  }
+  Future<bool> handleFollowUpUpdate({
+    required String inquiryId,
+    required Map<String, dynamic> formData,
+    required int interest,
+  }) async {
+    return await updateInquiryStatus(
+      inquiryId: inquiryId,
+      selectedTab: 'follow up',
+      formData: formData,
+      interest: interest,
+      isSiteVisit: formData['isSiteVisit'] as int?,
+      interestedProduct: formData['interestedProduct'] as String?,
+    );
+  }
+  Future<bool> updateLead({
+    required String action,
+    required String leadId,
+    required String fullName,
+    required String mobileno,
+    required String altmobileno,
+    required String email,
+    required String houseno,
+    required String society,
+    required String area,
+    required String city,
+    required String countryCode,
+    required String intrestedArea,
+    required String intrestedAreaName,
+    required String interstedSiteName,
+    required String budget,
+    required String purposeBuy,
+    required String approxBuy,
+    required String propertyConfiguration,
+    required String inquiryType,
+    required String inquirySourceType,
+    required String description,
+    required String intrestedProduct,
+    String? nxtFollowUp,
+  }) async {
+    try {
+      final success = await _apiService.updateLeadData(
+        leadId: leadId,
+        fullName: fullName,
+        mobileno: mobileno,
+        altmobileno: altmobileno,
+        email: email,
+        houseno: houseno,
+        society: society,
+        area: area,
+        city: city,
+        countryCode: countryCode,
+        intrestedArea: intrestedArea,
+        intrestedAreaName: intrestedAreaName,
+        interstedSiteName: interstedSiteName,
+        budget: budget,
+        purposeBuy: purposeBuy,
+        approxBuy: approxBuy,
+        propertyConfiguration: propertyConfiguration,
+        inquiryType: inquiryType,
+        inquirySourceType: inquirySourceType,
+        description: description,
+        intrestedProduct: intrestedProduct,
+        nxtFollowUp: nxtFollowUp,
+      );
+      print("Update Lead Result: $success");
+      notifyListeners();
+      return success;
+    } catch (e) {
+      print('Error in provider updating lead data: $e');
+      return false;
+    }
+  }
+  InquiryModel? _inquiryModel;
+  InquiryModel? get inquiryModel => _inquiryModel;
+  Future<void> loadInquiryData(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _inquiryModel = await _apiService.fetchInquiryData(id);
+    } catch (e) {
+      print('Error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> addLead({
@@ -475,7 +660,8 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno, required String description
+    required String altmobileno, required String description,
+    // required String intrested_product
 
   }) async {
     try {
@@ -559,31 +745,131 @@ class UserProvider with ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  VisitEntryModel? _visitData;
-  VisitEntryModel? get visitData => _visitData;
-  Future<void> fetchVisitData() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
 
+  Future<void> fetchFilterData() async {
     try {
-      _visitData = await _apiService.fetchVisitData();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _filterData = await _apiService.fetchFilterData();
+
       _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
       notifyListeners();
     }
   }
-
-  Future<void> fetchStaffAttendanceData () async {
+  Future<void> fetchVisitData(String inquiryId) async {
     try {
-      _staffAttendanceData = await _apiService.fetchStaffAttendanceData();
+      _isLoading=true;
+
+      _visitData=await _apiService.fetchVisitData(inquiryId);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      throw e;
+    }
+  }
+
+
+  Future<void> fetchBookingData(String editId) async {
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _bookingData = await _apiService.fetchBookingData(editId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      throw e;
+    }
+  }
+
+  // Future<void> fetchStaffAttendanceData () async {
+  //   try {
+  //     _staffAttendanceData = (await _apiService.fetchStaffAttendanceData()) ;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     print("Error fetching staff attendance data: $e");
+  //   }
+  // }
+
+  DismissModel? _dismissmodel;
+  DismissModel? get dismissmodel => _dismissmodel;
+  Future<void> fetchDismissData(int pageNumber) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      _dismissmodel = null;
+      notifyListeners();
+
+      print('Fetching dismiss data for page: $pageNumber');
+      _dismissmodel = await _apiService.fetchDismissData(
+        pageNumber,
+      );
+      print('Dismiss data fetched: ${_dismissmodel?.toJson()}');
+
+      _isLoading = false;
+      if (_dismissmodel == null) {
+        _errorMessage = "No dismiss data returned from API";
+        print('Error: No data returned');
+      }
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _dismissmodel = null;
+      _errorMessage = "Error fetching dismiss data: $e";
+      print('Exception: $_errorMessage');
+      notifyListeners();
+    }
+  }
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  fetchTransferInquiryModel? _transferInquiryData;
+  fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
+
+  Future<void> fetchTransferInquiryData () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");
     }
   }
+  Future<void> fetch () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+    }
+  }
+
+  Future<void> sendTransferInquiry ({
+    required List<String> inqIds, // Changed to accept a list of IDs
+    required String actionKey,
+    required String employeeId,
+  }) async {
+    try {
+      await _apiService.sendTransferInquiry(inqIds: inqIds, actionKey: actionKey, employeeId: employeeId);
+      notifyListeners();
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return null;
+    }
+  }
+
+
 
 //   void resetPagination() {
 //     _currentPage = 1;

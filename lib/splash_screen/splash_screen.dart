@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+// import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
+// import 'package:hr_app/Week%20Off%20Or%20Holiday/week_Off_Screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +10,8 @@ import '../Provider/UserProvider.dart';
 import '../Staff Attendance Options/Mannual Day Start/mannual_Attendance_Screen.dart';
 import '../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
-import '../dashboard.dart';
+import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/timeOutScreen.dart';
+import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/weekOffScreen.dart';
 
 
 class SplashScreen extends StatefulWidget {
@@ -62,49 +65,111 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     await userProvider.fetchProfileData();
-    final profileData = userProvider.profileData;
-
     if (!mounted) return;
 
-    if (profileData != null && profileData.staffProfile != null) {
-      final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
+    final profileData = userProvider.profileData?.staffProfile;
 
-      if (staffAttendanceMethod == "0") {
-        print('Navigating to Dashboard (Staff_attendance_method = 0)');
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else if (staffAttendanceMethod == "1") {
-        final prefs = await SharedPreferences.getInstance();
-        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
-        final String staffAttendanceMethodStatus = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
+    // Redirect to login if profile data is null
+    if (profileData == null) {
+      _showErrorToast('Failed to load profile. Please try again.');
+      _navigateToLogin();
+      return;
+    }
 
-        if (isAttendanceMarkedForToday) {
-          print('Navigating to Dashboard (Attendance already marked for today)');
-          Navigator.pushReplacementNamed(context, '/dashboard');
+    final now = DateTime.now();
+    final activeFromTime = _parseTime(profileData.activeFromTime);
+    final activeToTime = _parseTime(profileData.activeToTime);
 
-
-        } else {
-
-
-          print('Navigating to FaceOnboarding (Attendance not marked)');
-          if(staffAttendanceMethodStatus=="day_attendance"){
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>mannualAttendanceScreen()));
-          }else if(staffAttendanceMethodStatus=="qr_attendance"){
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>qrOnboardingScreen()));
-
-          }else{
-            Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>FaceOnboarding()));
-          }
-
-        }
-      } else {
-        print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
-        Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
+    if (activeFromTime != null && activeToTime != null) {
+      if (now.isBefore(activeFromTime) || now.isAfter(activeToTime)) {
+        _navigateToScreen(timeOutScreen(), '⏰ Navigating to TimeoutScreen');
+        return;
       }
     } else {
-      print('Error: Failed to fetch profile data');
-      Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
-      Navigator.pushReplacementNamed(context, '/login');
+      print('⚠️ Warning: activeFromTime or activeToTime is null');
+    }
+
+    // Handle holidays, week-offs, or vacations
+    if (profileData.holidayToday == 1 ||
+        profileData.weekoffToday == 1 ||
+        profileData.vacationToday == 1) {
+      _navigateToScreen(weekOffScreen(), '📅 Navigating to WeekOffScreen');
+      return;
+    }
+
+    final staffAttendanceMethod = profileData.staffAttendanceMethod;
+    if (staffAttendanceMethod == "0") {
+      _navigateToDashboard('✅ Navigating to Dashboard (Attendance not required)');
+      return;
+    }
+
+    if (staffAttendanceMethod == "1") {
+      final isAttendanceMarked = await _isAttendanceMarked();
+      if (isAttendanceMarked) {
+        _navigateToDashboard('✅ Navigating to Dashboard (Attendance already marked)');
+        return;
+      }
+
+      _navigateToAttendanceScreen(profileData.attendanceMethod);
+      return;
+    }
+
+    _showErrorToast('Invalid attendance method. Please contact support.');
+  }
+
+  Future<bool> _isAttendanceMarked() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    return prefs.getBool('attendanceMarked_$today') ?? false;
+  }
+
+  void _navigateToScreen(Widget screen, String logMessage) {
+    print(logMessage);
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  void _navigateToDashboard(String logMessage) {
+    print(logMessage);
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+
+  void _navigateToLogin() {
+    print('❌ Redirecting to login');
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  void _showErrorToast(String message) {
+    print('❌ Error: $message');
+    Fluttertoast.showToast(msg: message);
+  }
+
+  void _navigateToAttendanceScreen(String? method) {
+    final Widget nextScreen;
+    switch (method) {
+      case "day_attendance":
+        nextScreen = mannualAttendanceScreen();
+        break;
+      case "qr_attendance":
+        nextScreen = qrOnboardingScreen();
+        break;
+      default:
+        nextScreen = FaceOnboarding();
+    }
+    _navigateToScreen(nextScreen, '📸 Navigating to Attendance Screen');
+  }
+
+  /// Helper function to parse time strings (e.g., "09:00") into DateTime objects
+  DateTime? _parseTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) return null;
+
+    try {
+      final now = DateTime.now();
+      final formattedTime = DateFormat('hh:mm a').parse(timeString); // Parse '09:00 AM' format
+
+      return DateTime(now.year, now.month, now.day, formattedTime.hour, formattedTime.minute);
+    } catch (e) {
+      print('⚠️ Error parsing time: $e');
+      return null;
     }
   }
 

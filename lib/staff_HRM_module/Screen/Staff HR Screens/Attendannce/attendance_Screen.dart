@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
+// import 'package:hr_app/staff_HRM_module/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import '../../../../Provider/UserProvider.dart';
+import '../../../../../Provider/UserProvider.dart';
+// import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
+import '../../Color/app_Color.dart';
 
 class attendanceScreen extends StatefulWidget {
   @override
@@ -11,543 +15,461 @@ class attendanceScreen extends StatefulWidget {
 }
 
 class _attendanceScreenState extends State<attendanceScreen> {
-
-  String selectedFilter = "Last 7 Days";
-
-  List<Data> staffAttendanceList = [];
-
+  String selectedFilter = "Last 7 Days"; // Default filter
   List<Map<String, dynamic>> attendanceRecords = [];
+  bool isLoading = true;
 
   final List<String> filters = ["Last 7 Days", "Last 30 Days", "Last Month"];
-
-  Future<void> _fetchStaffAttendanceData() async {
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    await userProvider.fetchStaffAttendanceData();
-
-    setState(() {
-
-      staffAttendanceList = userProvider.staffAttendanceData?.data ?? [];
-      _updateAttendanceRecords();
-
-    });
-
-  }
 
   @override
   void initState() {
     super.initState();
-    _fetchStaffAttendanceData();
+    // Fetch data from UserProvider when the screen initializes
+    _fetchAttendanceData();
   }
 
-  void _updateAttendanceRecords() {
-    attendanceRecords = _filterAttendanceByPunchDate();
+  Future<void> _fetchAttendanceData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() => isLoading = true);
+    await userProvider.fetchTwoMonthsAttendance();
+    _updateAttendanceRecords(userProvider.staffAttendanceData);
   }
 
-  List<Map<String, dynamic>> _filterAttendanceByPunchDate() {
+  /// Update records based on selected filter and provider data
+  void _updateAttendanceRecords(List<Realtostaffattendancemodel>? attendanceData) {
+    if (attendanceData == null || attendanceData.isEmpty) {
+      print("No attendance data available from provider!");
+      setState(() {
+        attendanceRecords = [];
+        isLoading = false;
+      });
+      return;
+    }
 
+    // Combine calendar data from both months
+    List<Calendar> staffAttendanceList = [];
+    for (var monthData in attendanceData) {
+      if (monthData.data?.calendar != null) {
+        staffAttendanceList.addAll(monthData.data!.calendar!);
+      }
+    }
+
+    setState(() {
+      attendanceRecords = _filterAttendanceByPunchDate(staffAttendanceList);
+      print("Updated Attendance Records: $attendanceRecords");
+      isLoading = false;
+    });
+  }
+
+  /// Filter attendance data based on selected filter
+  List<Map<String, dynamic>> _filterAttendanceByPunchDate(List<Calendar> staffAttendanceList) {
     DateTime now = DateTime.now();
     DateTime startDate;
     DateTime endDate = now;
 
-    // Determine the start date based on the selected filter
     switch (selectedFilter) {
-
       case 'Last 7 Days':
-
-        startDate = now.subtract(Duration(days: 7));
+        startDate = now.subtract(const Duration(days: 6));
         break;
-
       case 'Last 30 Days':
-
-        startDate = now.subtract(Duration(days: 30));
+        startDate = now.subtract(const Duration(days: 29));
         break;
-
       case 'Last Month':
-
-      // Calculate the start date for the previous month
-        startDate = DateTime(now.year, now.month - 1, 0); // First day of the previous month
-        endDate = DateTime(now.year, now.month, 0); // Last day of the previous month
+        startDate = DateTime(now.year, now.month - 1, 1);
+        endDate = DateTime(now.year, now.month, 0);
         break;
-
       default:
-
-        startDate = now.subtract(Duration(days: 7)); // Fallback to Last 7 Days
-
+        startDate = now.subtract(const Duration(days: 6));
     }
 
-    // Generate a set of expected dates within the range, starting from endDate to startDate
+    // Expected dates within the selected range in "dd-MM-yyyy" format
     Set<String> expectedDates = {};
-
-    for (int i = 0; i < endDate.difference(startDate).inDays; i++) {
-
-      expectedDates.add(DateFormat('dd-MM-yyyy').format(endDate.subtract(Duration(days: i))));
-
+    for (int i = 0; i <= endDate.difference(startDate).inDays; i++) {
+      expectedDates.add(DateFormat('dd-MM-yyyy').format(startDate.add(Duration(days: i))));
     }
 
-    // Convert the set to a list (already in descending order)
-    List<String> sortedDates = expectedDates.toList();
-
-    // Create a map of attendance records with punch dates as keys
+    // Create a map of attendance records from API data
     Map<String, Map<String, dynamic>> attendanceMap = {};
 
     for (var record in staffAttendanceList) {
+      if (record.date != null && record.date != '0000-00-00') {
+        String formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.date!));
 
-      // Check if punchDate is not null and not '0000-00-00'
-      if (record.punchDate != null && record.punchDate != '0000-00-00') {
-
-        // Convert punchDate to the same format as expectedDates (dd-MM-yyyy)
-        String formattedPunchDate;
-
-        try {
-
-          formattedPunchDate = DateFormat('dd-MM-yyyy').format(DateTime.parse(record.punchDate!));
-
-        } catch (e) {
-
-          // Handle invalid date format
-          formattedPunchDate = 'Invalid Date';
-
+        if (expectedDates.contains(formattedPunchDate)) {
+          attendanceMap[formattedPunchDate] = {
+            'date': formattedPunchDate,
+            'checkIn': record.inTime ?? '00:00',
+            'checkOut': record.outTime ?? '00:00',
+            'status': record.status ?? 'Absent',
+          };
         }
-
-        // Extract time part (HH:mm) from entryDateTime
-        String checkInTime = '00:00'; // Default value
-
-        if (record.entryDateTime != null) {
-
-          try {
-
-            List<String> dateTimeParts = record.entryDateTime!.split(' ');
-
-            if (dateTimeParts.length > 1) {
-
-              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
-
-              checkInTime = timePart.substring(0, 5); // Extract HH:mm
-
-            }
-
-          } catch (e) {
-
-            // Handle invalid time format
-            checkInTime = '00:00';
-
-          }
-
-        }
-
-        // Extract time part (HH:mm) from exitDateTime
-        String checkOutTime = '00:00'; // Default value
-
-        if (record.exitDateTime != null) {
-
-          try {
-
-            List<String> dateTimeParts = record.exitDateTime!.split(' ');
-
-            if (dateTimeParts.length > 1) {
-
-              String timePart = dateTimeParts[1]; // Get the time part (HH:mm:ss)
-
-              checkOutTime = timePart.substring(0, 5); // Extract HH:mm
-
-            }
-
-          } catch (e) {
-
-            // Handle invalid time format
-            checkOutTime = '00:00';
-
-          }
-
-        }
-
-        attendanceMap[formattedPunchDate] = {
-
-          'date': formattedPunchDate,
-          'checkIn': checkInTime, // Assign extracted time for check-in
-          'checkOut': checkOutTime, // Assign extracted time for check-out
-          'status': 'Present', // Mark as Present if punch date exists
-
-        };
-
       }
-
     }
 
-    // Generate the final list of attendance data in descending order
-    return sortedDates.map((date) {
-
-      if (attendanceMap.containsKey(date)) {
-
-        return attendanceMap[date]!; // Return the present record
-
-      } else {
-
-        return {
-
-          'date': date,
-          'checkIn': '00:00',
-          'checkOut': '00:00',
-          'status': 'Absent', // Mark as Absent if punch date does not exist
-
-        };
-
-      }
-
+    // Build final attendance list
+    List<Map<String, dynamic>> attendanceList = expectedDates.map((date) {
+      return attendanceMap.containsKey(date)
+          ? attendanceMap[date]!
+          : {
+        'date': date,
+        'checkIn': '00:00',
+        'checkOut': '00:00',
+        'status': 'Absent'
+      };
     }).toList();
 
+    // Sort the list by date in descending order
+    attendanceList.sort((a, b) {
+      DateTime dateA = DateFormat('dd-MM-yyyy').parse(a['date']);
+      DateTime dateB = DateFormat('dd-MM-yyyy').parse(b['date']);
+      return dateB.compareTo(dateA);
+    });
+
+    return attendanceList;
+  }
+
+  /// Handle filter change
+  void _onFilterChanged(String newFilter) {
+    setState(() {
+      selectedFilter = newFilter;
+      isLoading = true;
+    });
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    _updateAttendanceRecords(userProvider.staffAttendanceData); // Use already fetched data
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-
-    return Scaffold(
-
-      appBar: AppBar(
-
-        title: Text('Attendance Dashboard', style: TextStyle(color: Colors.black, fontSize: 18, fontFamily: "poppins_thin", fontWeight: FontWeight.bold),),
-
-        backgroundColor: Colors.white,
-
-        centerTitle: true,
-
-        leading: Container(
-
-          margin: EdgeInsets.all(7),
-
-          decoration: BoxDecoration(
-
-            color: Colors.grey.shade100,
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 3, offset: Offset(1, 3)),],
-
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Attendance Dashboard',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontFamily: "poppins_thin",
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            centerTitle: true,
+            leading: Container(
+              margin: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: appColor.subFavColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade400,
+                    blurRadius: 3,
+                    offset: const Offset(1, 3),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                  size: 16,
+                ),
+              ),
+            ),
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.black, size: 20),
+                position: PopupMenuPosition.under,
+                offset: const Offset(0, 8),
+                color: appColor.subFavColor,
+                onSelected: (value) {
+                  _onFilterChanged(value);
+                },
+                itemBuilder: (context) => filters
+                    .map(
+                      (choice) => PopupMenuItem<String>(
+                    value: choice,
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      choice,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                )
+                    .toList(),
+              ),
+            ],
+            flexibleSpace: Container(color: Colors.white),
           ),
-
-          child: IconButton(
-
-            onPressed: (){
-              Navigator.pop(context);
-            },
-
-            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20,),
-
+          backgroundColor: Colors.white,
+          body: isLoading
+              ? Center(
+            child: CircularProgressIndicator(
+              color: Colors.deepPurple.shade700,
+            ),
+          )
+              : SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildChart(),
+                const SizedBox(height: 20),
+                _buildAttendanceList(),
+              ],
+            ),
           ),
-        ),
-
-        actions: [
-
-          PopupMenuButton<String>(
-
-            icon: Icon(Icons.more_vert, color: Colors.black, size: 20,),
-
-            position: PopupMenuPosition.under,
-
-            offset: Offset(0, 8),
-
-            onSelected: (value) {
-
-              setState(() {
-
-                selectedFilter = value;
-                _updateAttendanceRecords();
-
-              });
-
-            },
-
-            itemBuilder: (context) => filters.map((choice) => PopupMenuItem<String>(
-
-              value: choice,
-              height: 40,
-              child: Text(choice, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700),),
-
-            )).toList(),
-
-          ),
-
-        ],
-        flexibleSpace: Container(color: Colors.white,),
-
-      ),
-
-      backgroundColor: Colors.white,
-
-      body: staffAttendanceList.isEmpty ? Center(
-
-        child: CircularProgressIndicator(
-
-          color: Colors.deepPurple.shade700,
-
-        ),
-
-      ) :
-
-      SingleChildScrollView(
-
-        padding: EdgeInsets.all(16),
-
-        child: Column(
-
-          children: [
-
-            _buildChart(),
-
-            SizedBox(height: 20),
-
-            _buildAttendanceList(),
-
-          ],
-
-        ),
-
-      ),
-
+        );
+      },
     );
-
   }
 
+  // Rest of your widgets (buildChart, chartSection, buildAttendanceList, attendanceCard) remain unchanged
+  // Just copy them from your original code as they are still valid
+
   Widget _buildChart() {
-
     return Container(
-
       height: 250,
-
-      padding: EdgeInsets.all(10),
-
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(1, 3))],
-
+        boxShadow: [
+          const BoxShadow(
+            color: Colors.black12,
+            blurRadius: 3,
+            offset: Offset(1, 3),
+          )
+        ],
       ),
-
       child: Column(
-
         children: [
-
-          Text("Attendance Overview", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-
-          SizedBox(height: 10),
-
+          const Text(
+            "Attendance Overview",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
           Expanded(
-
             child: PieChart(
-
+              key: ValueKey(selectedFilter),
               curve: Curves.linearToEaseOut,
-              duration: Duration(seconds: 2),
-
+              duration: const Duration(seconds: 2),
               PieChartData(
-
                 sections: [
-
-                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Present').length, Colors.green.shade700, "Present"),
-                  _chartSection(attendanceRecords.where((e) => e['status'] == 'Absent').length, Colors.red.shade700, "Absent"),
-
+                  _chartSection(
+                    attendanceRecords
+                        .where((e) => e['status'] == 'present')
+                        .length,
+                    Colors.green.shade700,
+                    "present",
+                  ),
+                  _chartSection(
+                    attendanceRecords.where((e) => e['status'] == 'absent').length,
+                    Colors.red.shade700,
+                    "absent",
+                  ),
+                  _chartSection(
+                    attendanceRecords
+                        .where((e) => e['status'] == 'half day')
+                        .length,
+                    Colors.orange.shade500,
+                    "halfday",
+                  ),
                 ],
-
                 sectionsSpace: 2,
                 centerSpaceRadius: 40,
-
               ),
-
             ),
-
           ),
-
         ],
-
       ),
-
     );
-
   }
 
   PieChartSectionData _chartSection(int value, Color color, String title) {
-
     return PieChartSectionData(
-
       value: value.toDouble(),
       color: color,
       title: "$title\n$value",
       radius: 56,
-      titleStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-
+      titleStyle:
+      const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
     );
-
   }
 
   Widget _buildAttendanceList() {
-
     return Column(
-
       crossAxisAlignment: CrossAxisAlignment.start,
-
       children: [
-
-        SizedBox(height: 2,),
-
-        Text('Showing: $selectedFilter', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: "poppins_thin", color: Colors.black)),
-
-        SizedBox(height: 10),
-
-        ListView.builder(
-
-          shrinkWrap: true,
-
-          physics: NeverScrollableScrollPhysics(),
-
-          itemCount: attendanceRecords.length,
-
-          itemBuilder: (context, index) {
-
-            final record = attendanceRecords[index];
-
-            return _attendanceCard(
-
-              date: record['date'],
-
-              checkIn: record['checkIn'],
-
-              checkOut: record['checkOut'],
-
-              status: record['status'],
-
-            );
-
-          },
-
+        const SizedBox(height: 2),
+        Text(
+          'Showing: $selectedFilter',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            fontFamily: "poppins_thin",
+            color: Colors.black,
+          ),
         ),
-
+        const SizedBox(height: 10),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: attendanceRecords.length,
+          itemBuilder: (context, index) {
+            final record = attendanceRecords[index];
+            return _attendanceCard(
+              date: record['date'],
+              checkIn: record['checkIn'],
+              checkOut: record['checkOut'],
+              status: record['status'],
+            );
+          },
+        ),
       ],
-
     );
-
   }
 
-  Widget _attendanceCard({required String date, required String checkIn, required String checkOut, required String status}) {
-
-    // return ListTile(
-    //
-    //   title: Text(date),
-    //
-    //   subtitle: Text("Check-In: $checkIn, Check-Out: $checkOut"),
-    //
-    //   trailing: Text(status, style: TextStyle(color: status == 'Present' ? Colors.green : Colors.red),),
-    //
-    // );
-
+  Widget _attendanceCard({
+    required String date,
+    required String checkIn,
+    required String checkOut,
+    required String status,
+  }) {
     return Container(
-
       height: 80,
       width: MediaQuery.of(context).size.width.toDouble(),
-      margin: EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(1, 3))],
-
+        boxShadow: [
+          const BoxShadow(
+            color: Colors.black12,
+            blurRadius: 3,
+            offset: Offset(1, 3),
+          )
+        ],
       ),
-
       child: Row(
-
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-
-          SizedBox(width: 12,),
-
+          const SizedBox(width: 12),
           Container(
-
             height: 46,
             width: 36,
-
             decoration: BoxDecoration(
-
-              // color: appColor.boxColor,
-
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: Colors.grey.shade400, width: 1.2),
-
             ),
-
             child: Center(
-
-              child: Icon(status == 'Present' ? Icons.check_circle : Icons.cancel, color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900, size: 22,),
-
+              child: Icon(
+                status == 'present'
+                    ? Icons.check_circle
+                    : status == 'half day'
+                    ? Icons.access_time
+                    : Icons.cancel,
+                color: status == 'present'
+                    ? Colors.green.shade900
+                    : status == 'half day'
+                    ? Colors.orange.shade700
+                    : Colors.red.shade900,
+                size: 22,
+              ),
             ),
-
           ),
-
-          SizedBox(width: 16,),
-
+          const SizedBox(width: 16),
           Container(
-
             height: 80,
-            width: MediaQuery.of(context).size.width.toDouble()/2,
-            // color: Colors.red,
-
+            width: MediaQuery.of(context).size.width.toDouble() / 2,
             child: Column(
-
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
-
                 Container(
-
                   height: 19,
-                  width: MediaQuery.of(context).size.width.toDouble()/2,
-                  // color: Colors.red.shade200,
-
-                  child: Text(date, style: TextStyle(color: Colors.grey.shade900, fontFamily: "poppins_thin", fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
+                  width: MediaQuery.of(context).size.width.toDouble() / 2,
+                  child: Text(
+                    date,
+                    style: TextStyle(
+                      color: Colors.grey.shade900,
+                      fontFamily: "poppins_thin",
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-
-                SizedBox(height: 6,),
-
+                const SizedBox(height: 6),
                 Row(
-
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.start,
-
                   children: [
-
-                    Image.asset("asset/HR Screen Images/check-in.png", height: 16,),
-                    SizedBox(width: 5,),
-                    Text(checkIn, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
-                    Spacer(),
-
-                    Image.asset("asset/HR Screen Images/check-out.png", height: 16,),
-                    SizedBox(width: 5,),
-                    Text(checkOut, style: TextStyle(color: Colors.grey.shade700, fontFamily: "poppins_thin", fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis,),
-
+                    Image.asset(
+                      "asset/HR Screen Images/check-in.png",
+                      height: 16,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      checkIn,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontFamily: "poppins_thin",
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Image.asset(
+                      "asset/HR Screen Images/check-out.png",
+                      height: 16,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      checkOut,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontFamily: "poppins_thin",
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
-
                 ),
-
               ],
-
             ),
-
           ),
-
-          Spacer(),
-
-          Text(status, style: TextStyle(fontSize: 12.5,  fontFamily: "poppins_thin", color: status == 'Present' ? Colors.green.shade900 : Colors.red.shade900)),
-
-          SizedBox(width: 12,),
-
+          const Spacer(),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontFamily: "poppins_thin",
+              color: status == 'present'
+                  ? Colors.green.shade900
+                  : status == 'half day'
+                  ? Colors.orange.shade700
+                  : Colors.red.shade900,
+            ),
+          ),
+          const SizedBox(width: 12),
         ],
-
       ),
-
     );
-
   }
-
 }

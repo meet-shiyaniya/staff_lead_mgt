@@ -29,111 +29,113 @@ class _PerformanceScreenState extends State<PendingFollowUp> {
     return Scaffold(
       backgroundColor: Colors.grey[100], // Light background for a modern look
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(15.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-
-
-            // Pending Follow-up List with neumorphic design
-            Padding(
-              padding: const EdgeInsets.only(right: 10.0,left: 5),
-              child: Row(
-                children: [
-                  Text(
-                    'Pending Follow-up List',
-                    style: TextStyle(fontSize: 17,fontFamily: "poppins_thin",color: Colors.deepPurple[900]),
-                  ),
-                  Spacer(),
-                  Icon(Icons.pending,color: Colors.deepPurple[900],)
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 4,
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Header Row
-                  Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children:  [
-                        Container(
-                            width: MediaQuery.of(context).size.width/3,
-                            child: Text('UserName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey))),
-                        Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
-                        Text('Pending', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
-                        Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
-                        Text('Done', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
-                      ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(15.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+        
+        
+        
+              // Pending Follow-up List with neumorphic design
+              Padding(
+                padding: const EdgeInsets.only(right: 10.0,left: 5),
+                child: Row(
+                  children: [
+                    Text(
+                      'Pending Follow-up List',
+                      style: TextStyle(fontSize: 17,fontFamily: "poppins_thin",color: Colors.deepPurple[900]),
                     ),
-                  ),
-                  Divider(color: Colors.grey),
-                  // List Items
-                  ...followUpList.map((user) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
+                    Spacer(),
+                    Icon(Icons.pending,color: Colors.deepPurple[900],)
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 4,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Header Row
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children:  [
+                          Container(
+                              width: MediaQuery.of(context).size.width/3,
+                              child: Text('UserName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey))),
+                          Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                          Text('Pending', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                          Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                          Text('Done', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                        ],
+                      ),
+                    ),
+                    Divider(color: Colors.grey),
+                    // List Items
+                    ...followUpList.map((user) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                                width: MediaQuery.of(context).size.width/3,
-                                child: Text(user['name'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87))),
-                          ],
-                        ),
-                        Text(user['today'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                        Text(user['pending'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                        Text(user['total'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                        Text(user['done'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                      ],
+                              const SizedBox(width: 8),
+                              Container(
+                                  width: MediaQuery.of(context).size.width/3,
+                                  child: Text(user['name'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87))),
+                            ],
+                          ),
+                          Text(user['today'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                          Text(user['pending'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                          Text(user['total'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                          Text(user['done'].toString(), style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        ],
+                      ),
+                    )),
+                    // Total Row
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: const [
+                          Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('3', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('9', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('9', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                          Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+                        ],
+                      ),
                     ),
-                  )),
-                  // Total Row
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: const [
-                        Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('3', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('9', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('9', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                        Text('0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
 

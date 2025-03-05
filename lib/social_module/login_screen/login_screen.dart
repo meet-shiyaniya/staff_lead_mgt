@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/Mannual%20Day%20Start/mannual_Attendance_Screen.dart';
+// import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../Provider/UserProvider.dart';
 import '../../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
+// import '../../Week Off Or Holiday/week_Off_Screen.dart';
+import '../../staff_HRM_module/Screen/Staff HR Screens/Attendannce/timeOutScreen.dart';
+import '../../staff_HRM_module/Screen/Staff HR Screens/Attendannce/weekOffScreen.dart';
 import '../colors/colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -46,11 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final username = emailController.text.trim();
       final password = passwordController.text.trim();
 
-
-
+      // Validate input fields
       if (username.isEmpty || password.isEmpty) {
         Fluttertoast.showToast(
-          msg: "Please enter both email and password❌",
+          msg: "Please enter both email and password ❌",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.black,
@@ -59,77 +62,116 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // Attempt login
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      bool isSuccess = await userProvider.login(username, password);
 
-      bool isSuccess = await Provider.of<UserProvider>(context, listen: false).login(username, password);
-
-      if (isSuccess) {
-        String? token = await _secureStorage.read(key: 'token');
-        if (token != null) {
-
-          final userProvider = Provider.of<UserProvider>(context, listen: false);
-          await userProvider.fetchProfileData();
-          final profileData = userProvider.profileData;
-
-          if (profileData != null && profileData.staffProfile != null) {
-            final staffAttendanceMethod = profileData.staffProfile!.staffAttendanceMethod;
-
-            if (staffAttendanceMethod == "0") {
-              print('Navigating to Dashboard (Staff_attendance_method = 0)');
-              Navigator.pushReplacementNamed(context, '/dashboard');
-            } else if (staffAttendanceMethod == "1") {
-              final prefs = await SharedPreferences.getInstance();
-              final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-              final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
-              final String staffAttendanceMethodStatus = userProvider.profileData?.staffProfile?.attendanceMethod ?? "selfi_attendance";
-
-              if (isAttendanceMarkedForToday) {
-                print('Navigating to Dashboard (Attendance already marked for today)');
-                Navigator.pushReplacementNamed(context, '/dashboard');
-
-              } else {
-                print('Navigating to FaceOnboarding $staffAttendanceMethodStatus');
-                if(staffAttendanceMethodStatus=="day_attendance"){
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>mannualAttendanceScreen()));
-                }else if(staffAttendanceMethodStatus=="qr_attendance"){
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>qrOnboardingScreen()));
-
-                }else{
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>FaceOnboarding()));
-                }
-              }
-            } else {
-              print('Error: Invalid Staff_attendance_method: $staffAttendanceMethod');
-              Fluttertoast.showToast(msg: 'Invalid attendance method. Please contact support.');
-            }
-          } else {
-            print('Error: Failed to fetch profile data');
-            Fluttertoast.showToast(msg: 'Failed to load profile. Please try again.');
-            Navigator.pushReplacementNamed(context, '/login');
-          }
-          print("Login Successful");
-          Fluttertoast.showToast(
-            msg: "Login Successful ✅",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            backgroundColor: AppColors.primaryColor,
-            textColor: Colors.white,
-          );
-
-          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FaceOnboarding()));
-        } else {
-          print("Login failed");
-        }
-      } else {
+      if (!isSuccess) {
         Fluttertoast.showToast(
-          msg: "Invalid username or password. Please try again ❌.",
+          msg: "Invalid username or password. Please try again ❌",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.black,
           textColor: Colors.white,
         );
+        return;
       }
-    }
 
+      // Fetch authentication token
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        print("❌ Login failed: Token not found");
+        return;
+      }
+
+      // Fetch user profile data
+      await userProvider.fetchProfileData();
+      final profileData = userProvider.profileData?.staffProfile;
+
+      if (profileData == null) {
+        print("❌ Error: Failed to fetch profile data");
+        Fluttertoast.showToast(msg: "Failed to load profile. Please try again.");
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      DateTime? _parseTime(String? timeString) {
+        if (timeString == null || timeString.isEmpty) return null;
+
+        try {
+          final now = DateTime.now();
+          final formattedTime = DateFormat('hh:mm a').parse(timeString); // Parses '09:00 AM' format
+          return DateTime(now.year, now.month, now.day, formattedTime.hour, formattedTime.minute);
+        } catch (e) {
+          print('⚠️ Error parsing time: $e');
+          return null;
+        }
+      }
+
+      // Time comparison logic
+      final now = DateTime.now();
+      final activeFromTime = _parseTime(profileData.activeFromTime);
+      final activeToTime = _parseTime(profileData.activeToTime);
+
+      if (activeFromTime != null && activeToTime != null) {
+        if (now.isBefore(activeFromTime) || now.isAfter(activeToTime)) {
+          print("⏰ Navigating to TimeoutScreen (Outside Active Time)");
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => timeOutScreen()));
+          return;
+        }
+      } else {
+        print("⚠️ Warning: activeFromTime or activeToTime is null");
+      }
+
+      // Check if today is a holiday, week off, or vacation
+      if (profileData.holidayToday == 1 || profileData.weekoffToday == 1 || profileData.vacationToday == 1) {
+        print("📅 Navigating to WeekOff Screen (Holiday/Weekoff/Vacation)");
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => weekOffScreen()));
+        return;
+      }
+
+      final staffAttendanceMethod = profileData.staffAttendanceMethod;
+
+      if (staffAttendanceMethod == "0") {
+        print("✅ Navigating to Dashboard (Staff_attendance_method = 0)");
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        return;
+      }
+
+      if (staffAttendanceMethod == "1") {
+        final prefs = await SharedPreferences.getInstance();
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final isAttendanceMarkedForToday = prefs.getBool('attendanceMarked_$today') ?? false;
+
+        if (isAttendanceMarkedForToday) {
+          print("✅ Navigating to Dashboard (Attendance already marked)");
+          Navigator.pushReplacementNamed(context, '/dashboard');
+          return;
+        }
+
+        // Navigate to appropriate attendance screen
+        final attendanceMethod = profileData.attendanceMethod ?? "selfi_attendance";
+        Widget nextScreen;
+        switch (attendanceMethod) {
+          case "day_attendance":
+            nextScreen = mannualAttendanceScreen();
+            break;
+          case "qr_attendance":
+            nextScreen = qrOnboardingScreen();
+            break;
+          default:
+            nextScreen = FaceOnboarding();
+        }
+
+        print("📸 Navigating to Attendance Screen ($attendanceMethod)");
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => nextScreen));
+        return;
+      }
+
+      // Handle invalid attendance method
+      print("❌ Error: Invalid Staff_attendance_method: $staffAttendanceMethod");
+      Fluttertoast.showToast(msg: "Invalid attendance method. Please contact support.");
+    }
 
     return Scaffold(
         backgroundColor: AppColors.whiteColor,

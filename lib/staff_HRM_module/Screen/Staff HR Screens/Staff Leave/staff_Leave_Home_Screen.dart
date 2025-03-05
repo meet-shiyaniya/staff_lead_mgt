@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Staff%20HR%20Screens/Staff%20Leave/all_Staff_Leaves_Screen.dart';
 import '../../Color/app_Color.dart';
 import 'Show Leave Details Screens/show_Leave_Option_Screen.dart';
+import 'all_Staff_Leaves_Screen.dart';
 import 'leave_Request_Screen.dart';
 
 class staffLeaveHomeScreen extends StatefulWidget {
@@ -49,7 +49,7 @@ class _staffLeaveHomeScreenState extends State<staffLeaveHomeScreen> {
           Container(
             height: 60,
             width: double.infinity,
-            color: Colors.grey.shade100,
+            color: Colors.blueGrey.shade50,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SingleChildScrollView(

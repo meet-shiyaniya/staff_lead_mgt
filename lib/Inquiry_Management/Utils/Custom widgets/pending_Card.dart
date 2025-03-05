@@ -289,8 +289,8 @@ class TestCard extends StatelessWidget {
   final String name;
   final String label;
   final String username;
-  final String followUpDate;
-  final String nextFollowUpDate;
+  final String followUpDate;//
+  final String nextFollowUpDate;//
   final String inquiryType;
   final String intArea;
   final String purposeBuy;
@@ -423,7 +423,9 @@ class TestCard extends StatelessWidget {
                   ),
           GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => InquiryScreen(),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                          InquiryScreen(inquiryId: id,),
+                      ));
                     },
                     child: Image(image: AssetImage("asset/Inquiry_module/call-forwarding.png"),width: 30,height: 30,),
                   ),
@@ -432,7 +434,7 @@ class TestCard extends StatelessWidget {
 
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => AddVisitScreen(),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => AddVisitScreen(inquiryId: id,),));
                     },
                     child: Image(image: AssetImage("asset/Inquiry_module/map.png"),width: 25,height: 25,),
                   ),
@@ -440,7 +442,7 @@ class TestCard extends StatelessWidget {
 
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => BookingScreen(),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => BookingScreen(inquiryId: id,),));
                     },
                     child: Image(image: AssetImage("asset/Inquiry_module/rupee.png"),width: 25,height: 25,),
                   ),

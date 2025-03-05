@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:hr_app/dashboard_ui/main_dashboard/performance_screen.dart';
-import 'package:hr_app/dashboard_ui/main_dashboard/report_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../Provider/UserProvider.dart';
@@ -9,6 +7,8 @@ import '../../social_module/colors/colors.dart';
 import '../../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../dashboard2/dashboard2.dart';
 import '../main_dashboard/activity_screen.dart';
+import '../main_dashboard/performance_screen.dart';
+import '../main_dashboard/report_ui.dart';
 
 class StaffDashboard extends StatefulWidget {
   @override
@@ -189,7 +189,7 @@ class _DashboardScreenState extends State<StaffDashboard> with SingleTickerProvi
               SizedBox(height: 10),
               _buildPerformanceSection(),
               SizedBox(height: 10),
-              _buildTabBar(),
+              // _buildTabBar(),
               SizedBox(height: 12),
               _buildTabContent(),
             ],
@@ -394,7 +394,6 @@ class _DashboardScreenState extends State<StaffDashboard> with SingleTickerProvi
         boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade300)],
       ),
       child: TabBar(
-        indicatorAnimation: TabIndicatorAnimation.elastic,
         controller: _tabController,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
