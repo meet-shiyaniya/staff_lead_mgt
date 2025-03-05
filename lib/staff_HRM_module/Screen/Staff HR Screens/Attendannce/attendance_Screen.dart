@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
+// import 'package:hr_app/staff_HRM_module/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import '../../../../Provider/UserProvider.dart';
+import '../../../../../Provider/UserProvider.dart';
+// import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../../../Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../../Color/app_Color.dart';
 
@@ -233,7 +236,7 @@ class _attendanceScreenState extends State<attendanceScreen> {
     );
   }
 
-  // Rest of your widgets (_buildChart, _chartSection, _buildAttendanceList, _attendanceCard) remain unchanged
+  // Rest of your widgets (buildChart, chartSection, buildAttendanceList, attendanceCard) remain unchanged
   // Just copy them from your original code as they are still valid
 
   Widget _buildChart() {

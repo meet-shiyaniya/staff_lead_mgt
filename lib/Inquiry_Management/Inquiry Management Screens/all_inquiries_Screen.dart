@@ -1,10 +1,11 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/custom_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+
 import '../../Provider/UserProvider.dart';
+// import '../Filter/inquiry_Filter_Screen.dart';
 import '../Model/Api Model/allInquiryModel.dart';
 import '../Model/category_Model.dart';
 import '../Utils/Colors/app_Colors.dart';
@@ -14,6 +15,7 @@ import '../Utils/Custom widgets/custom_dialog.dart';
 import '../Utils/Custom widgets/custom_search.dart';
 import '../Utils/Custom widgets/pending_Card.dart';
 import '../Utils/Custom widgets/search_Screen.dart';
+// import 'Filter_Screen_Page.dart';
 import 'Filters/inquiry_Filter_Screen.dart';
 import 'Followup Screen/list_filter_Screen.dart';
 import 'lead_Detail_Screen.dart';
@@ -661,7 +663,7 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
             child: IconButton(
               onPressed: () {
                Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => inquiryFilterScreen()));
+                    context, MaterialPageRoute(builder: (context) => InquiryFilterScreen()));
               },
               icon: Icon(
                 Icons.filter_list_outlined,
@@ -917,14 +919,14 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                               return GestureDetector(
                                 onLongPress: () => toggleSelection(index),
                                 onTap: () {
-                                  // Navigator.push(
-                                  //   context,
-                                  //   MaterialPageRoute(
-                                  //     builder: (context) => LeaddetailScreen(
-                                  //       InquiryInfoList: inquiry,
-                                  //     ),
-                                  //   ),
-                                  // );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LeadDetailScreen(
+                                        InquiryInfoList: inquiry,
+                                      ),
+                                    ),
+                                  );
                                 },
                                 child: TestCard(
                                   id: inquiry.id,

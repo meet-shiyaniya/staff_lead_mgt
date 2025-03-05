@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
+
+import '../../Color/app_Color.dart';
 
 class NotificationScreen extends StatefulWidget {
   @override

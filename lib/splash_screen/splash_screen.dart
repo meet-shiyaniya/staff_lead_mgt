@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
-import 'package:hr_app/Week%20Off%20Or%20Holiday/week_Off_Screen.dart';
+// import 'package:hr_app/Week%20Off%20Or%20Holiday/time_Out_Screen.dart';
+// import 'package:hr_app/Week%20Off%20Or%20Holiday/week_Off_Screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +10,8 @@ import '../Provider/UserProvider.dart';
 import '../Staff Attendance Options/Mannual Day Start/mannual_Attendance_Screen.dart';
 import '../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
+import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/timeOutScreen.dart';
+import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/weekOffScreen.dart';
 
 
 class SplashScreen extends StatefulWidget {
@@ -51,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await prefs.setBool('isFirstLaunch', false);
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
-
+        // Handle subsequent navigation in the LoginScreen instead of here
       }
     } else {
       _handleAuthenticatedFlow();

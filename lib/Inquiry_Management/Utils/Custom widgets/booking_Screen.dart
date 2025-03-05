@@ -1,16 +1,20 @@
 import 'dart:convert';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import '../../../Api_services/api_service.dart';
 import '../../../Provider/UserProvider.dart';
-import '../../Model/Api Model/add_Lead_Model.dart';
+import '../Colors/app_Colors.dart';
+
 
 class BookingScreen extends StatefulWidget {
+  final String? inquiryId;
+
+  BookingScreen({Key? key, this.inquiryId}) : super(key: key);
+
   @override
   _BookingScreenState createState() => _BookingScreenState();
 }
@@ -21,7 +25,6 @@ class _BookingScreenState extends State<BookingScreen> {
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   final ApiService _apiService = ApiService();
 
-  // Form data variables
   DateTime? nextFollowUp;
   bool isLoanSelected = true;
   bool isIncludeSelected = true;
@@ -30,7 +33,6 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isPaymentValid = false;
   String? _amountError;
 
-  // Text Editing Controllers
   final TextEditingController _mobileNoController = TextEditingController();
   final TextEditingController _partyNameController = TextEditingController();
   final TextEditingController _houseNoController = TextEditingController();
@@ -57,8 +59,7 @@ class _BookingScreenState extends State<BookingScreen> {
   final TextEditingController _bookingDateController = TextEditingController();
   final TextEditingController _hastakController = TextEditingController();
 
-  // Dropdown values with IDs
-  String? _selectedAreaId; // Stores full string like "Area 1 (1)"
+  String? _selectedAreaId;
   String? _selectedPropertySubType;
   String? _selectedPurposeOfBuying;
   String? _selectedApproxBuyingTime;
@@ -72,26 +73,29 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<UserProvider>(context, listen: false);
-    provider.fetchVisitData();
-    provider.fetchAddLeadData();
-    _addCashField();
-    _addLoanField();
-    _selectedHastakSource = 'Walk In';
-    _bookingDateController.text = DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now());
+    Future.microtask(() {
+      final provider = Provider.of<UserProvider>(context, listen: false);
+      if (widget.inquiryId != null) {
+        provider.fetchBookingData(widget.inquiryId!);
+        provider.fetchVisitData(widget.inquiryId!); // Keep this if needed elsewhere
+      }
+      provider.fetchAddLeadData();
+      _addCashField();
+      _addLoanField();
+      _selectedHastakSource = 'Walk In';
+      _bookingDateController.text = DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now());
 
-    _priceController.addListener(_updatePrices);
-    _extraWorkController.addListener(_updatePrices);
-    _extraExpenseController.addListener(_updatePrices);
-    _discountController.addListener(_updatePrices);
-    _loanAmountController.addListener(_updateRemainingAmount);
-    _amountController.addListener(_updateRemainingAmount);
-    _tokenAmountController.addListener(_updateTokenAmountInWords);
+      _priceController.addListener(_updatePrices);
+      _extraWorkController.addListener(_updatePrices);
+      _extraExpenseController.addListener(_updatePrices);
+      _discountController.addListener(_updatePrices);
+      _loanAmountController.addListener(_updateRemainingAmount);
+      _amountController.addListener(_updateRemainingAmount);
+      _tokenAmountController.addListener(_updateTokenAmountInWords);
 
-    _updatePrices();
+      _updatePrices();
+    });
 
-    // Log initial state
-    debugPrint('initState: Fetching visitData and addLeadData');
   }
 
   @override
@@ -136,6 +140,151 @@ class _BookingScreenState extends State<BookingScreen> {
     super.dispose();
   }
 
+
+
+  Future<void> _submitForm() async {
+    // Log the start of the submission process
+    print('Starting form submission...');
+
+    // Validation for required fields
+    if (_mobileNoController.text.isEmpty ||
+        _partyNameController.text.isEmpty ||
+        _houseNoController.text.isEmpty ||
+        _societyController.text.isEmpty ||
+        _selectedAreaId == null ||
+        _landMarkController.text.isEmpty ||
+        _cityController.text.isEmpty ||
+        _pincodeController.text.isEmpty ||
+        _intAreaController.text.isEmpty ||
+        _selectedPropertySubType == null ||
+        _propertyTypeController.text.isEmpty ||
+        _budgetController.text.isEmpty ||
+        _selectedPurposeOfBuying == null ||
+        _selectedApproxBuyingTime == null ||
+        _priceController.text.isEmpty ||
+        _extraWorkController.text.isEmpty ||
+        _totalPriceController.text.isEmpty ||
+        _discountController.text.isEmpty ||
+        _finalPriceController.text.isEmpty ||
+        _remainingTotalAmountController.text.isEmpty ||
+        _totalAmountOfPurchaseController.text.isEmpty ||
+        _tokenAmountController.text.isEmpty ||
+        _tokenDateController.text.isEmpty ||
+        _selectedTokenBy == null ||
+        _bookingDateController.text.isEmpty ||
+        _selectedHastakSource == null) {
+      print('Validation failed: One or more required fields are empty');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    print('Validation passed, preparing request body...');
+
+    // Extract IDs from dropdowns where necessary
+    String areaId = _selectedAreaId != null
+        ? _selectedAreaId!.split('(').last.replaceAll(')', '').trim()
+        : '0';
+    String? managerId = _selectedManager != null
+        ? _selectedManager!.split('(').last.replaceAll(')', '').trim()
+        : null;
+    String? staffId = _selectedStaff != null
+        ? _selectedStaff!.split('(').last.replaceAll(')', '').trim()
+        : null;
+    String? channelPartnerId = _selectedChannelPartner != null
+        ? _selectedChannelPartner!.split('(').last.replaceAll(')', '').trim()
+        : null;
+    String? customerId = _selectedCustomer != null
+        ? _selectedCustomer!.split('(').last.replaceAll(')', '').trim()
+        : null;
+
+    // Collect payment details (cash or loan fields)
+    List<Map<String, dynamic>> paymentFields = isLoanSelected
+        ? loanFields.map((field) => {
+      'amount': double.tryParse(field['amount']!.text) ?? 0,
+      'date': field['date']!.text.isNotEmpty ? field['date']!.text : null,
+      'duration': int.tryParse(field['duration']!.text) ?? 0,
+    }).toList()
+        : cashFields.map((field) => {
+      'amount': double.tryParse(field['amount']!.text) ?? 0,
+      'date': field['date']!.text.isNotEmpty ? field['date']!.text : null,
+      'duration': int.tryParse(field['duration']!.text) ?? 0,
+    }).toList();
+
+    // Prepare the API request body with screen data only
+    final Map<String, dynamic> requestBody = {
+      "inquiry_id": widget.inquiryId ?? "",
+      "booking_date": _bookingDateController.text,
+      "unitno": int.tryParse(_houseNoController.text) ?? 0,
+      "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
+      "payment_date": _tokenDateController.text,
+      "duration_day": paymentFields.isNotEmpty ? (int.tryParse(paymentFields[0]['duration'].toString()) ?? 0) : 0,
+      "remaining_amount": double.tryParse(_remainingTotalAmountController.text) ?? 0,
+      "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
+      "token_amount_date": _tokenDateController.text,
+      "token_by": _selectedTokenBy ?? "",
+      "booking_by_ssm": managerId ?? "",
+      "booking_by_sse": staffId ?? "",
+      "booking_by_broker": channelPartnerId ?? "",
+      "booking_by_customer": customerId ?? "",
+      "mobileno": _mobileNoController.text,
+      "partyname": _partyNameController.text,
+      "houseno": int.tryParse(_houseNoController.text) ?? 0,
+      "societyname": _societyController.text,
+      "area": int.tryParse(areaId) ?? 0,
+      "landmark": _landMarkController.text,
+      "city": _cityController.text,
+      "pincode": int.tryParse(_pincodeController.text) ?? 0,
+      "unitsize": _intAreaController.text,
+      "property_sub_type": _selectedPropertySubType ?? "",
+      "property_type": _propertyTypeController.text,
+      "budget": double.tryParse(_budgetController.text) ?? 0,
+      "purpose_of_buying": _selectedPurposeOfBuying ?? "",
+      "approx_buying_time": _selectedApproxBuyingTime ?? "",
+      "price": double.tryParse(_priceController.text) ?? 0,
+      "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
+      "extra_expense": !isIncludeSelected ? (double.tryParse(_extraExpenseController.text) ?? 0) : 0,
+      "total_price": double.tryParse(_totalPriceController.text) ?? 0,
+      "discount_price": double.tryParse(_discountController.text) ?? 0,
+      "final_price": double.tryParse(_finalPriceController.text) ?? 0,
+      "switcher_amount": isLoanSelected ? "loan" : "cash",
+      "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0) : 0,
+      "cash_amount": !isLoanSelected ? (double.tryParse(_amountController.text) ?? 0) : 0,
+      "payment_fields": paymentFields,
+      "hastak_source": _selectedHastakSource ?? "",
+    };
+
+    // Log the request body for debugging
+    print('Request Body: ${json.encode(requestBody)}');
+
+    try {
+      print('Calling API to submit booking data...');
+      final result = await _apiService.submitBookingData(requestBody);
+      print('API Response: $result');
+
+      if (result['status'] == 1) {
+        print('Booking submitted successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking submitted successfully!')),
+        );
+        Navigator.pop(context);
+      } else {
+        print('API returned error: ${result['message']}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${result['message']}')),
+        );
+      }
+    } catch (e) {
+      print('Exception during API call: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting booking: $e')),
+      );
+    }
+  }
+
+
+
   void _updatePrices() {
     double price = double.tryParse(_priceController.text) ?? 0;
     double extraWork = double.tryParse(_extraWorkController.text) ?? 0;
@@ -148,8 +297,6 @@ class _BookingScreenState extends State<BookingScreen> {
     _totalPriceController.text = total.toStringAsFixed(2);
     _finalPriceController.text = finalPrice.toStringAsFixed(2);
     _totalAmountOfPurchaseController.text = finalPrice.toStringAsFixed(2);
-
-    debugPrint('Updated Prices: Total = $total, Final Price = $finalPrice');
 
     _updateRemainingAmount();
   }
@@ -170,21 +317,18 @@ class _BookingScreenState extends State<BookingScreen> {
 
     _remainingTotalAmountController.text = remaining.toStringAsFixed(2);
 
-    debugPrint('Updated Remaining Amount: Final Price = $finalPrice, Total Paid = $totalPaid, Remaining = $remaining');
-
     setState(() {
       if (remaining < 0) {
         _remainingTotalAmountController.text = '0.00';
-        _amountError = 'Amount is not equal to 0 amount is :- ${remaining.abs().toStringAsFixed(2)} extra';
+        _amountError = 'Amount is not equal to 0, extra: ${remaining.abs().toStringAsFixed(2)}';
         _isPaymentValid = false;
       } else if (remaining == 0) {
         _amountError = null;
         _isPaymentValid = true;
       } else {
-        _amountError = 'Amount is not equal to 0 amount is : ${remaining.toStringAsFixed(2)}';
+        _amountError = 'Amount is not equal to 0, remaining: ${remaining.toStringAsFixed(2)}';
         _isPaymentValid = false;
       }
-      debugPrint('Payment Valid: $_isPaymentValid, Amount Error: $_amountError');
     });
   }
 
@@ -264,14 +408,12 @@ class _BookingScreenState extends State<BookingScreen> {
   void _updateTokenAmountInWords() {
     double amount = double.tryParse(_tokenAmountController.text) ?? 0;
     _tokenAmountInWordsController.text = _numberToWords(amount);
-    debugPrint('Token Amount in Words: ${_tokenAmountInWordsController.text}');
   }
 
   void _nextPage() {
     if (_currentPage < 3) {
       setState(() => _currentPage++);
       _pageController.nextPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
-      debugPrint('Navigated to page: $_currentPage');
     }
   }
 
@@ -279,119 +421,10 @@ class _BookingScreenState extends State<BookingScreen> {
     if (_currentPage > 0) {
       setState(() => _currentPage--);
       _pageController.previousPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
-      debugPrint('Navigated to page: $_currentPage');
     }
   }
 
-  // Future<void> _submitForm() async {
-  //   if (_mobileNoController.text.isEmpty ||
-  //       _partyNameController.text.isEmpty ||
-  //       _houseNoController.text.isEmpty ||
-  //       _societyController.text.isEmpty ||
-  //       _selectedAreaId == null ||
-  //       _landMarkController.text.isEmpty ||
-  //       _cityController.text.isEmpty ||
-  //       _pincodeController.text.isEmpty ||
-  //       _intAreaController.text.isEmpty ||
-  //       _selectedPropertySubType == null ||
-  //       _propertyTypeController.text.isEmpty ||
-  //       _budgetController.text.isEmpty ||
-  //       _selectedPurposeOfBuying == null ||
-  //       _selectedApproxBuyingTime == null ||
-  //       _priceController.text.isEmpty ||
-  //       _extraWorkController.text.isEmpty ||
-  //       _totalPriceController.text.isEmpty ||
-  //       _discountController.text.isEmpty ||
-  //       _finalPriceController.text.isEmpty ||
-  //       _remainingTotalAmountController.text.isEmpty ||
-  //       _totalAmountOfPurchaseController.text.isEmpty ||
-  //       _tokenAmountController.text.isEmpty ||
-  //       _tokenDateController.text.isEmpty ||
-  //       _selectedTokenBy == null ||
-  //       _bookingDateController.text.isEmpty ||
-  //       _selectedHastakSource == null) {
-  //     debugPrint('Validation Failed: Missing required fields');
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Please fill all required fields')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   // Parse the area ID from _selectedAreaId
-  //   String areaId = '0';
-  //   if (_selectedAreaId != null) {
-  //     final RegExp idRegex = RegExp(r'\((\d+)\)');
-  //     final match = idRegex.firstMatch(_selectedAreaId!);
-  //     areaId = match != null ? match.group(1)! : '0';
-  //     debugPrint('Parsed Area ID for submission: $areaId');
-  //   }
-  //
-  //   final Map<String, dynamic> requestBody = {
-  //     "inquiry_id": 95557,
-  //     "booking_date": _bookingDateController.text,
-  //     "product_name": 1,
-  //     "unitno": int.tryParse(_houseNoController.text) ?? 0,
-  //     "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
-  //     "payment_date": _tokenDateController.text.isNotEmpty
-  //         ? _tokenDateController.text
-  //         : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
-  //     "duration_day": 3,
-  //     "remaining_amount": double.tryParse(_remainingTotalAmountController.text) ?? 0,
-  //     "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
-  //     "token_amount_date": _tokenDateController.text.isNotEmpty
-  //         ? _tokenDateController.text
-  //         : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
-  //     "token_by": _selectedTokenBy ?? "",
-  //     "booking_by_ssm": "",
-  //     "booking_by_sse": "",
-  //     "booking_by_broker": "",
-  //     "booking_by_customer": "",
-  //     "mobileno": _mobileNoController.text,
-  //     "partyname": _partyNameController.text,
-  //     "houseno": int.tryParse(_houseNoController.text) ?? 0,
-  //     "societyname": _societyController.text,
-  //     "area": int.tryParse(areaId) ?? 0,
-  //     "landmark": _landMarkController.text,
-  //     "city": _cityController.text,
-  //     "pincode": int.tryParse(_pincodeController.text) ?? 0,
-  //     "unitsize": "345",
-  //     "construction": 2,
-  //     "price": double.tryParse(_priceController.text) ?? 0,
-  //     "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
-  //     "total_price": double.tryParse(_totalPriceController.text) ?? 0,
-  //     "discount_price": double.tryParse(_discountController.text) ?? 0,
-  //     "switcher_amount": isLoanSelected ? "loan" : "cash",
-  //     "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
-  //   };
-  //
-  //   debugPrint('=== Submit Form Start ===');
-  //   debugPrint('Form Data Prepared: ${jsonEncode(requestBody)}');
-  //
-  //   try {
-  //     final result = await _apiService.submitBookingData(requestBody);
-  //     debugPrint('API Call Result: ${jsonEncode(result)}');
-  //
-  //     if (result['status'] == 1) {
-  //       debugPrint('Booking Success: ${result['message']}');
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Booking submitted successfully!')),
-  //       );
-  //       Navigator.pop(context);
-  //     } else {
-  //       debugPrint('Booking Failed: ${result['message']}');
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Error: ${result['message']}')),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Exception in Submit Form: $e');
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Error submitting booking: $e')),
-  //     );
-  //   }
-  //
-  //   debugPrint('=== Submit Form End ===');
-  // }
+
 
   void _addCashField() {
     TextEditingController amountController = TextEditingController()..addListener(_updateRemainingAmount);
@@ -399,7 +432,6 @@ class _BookingScreenState extends State<BookingScreen> {
     TextEditingController durationController = TextEditingController();
     setState(() {
       cashFields.add({'amount': amountController, 'date': dateController, 'duration': durationController});
-      debugPrint('Added cash field: ${cashFields.length} total');
     });
   }
 
@@ -409,7 +441,6 @@ class _BookingScreenState extends State<BookingScreen> {
     TextEditingController durationController = TextEditingController();
     setState(() {
       loanFields.add({'amount': amountController, 'date': dateController, 'duration': durationController});
-      debugPrint('Added loan field: ${loanFields.length} total');
     });
   }
 
@@ -420,7 +451,6 @@ class _BookingScreenState extends State<BookingScreen> {
       cashFields[index]['duration']?.dispose();
       cashFields.removeAt(index);
       _updateRemainingAmount();
-      debugPrint('Removed cash field at index $index, remaining: ${cashFields.length}');
     });
   }
 
@@ -431,7 +461,6 @@ class _BookingScreenState extends State<BookingScreen> {
       loanFields[index]['duration']?.dispose();
       loanFields.removeAt(index);
       _updateRemainingAmount();
-      debugPrint('Removed loan field at index $index, remaining: ${loanFields.length}');
     });
   }
 
@@ -449,35 +478,20 @@ class _BookingScreenState extends State<BookingScreen> {
       backgroundColor: Colors.white,
       body: Consumer<UserProvider>(
         builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return Center(child: CircularProgressIndicator());
+          }
           if (provider.error != null) {
-            debugPrint('Provider Error: ${provider.error}');
             return Center(child: Text('Error: ${provider.error}'));
           }
 
-          debugPrint('Visit Data: ${provider.visitData != null ? "Available" : "Null"}');
-          debugPrint('Dropdown Data: ${provider.dropdownData != null ? "Available" : "Null"}');
-
-          if (provider.visitData != null && _mobileNoController.text.isEmpty) {
-            final inquiries = provider.visitData!.inquiries;
-            _mobileNoController.text = inquiries.mobileno;
-            _partyNameController.text = inquiries.fullName;
-            _houseNoController.text = inquiries.unitNo;
-            _budgetController.text = inquiries.budget;
-            _propertyTypeController.text = inquiries.propertyType;
-            _intAreaController.text = inquiries.intrestedProduct;
-
-            _selectedPropertySubType = inquiries.propertySubType.isNotEmpty &&
-                provider.dropdownData?.propertyConfiguration.any((p) => p.propertyType == inquiries.propertySubType) == true
-                ? inquiries.propertySubType
-                : null;
-            _selectedPurposeOfBuying = inquiries.purposeBuy.isNotEmpty && provider.dropdownData?.purposeOfBuying != null &&
-                (provider.dropdownData!.purposeOfBuying!.investment == inquiries.purposeBuy ||
-                    provider.dropdownData!.purposeOfBuying!.personalUse == inquiries.purposeBuy)
-                ? inquiries.purposeBuy
-                : null;
-
-            debugPrint('Pre-filled from visitData: Mobile: ${_mobileNoController.text}, Party: ${_partyNameController.text}, House: ${_houseNoController.text}');
-            debugPrint('Property Sub Type: $_selectedPropertySubType, Purpose: $_selectedPurposeOfBuying');
+          // Pre-fill text fields from booking data
+          if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty && _mobileNoController.text.isEmpty) {
+            final booking = provider.bookingData!.data[0];
+            _houseNoController.text = booking.houseno;
+            _societyController.text = booking.society;
+            _selectedAreaId = "${booking.area} (${booking.area})"; // Assuming area is an ID or name
+            _cityController.text = booking.city;
           }
 
           return SafeArea(
@@ -488,7 +502,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 _buildCustomerInformationPage(provider),
                 _buildInterestSuggestionPage(provider),
                 _buildAdditionalPage(),
-                _buildFollowUpPage(),
+                _buildFollowUpPage(provider),
               ],
             ),
           );
@@ -498,18 +512,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildCustomerInformationPage(UserProvider provider) {
-    debugPrint('Building Customer Information Page');
-    debugPrint('Provider dropdownData: ${provider.dropdownData != null}');
-    debugPrint('AreaCityCountry: ${provider.dropdownData?.areaCityCountry?.map((area) => "${area.area} (${area.id})").toList()}');
-
-    // Ensure unique items using a Set
-    final areaItems = (provider.dropdownData?.areaCityCountry?.map((area) => "${area.area} (${area.id})")?.toSet().toList()) ?? ['Area 1 (1)', 'Area 2 (2)', 'Area 3 (3)'];
-    debugPrint('Area Items: $areaItems');
-    debugPrint('Current _selectedAreaId: $_selectedAreaId');
-
-    // Validate _selectedAreaId against areaItems
+    final areaItems = provider.bookingData?.data.map((datum) => "${datum.area} (${datum.area})").toSet().toList() ?? ['Area 1 (1)', 'Area 2 (2)', 'Area 3 (3)'];
     if (_selectedAreaId != null && !areaItems.contains(_selectedAreaId)) {
-      debugPrint('Warning: _selectedAreaId ($_selectedAreaId) not in areaItems, resetting to null');
       _selectedAreaId = null;
     }
 
@@ -544,13 +548,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           label: "Area",
                           items: areaItems,
                           selectedValue: _selectedAreaId,
-                          onChanged: (value) {
-                            debugPrint('Area Dropdown onChanged: $value');
-                            setState(() {
-                              _selectedAreaId = value; // Store the full string
-                              debugPrint('Updated _selectedAreaId: $_selectedAreaId');
-                            });
-                          },
+                          onChanged: (value) => setState(() => _selectedAreaId = value),
                         ),
                         _buildTextField('Land Mark', controller: _landMarkController),
                         _buildTextField('City', controller: _cityController),
@@ -578,7 +576,6 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildInterestSuggestionPage(UserProvider provider) {
-    debugPrint('Building Interest Suggestion Page');
     final propertySubTypeItems = provider.dropdownData?.propertyConfiguration.map((config) => config.propertyType).toList() ?? ['Type 1', 'Type 2', 'Type 3'];
     final purposeBuyingItems = provider.dropdownData?.purposeOfBuying != null
         ? [provider.dropdownData!.purposeOfBuying!.investment, provider.dropdownData!.purposeOfBuying!.personalUse]
@@ -586,10 +583,6 @@ class _BookingScreenState extends State<BookingScreen> {
     final approxBuyingTimeItems = provider.dropdownData?.apxTime != null
         ? provider.dropdownData!.apxTime!.apxTimeData.split(',').map((time) => time.trim()).toList()
         : ['Time 1', 'Time 2', 'Time 3'];
-
-    debugPrint('Property Sub Type Items: $propertySubTypeItems');
-    debugPrint('Purpose Buying Items: $purposeBuyingItems');
-    debugPrint('Approx Buying Time Items: $approxBuyingTimeItems');
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -695,7 +688,6 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildAdditionalPage() {
-    debugPrint('Building Additional Page');
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -834,8 +826,12 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildFollowUpPage() {
-    debugPrint('Building Follow Up Page');
+  Widget _buildFollowUpPage(UserProvider provider) {
+    final managerItems = provider.bookingData?.manager.map((m) => "${m.firstname} (${m.id})").toList() ?? ['Select Manager'];
+    final staffItems = provider.bookingData?.staff.map((s) => "${s.firstname} (${s.id})").toList() ?? ['Select Staff'];
+    final channelPartnerItems = provider.bookingData?.channelPartner.map((cp) => "${cp.brokername} (${cp.id})").toList() ?? ['Select Channel Partner'];
+    final customerItems = provider.bookingData?.customer.map((c) => "${c.name} (${c.id})").toList() ?? ['Select Customer'];
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -893,7 +889,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       children: [
                         _buildDropdown2(
                           label: 'Manager',
-                          items: ['Select Manager', 'Manager 1', 'Manager 2', 'Manager 3'],
+                          items: managerItems,
                           selectedValue: _selectedManager,
                           onChanged: (value) => setState(() => _selectedManager = value),
                         ),
@@ -936,21 +932,21 @@ class _BookingScreenState extends State<BookingScreen> {
                         if (_selectedHastakSource == 'Staff')
                           _buildDropdown2(
                             label: 'Staff Select',
-                            items: ['Select Staff', 'Staff 1', 'Staff 2', 'Staff 3'],
+                            items: staffItems,
                             selectedValue: _selectedStaff,
                             onChanged: (value) => setState(() => _selectedStaff = value),
                           ),
                         if (_selectedHastakSource == 'Channel Partner')
                           _buildDropdown2(
                             label: 'Channel Partner Select',
-                            items: ['Select Channel Partner', 'Partner 1', 'Partner 2', 'Partner 3'],
+                            items: channelPartnerItems,
                             selectedValue: _selectedChannelPartner,
                             onChanged: (value) => setState(() => _selectedChannelPartner = value),
                           ),
                         if (_selectedHastakSource == 'Customer')
                           _buildDropdown2(
                             label: 'Customer Select',
-                            items: ['Select Customer', 'Customer 1', 'Customer 2', 'Customer 3'],
+                            items: customerItems,
                             selectedValue: _selectedCustomer,
                             onChanged: (value) => setState(() => _selectedCustomer = value),
                           ),
@@ -970,10 +966,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
               ElevatedButton(
-                // onPressed: _submitForm,
-                onPressed: () {
-
-                },
+                onPressed: _submitForm,
                 child: Text('Submit', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
@@ -1008,7 +1001,6 @@ class _BookingScreenState extends State<BookingScreen> {
           keyboardType: (label.contains('Amount') && !label.contains('Words')) || label.contains('Price') || label.contains('Discount')
               ? TextInputType.numberWithOptions(decimal: true)
               : TextInputType.text,
-          onChanged: (value) => debugPrint('$label changed: $value'),
         ),
       ),
     );
@@ -1037,7 +1029,6 @@ class _BookingScreenState extends State<BookingScreen> {
           );
           if (picked != null) {
             controller!.text = DateFormat('dd-MM-yyyy hh:mm a').format(picked);
-            debugPrint('$label selected: ${controller.text}');
           }
         },
       ),
@@ -1050,7 +1041,6 @@ class _BookingScreenState extends State<BookingScreen> {
     required String? selectedValue,
     required Function(String?) onChanged,
   }) {
-    debugPrint('Building Dropdown: $label, Items: $items, Selected Value: $selectedValue');
     return Padding(
       padding: const EdgeInsets.only(top: 10, bottom: 10),
       child: Container(

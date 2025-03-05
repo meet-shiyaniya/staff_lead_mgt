@@ -4,6 +4,8 @@ import 'package:hr_app/dashboard_ui/main_dashboard/performance_screen.dart';
 import 'package:hr_app/dashboard_ui/main_dashboard/report_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import 'package:realtosmart/dashboard_ui/main_dashboard/performance_screen.dart';
+// import 'package:realtosmart/dashboard_ui/main_dashboard/report_ui.dart';
 import '../../Provider/UserProvider.dart';
 import '../../social_module/colors/colors.dart';
 import '../../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
@@ -16,7 +18,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProviderStateMixin {
-  String _selectedFilter = 'Daily';
+  String _selectedFilter = 'month';
   String _selectedCategory = 'Inquiry';
   late TabController _tabController;
 
@@ -189,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               SizedBox(height: 10),
               _buildPerformanceSection(),
               SizedBox(height: 10),
-              _buildTabBar(),
+              // _buildTabBar(),
               SizedBox(height: 12),
               _buildTabContent(),
             ],
@@ -370,7 +372,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         children: [
           Text('Select Time Filter', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 10),
-          ...['Daily', 'Weekly', 'Monthly', 'Yearly'].map((filter) => ListTile(
+          ...['Weekly', 'Monthly', 'Yearly'].map((filter) => ListTile(
             title: Text(filter),
             onTap: () {
               setState(() {
@@ -394,7 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade300)],
       ),
       child: TabBar(
-        indicatorAnimation: TabIndicatorAnimation.elastic,
+        // indicatorAnimation: TabIndicatorAnimation.elastic,
         controller: _tabController,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(

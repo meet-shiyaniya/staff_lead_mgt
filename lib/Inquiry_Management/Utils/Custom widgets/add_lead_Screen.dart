@@ -5,15 +5,17 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../Provider/UserProvider.dart';
-import '../../Inquiry Management Screens/all_inquiries_Screen.dart';
-import '../../Model/Api Model/add_Lead_Model.dart';
-import '../Colors/app_Colors.dart';
-import 'custom_buttons.dart';
+import '../../../Provider/UserProvider.dart'; // Adjust path
+import '../../Inquiry Management Screens/all_inquiries_Screen.dart'; // Adjust path
+import '../../Model/Api Model/add_Lead_Model.dart'; // Adjust path
+import '../../Model/Api Model/edit_Lead_Model.dart'; // Adjust path
+import '../Colors/app_Colors.dart'; // Adjust path
+import 'custom_buttons.dart'; // Adjust path
 
 class AddLeadScreen extends StatefulWidget {
   final bool? isEdit;
-  const AddLeadScreen({super.key, this.isEdit});
+  final String? leadId;
+  const AddLeadScreen({super.key, this.isEdit, this.leadId});
 
   @override
   _AddLeadScreenState createState() => _AddLeadScreenState();
@@ -25,12 +27,15 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String? _selectedArea;
   String? _selectedCity;
   InqType? _selectedInquiryType;
-  String? _selectedInqSource;
-  String? _selectedIntSite;
+  String? _selectedInqSource; // Display value
+  String? _selectedInqSourceId; // ID for API
+  String? _selectedIntSite; // Display value
+  String? _selectedIntSiteId;
   String? _selectedBudget;
   String? _selectedPurpose;
   String? _selectedApxTime;
-  String? _selectedPropertyConfiguration;
+  String? _selectedPropertyConfiguration; // Display value
+  String? _selectedPropertyConfigId;
   String action = "insert";
   String? _selectedInterestedProduct = "1";
   DateTime? nextFollowUp;
@@ -45,24 +50,154 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? _selectedFollowUpTime;
   String? _fillInterest;
+  EditLeadData? editLeadData;
 
   final List<String> countryCodeOptions = ['+1', '+44', '+91'];
-
   final List<String> _steps = ["Personal Info", "CST & Inquiry", "Follow Up"];
 
-  @override
   void initState() {
     super.initState();
+    if (widget.isEdit != true) {
+      _selectedCountryCode = '+91';
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.fetchAddLeadData().then((_) {
-        setState(() {
-          _fillInterest = userProvider.dropdownData?.cststatus.isNotEmpty == true
-              ? userProvider.dropdownData!.cststatus.first.fillInterest
-              : "0";
-        });
+        if (mounted) { // Check if widget is still mounted
+          setState(() {
+            _fillInterest = userProvider.dropdownData?.cststatus.isNotEmpty == true
+                ? userProvider.dropdownData!.cststatus.first.fillInterest
+                : "0";
+          });
+        }
+
+        if (widget.isEdit == true && widget.leadId != null) {
+          action = "edit";
+          userProvider.fetchEditLeadData(widget.leadId!).then((data) {
+            if (mounted && data != null) { // Check if mounted and data is not null
+              setState(() {
+                editLeadData = data;
+                _populateEditData();
+                print(
+                    "Edit Data Loaded: Area = $_selectedArea, City = $_selectedCity, CountryCode = $_selectedCountryCode");
+              });
+            } else if (data == null) {
+              Fluttertoast.showToast(msg: "No edit data received from server");
+            }
+          }).catchError((error) {
+            print("Error fetching edit data: $error");
+            if (mounted) {
+              Fluttertoast.showToast(msg: "Failed to load edit data: Server Error");
+            }
+          });
+        }
+      }).catchError((error) {
+        print("Error fetching add lead data: $error");
+        if (mounted) {
+          Fluttertoast.showToast(msg: "Failed to load initial data");
+        }
       });
     });
+  }
+  void _populateEditData() {
+    if (editLeadData == null) return;
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final dropdownData = userProvider.dropdownData;
+
+    // Populate text fields
+    _mobileController.text = editLeadData!.mobileno ?? '';
+    _fullNameController.text = editLeadData!.fullName ?? '';
+    _houseController.text = editLeadData!.houseno ?? '';
+    _societyController.text = editLeadData!.society ?? '';
+    _altMobileController.text = editLeadData!.altmobileno ?? '';
+    _emailController.text = editLeadData!.email ?? '';
+    _descriptionController.text = editLeadData!.inquiryDescription ?? '';
+    _selectedCountryCode = editLeadData!.countryCode != null
+        ? '+' + editLeadData!.countryCode
+        : '+91';
+
+    _selectedArea = editLeadData!.area;
+    _selectedCity = editLeadData!.city;
+
+    // Budget mapping
+    if (dropdownData?.budget != null) {
+      List<String> budgetValues = dropdownData!.budget!.values.split(',');
+      int budgetIndex = int.tryParse(editLeadData!.budget) ?? 0;
+      if (budgetIndex >= 0 && budgetIndex < budgetValues.length) {
+        _selectedBudget = budgetValues[budgetIndex];
+      }
+    }
+
+    _selectedPurpose = editLeadData!.purposeBuy;
+
+    // Apx Buying Time mapping
+    if (dropdownData?.apxTime != null) {
+      List<String> apxTimeValues = dropdownData!.apxTime!.apxTimeData.split(',');
+      int apxTimeIndex = int.tryParse(editLeadData!.approxBuy) ?? -1;
+      if (apxTimeIndex >= 0 && apxTimeIndex < apxTimeValues.length) {
+        _selectedApxTime = apxTimeValues[apxTimeIndex];
+      } else {
+        _selectedApxTime = apxTimeValues.isNotEmpty ? apxTimeValues.first : null;
+      }
+    }
+
+    // Interested Site mapping (use ID and name)
+    final List<IntSite> intSiteList = dropdownData?.intSite ?? [];
+    if (intSiteList.isNotEmpty) {
+      final selectedSite = intSiteList.firstWhere(
+            (site) => site.id == editLeadData!.interstedSiteName,
+        orElse: () => intSiteList.first,
+      );
+      _selectedIntSiteId = selectedSite.id;
+      _selectedIntSite = selectedSite.productName;
+    }
+
+    // Property Configuration mapping (use ID and name)
+    final List<PropertyConfiguration> propertyConfigList =
+        dropdownData?.propertyConfiguration ?? [];
+    if (propertyConfigList.isNotEmpty) {
+      final selectedConfig = propertyConfigList.firstWhere(
+            (prop) => prop.id == editLeadData!.propertyConfiguration,
+        orElse: () => propertyConfigList.first,
+      );
+      _selectedPropertyConfigId = selectedConfig.id;
+      _selectedPropertyConfiguration = selectedConfig.propertyType;
+    }
+
+    // Inquiry Type mapping
+    final List<InqType> inquiryTypeOptions = dropdownData?.inqType ?? [];
+    _selectedInquiryType = inquiryTypeOptions.isNotEmpty
+        ? inquiryTypeOptions.firstWhere(
+          (type) => type.id == editLeadData!.inquiryType,
+      orElse: () => inquiryTypeOptions.first,
+    )
+        : null;
+
+    // Inquiry Source mapping (use ID and name)
+    final List<InqSource> inqSourceList = dropdownData?.inqSource ?? [];
+    if (inqSourceList.isNotEmpty) {
+      final selectedSource = inqSourceList.firstWhere(
+            (source) => source.id == editLeadData!.inquirySourceType,
+        orElse: () => inqSourceList.first,
+      );
+      _selectedInqSourceId = selectedSource.id;
+      _selectedInqSource = selectedSource.source;
+    }
+
+    // Follow-up date and time
+    if (editLeadData!.nxtFollowUp != '0000-00-00 00:00:00') {
+      _dateController.text =
+          DateFormat('yyyy-MM-dd').format(DateTime.parse(editLeadData!.nxtFollowUp));
+      _selectedFollowUpTime =
+          DateFormat('HH:mm:ss').format(DateTime.parse(editLeadData!.nxtFollowUp));
+    }
+
+    // Debug print
+    print("Populated Int Site: $_selectedIntSite (ID: $_selectedIntSiteId)");
+    print("Populated Property Config: $_selectedPropertyConfiguration (ID: $_selectedPropertyConfigId)");
+    print("Populated Inquiry Source: $_selectedInqSource (ID: $_selectedInqSourceId)");
   }
 
   @override
@@ -95,73 +230,115 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     String formattedNextFollowUp = _dateController.text.isNotEmpty
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(_dateController.text))
         : "";
-
     String budgetId = dropdownData.budget != null && _selectedBudget != null
-        ? dropdownData.budget!.values
-        .split(',')
-        .indexOf(_selectedBudget!)
-        .toString()
-        : "";
+        ? dropdownData.budget!.values.split(',').indexOf(_selectedBudget!).toString()
+        : editLeadData?.budget ?? "";
     String approxBuyId = dropdownData.apxTime != null && _selectedApxTime != null
-        ? dropdownData.apxTime!.apxTimeData
-        .split(',')
-        .indexOf(_selectedApxTime!)
-        .toString()
-        : "";
-    String inquiryTypeId = _selectedInquiryType?.id ?? "";
-    String inquirySourceId = dropdownData.inqSource
-        ?.firstWhere((source) => source.source == _selectedInqSource,
-        orElse: () => InqSource(id: "", source: ""))
-        .id ??
-        "";
+        ? dropdownData.apxTime!.apxTimeData.split(',').indexOf(_selectedApxTime!).toString()
+        : editLeadData?.approxBuy ?? "";
+    String inquiryTypeId = _selectedInquiryType?.id ?? editLeadData?.inquiryType ?? "";
     String interestedAreaId = dropdownData.areaCityCountry
         ?.firstWhere((area) => area.area == _selectedArea,
         orElse: () => AreaCityCountry(id: "", area: "", city: "", state: "", country: ""))
         .id ??
-        "";
-    String interestedSiteId = dropdownData.intSite
-        ?.firstWhere((site) => site.productName == _selectedIntSite,
-        orElse: () => IntSite(id: "", productName: ""))
-        .id ??
-        "";
-    String propertyConfigId = dropdownData.propertyConfiguration
-        ?.firstWhere((prop) => prop.propertyType == _selectedPropertyConfiguration,
-        orElse: () => PropertyConfiguration(id: "", propertyType: ""))
-        .id ??
+        editLeadData?.intrestedArea ??
         "";
     String countryCodeId = _selectedCountryCode != null
         ? _selectedCountryCode!.replaceAll('+', '')
-        : "";
+        : editLeadData?.countryCode ?? "";
+    String interestedProductId = _selectedInterestedProduct ?? "1";
 
-    bool isLeadAdded = await userProvider.addLead(
-      action: action,
-      nxt_follow_up: formattedNextFollowUp,
-      time: _selectedFollowUpTime ?? "",
-      purpose_buy: _selectedPurpose ?? "",
-      city: _selectedCity ?? "",
-      country_code: countryCodeId,
-      intrested_area: interestedAreaId,
-      full_name: _fullNameController.text,
-      budget: budgetId,
-      approx_buy: approxBuyId,
-      area: _selectedArea ?? "",
-      mobileno: _mobileController.text,
-      inquiry_type: inquiryTypeId,
-      inquiry_source_type: inquirySourceId,
-      intrested_area_name: interestedAreaId,
-      intersted_site_name: interestedSiteId,
-      PropertyConfiguration: propertyConfigId,
-      society: _societyController.text,
-      houseno: _houseController.text,
-      altmobileno: _altMobileController.text,
-      description: _descriptionController.text
-    );
+    String interestedSiteId = _selectedIntSiteId ?? editLeadData?.interstedSiteName ?? "";
+    String propertyConfigId = _selectedPropertyConfigId ?? editLeadData?.propertyConfiguration ?? "";
+    String inquirySourceId = _selectedInqSourceId ?? editLeadData?.inquirySourceType ?? "";
 
-    if (isLeadAdded) {
-      Fluttertoast.showToast(msg: "Lead added successfully");
-      Navigator.pop(context, true);
+    print("Submitting Lead Data:");
+    print("Full Name: ${_fullNameController.text}");
+    print("Mobile No: ${_mobileController.text}");
+    print("Alt Mobile No: ${_altMobileController.text}");
+    print("Email: ${_emailController.text}");
+    print("House No: ${_houseController.text}");
+    print("Society: ${_societyController.text}");
+    print("Area: $_selectedArea");
+    print("City: $_selectedCity");
+    print("Country Code: $countryCodeId");
+    print("Interested Area ID: $interestedAreaId");
+    print("Interested Site ID: $interestedSiteId");
+    print("Budget ID: $budgetId");
+    print("Purpose Buy: $_selectedPurpose");
+    print("Approx Buy ID: $approxBuyId");
+    print("Property Config ID: $propertyConfigId");
+    print("Inquiry Type ID: $inquiryTypeId");
+    print("Inquiry Source ID: $inquirySourceId");
+    print("Description: ${_descriptionController.text}");
+    print("Interested Product ID: $interestedProductId");
+    print("Next Follow Up: ${widget.isEdit == true ? editLeadData!.nxtFollowUp : formattedNextFollowUp}");
+    print("Time: $_selectedFollowUpTime");
+
+    if (widget.isEdit == true) {
+      bool isLeadUpdated = await userProvider.updateLead(
+        action: "update",
+        leadId: widget.leadId!,
+        fullName: _fullNameController.text,
+        mobileno: _mobileController.text,
+        altmobileno: _altMobileController.text,
+        email: _emailController.text,
+        houseno: _houseController.text,
+        society: _societyController.text,
+        area: _selectedArea ?? "",
+        city: _selectedCity ?? "",
+        countryCode: countryCodeId,
+        intrestedArea: interestedAreaId,
+        intrestedAreaName: interestedAreaId,
+        interstedSiteName: interestedSiteId,
+        budget: budgetId,
+        purposeBuy: _selectedPurpose ?? "",
+        approxBuy: approxBuyId,
+        propertyConfiguration: propertyConfigId,
+        inquiryType: inquiryTypeId,
+        inquirySourceType: inquirySourceId,
+        description: _descriptionController.text,
+        intrestedProduct: interestedProductId,
+        nxtFollowUp: editLeadData!.nxtFollowUp,
+      );
+
+      if (isLeadUpdated == false) {
+        Fluttertoast.showToast(msg: "Lead updated successfully");
+        Navigator.pop(context, true);
+      } else {
+        Fluttertoast.showToast(msg: "Failed to update lead. Check server logs for details.");
+      }
     } else {
-      Fluttertoast.showToast(msg: "This mobile number is already created");
+      bool isLeadAdded = await userProvider.addLead(
+        action: "insert",
+        nxt_follow_up: formattedNextFollowUp,
+        time: _selectedFollowUpTime ?? "",
+        purpose_buy: _selectedPurpose ?? "",
+        city: _selectedCity ?? "",
+        country_code: countryCodeId,
+        intrested_area: interestedAreaId,
+        full_name: _fullNameController.text,
+        budget: budgetId,
+        approx_buy: approxBuyId,
+        area: _selectedArea ?? "",
+        mobileno: _mobileController.text,
+        inquiry_type: inquiryTypeId,
+        inquiry_source_type: inquirySourceId,
+        intrested_area_name: interestedAreaId,
+        intersted_site_name: interestedSiteId,
+        PropertyConfiguration: propertyConfigId,
+        society: _societyController.text,
+        houseno: _houseController.text,
+        altmobileno: _altMobileController.text,
+        description: _descriptionController.text,
+      );
+
+      if (isLeadAdded) {
+        Fluttertoast.showToast(msg: "Lead added successfully");
+        Navigator.pop(context, true);
+      } else {
+        Fluttertoast.showToast(msg: "This mobile number is already created");
+      }
     }
   }
 
@@ -171,8 +348,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       appBar: AppBar(
         title: Text(
           widget.isEdit == true ? "Edit Lead" : "Add Lead",
-          style: const TextStyle(
-              fontFamily: "poppins_thin", color: Colors.white, fontSize: 20),
+          style: const TextStyle(fontFamily: "poppins_thin", color: Colors.white, fontSize: 20),
         ),
         backgroundColor: AppColor.MainColor,
         leading: IconButton(
@@ -239,6 +415,18 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               .toSet()
               .toList();
 
+          print("Area Options: $areaOptions");
+          print("City Options: $cityOptions");
+          print("Selected Area: $_selectedArea, Selected City: $_selectedCity");
+          print("Int Site Options: $intSiteOptions");
+          print("Selected Int Site: $_selectedIntSite");
+          print("Property Config Options: $propertyConfigurationOptions");
+          print("Selected Property Config: $_selectedPropertyConfiguration");
+          print("Inquiry Type Options: $inquiryTypeOptions");
+          print("Selected Inquiry Type: ${_selectedInquiryType?.id}");
+          print("Inquiry Source Options: $inquirySourceOptions");
+          print("Selected Inquiry Source: $_selectedInqSource");
+
           return Form(
             key: _formKey,
             child: Column(
@@ -263,9 +451,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
-                    mainAxisAlignment: _currentStep == 0
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                    _currentStep == 0 ? MainAxisAlignment.end : MainAxisAlignment.spaceBetween,
                     children: [
                       if (_currentStep > 0)
                         GradientButton(
@@ -275,11 +462,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                           onPressed: _goToPreviousStep,
                         ),
                       GradientButton(
-                        buttonText: _currentStep == _steps.length - 1 ? "Submit" : "Next",
+                        buttonText: _currentStep == _steps.length - 1
+                            ? (widget.isEdit == true ? "Done" : "Submit")
+                            : "Next",
                         width: 120.0,
-                        onPressed: _currentStep == _steps.length - 1
-                            ? _submitLead
-                            : _goToNextStep,
+                        onPressed: _currentStep == _steps.length - 1 ? _submitLead : _goToNextStep,
                       ),
                     ],
                   ),
@@ -302,8 +489,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       List<String> budgetOptions,
       List<String> purposeOptions,
       List<String> apxTimeOptions,
-      List<String> propertyConfigurationOptions,
-      ) {
+      List<String> propertyConfigurationOptions) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(0.0),
@@ -387,8 +573,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   Widget _buildPersonalInquirySection(
       List<String> countryCodeOptions,
       List<String> areaOptions,
-      List<String> cityOptions,
-      ) {
+      List<String> cityOptions) {
     return Padding(
       padding: const EdgeInsets.all(18.0),
       child: Column(
@@ -403,6 +588,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               SizedBox(
                 width: 90,
                 child: CombinedDropdownTextField<String>(
+                  key: ValueKey(_selectedCountryCode),
                   options: countryCodeOptions,
                   onSelected: (String value) {
                     setState(() {
@@ -410,6 +596,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     });
                   },
                   isRequired: true,
+                  initialValue: _selectedCountryCode,
                 ),
               ),
               const SizedBox(width: 8),
@@ -422,6 +609,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   keyboardType: TextInputType.phone,
+                  enabled: widget.isEdit != true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Mobile number is required";
@@ -463,6 +651,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                       style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
                     ),
                     CombinedDropdownTextField<String>(
+                      key: ValueKey(_selectedArea),
                       options: areaOptions,
                       onSelected: (String value) {
                         setState(() {
@@ -470,6 +659,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                         });
                       },
                       isRequired: true,
+                      initialValue: _selectedArea,
                     ),
                   ],
                 ),
@@ -484,6 +674,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                       style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
                     ),
                     CombinedDropdownTextField<String>(
+                      key: ValueKey(_selectedCity),
                       options: cityOptions,
                       onSelected: (String value) {
                         setState(() {
@@ -491,6 +682,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                         });
                       },
                       isRequired: true,
+                      initialValue: _selectedCity,
                     ),
                   ],
                 ),
@@ -533,12 +725,14 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               SizedBox(
                 width: 80,
                 child: CombinedDropdownTextField<String>(
+                  key: ValueKey(_selectedCountryCode),
                   options: countryCodeOptions,
                   onSelected: (String value) {
                     setState(() {
-                      _selectedCountryCode = value; // Reuse for simplicity
+                      _selectedCountryCode = value;
                     });
                   },
+                  initialValue: _selectedCountryCode,
                 ),
               ),
               const SizedBox(width: 8),
@@ -582,8 +776,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       List<String> purposeOptions,
       List<String> apxTimeOptions,
       List<String> propertyConfigurationOptions,
-      List<String> inquirySourceOptions,
-      ) {
+      List<String> inquirySourceOptions) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final dropdownData = userProvider.dropdownData;
+
     return Padding(
       padding: const EdgeInsets.all(14.0),
       child: Column(
@@ -595,6 +791,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
           CombinedDropdownTextField<String>(
+            key: ValueKey(_selectedArea),
             options: areaOptions,
             onSelected: (String selectedArea) {
               setState(() {
@@ -602,76 +799,399 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               });
             },
             isRequired: _fillInterest == "1",
+            initialValue: _selectedArea,
           ),
           const SizedBox(height: 16),
           const Text(
             "Int Site",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: intSiteOptions,
-            onSelected: (String selectedIntSite) {
-              setState(() {
-                _selectedIntSite = selectedIntSite;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedIntSite,
+            validator: _fillInterest == "1"
+                ? (value) => value == null || value.isEmpty ? "This field is required" : null
+                : null,
+            builder: (FormFieldState<String> state) {
+              final effectiveIntSiteOptions = dropdownData?.intSite
+                  ?.map((site) => site.productName)
+                  .toList() ??
+                  ['No sites available'];
+
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Int Site',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                value: effectiveIntSiteOptions.contains(_selectedIntSite) ? _selectedIntSite : null,
+                underline: SizedBox(width: 0),
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: effectiveIntSiteOptions.map((String item) {
+                  final isSelected = item == _selectedIntSite;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedIntSite = value;
+                    if (value != null && dropdownData?.intSite != null) {
+                      final selectedSite = dropdownData!.intSite!.firstWhere(
+                            (site) => site.productName == value,
+                        orElse: () => IntSite(id: "", productName: ""),
+                      );
+                      _selectedIntSiteId = selectedSite.id;
+                    }
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
             "Budget(In Lac)*",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: budgetOptions,
-            onSelected: (String selectedBudget) {
-              setState(() {
-                _selectedBudget = selectedBudget;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedBudget,
+            validator: (value) => value == null ? "This field is required" : null,
+            builder: (FormFieldState<String> state) {
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Budget',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                underline: SizedBox(width: 0),
+                value: budgetOptions.contains(_selectedBudget) ? _selectedBudget : null,
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: budgetOptions.map((String item) {
+                  final isSelected = item == _selectedBudget;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedBudget = value;
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: true,
           ),
           const SizedBox(height: 16),
           const Text(
             "Purpose of Buying",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: purposeOptions,
-            onSelected: (String selectedPurpose) {
-              setState(() {
-                _selectedPurpose = selectedPurpose;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedPurpose,
+            validator: _fillInterest == "1"
+                ? (value) => value == null ? "This field is required" : null
+                : null,
+            builder: (FormFieldState<String> state) {
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Purpose',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                underline: SizedBox(width: 0),
+                value: purposeOptions.contains(_selectedPurpose) ? _selectedPurpose : null,
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: purposeOptions.map((String item) {
+                  final isSelected = item == _selectedPurpose;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPurpose = value;
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
             "Apx Buying Time",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: apxTimeOptions,
-            onSelected: (String selectedApxTime) {
-              setState(() {
-                _selectedApxTime = selectedApxTime;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedApxTime,
+            validator: _fillInterest == "1"
+                ? (value) => value == null ? "This field is required" : null
+                : null,
+            builder: (FormFieldState<String> state) {
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Apx Buying Time',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                underline: SizedBox(width: 0),
+                value: apxTimeOptions.contains(_selectedApxTime) ? _selectedApxTime : null,
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: apxTimeOptions.map((String item) {
+                  final isSelected = item == _selectedApxTime;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedApxTime = value;
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: _fillInterest == "1",
           ),
           const SizedBox(height: 16),
           const Text(
             "Property Configuration*",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: propertyConfigurationOptions,
-            onSelected: (String selectedPropertyConfiguration) {
-              setState(() {
-                _selectedPropertyConfiguration = selectedPropertyConfiguration;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedPropertyConfiguration,
+            validator: (value) => value == null || value.isEmpty ? "This field is required" : null,
+            builder: (FormFieldState<String> state) {
+              final effectivePropertyConfigOptions = dropdownData?.propertyConfiguration
+                  ?.map((prop) => prop.propertyType)
+                  .toList() ??
+                  ['No configurations available'];
+
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Property Configuration',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                value: effectivePropertyConfigOptions.contains(_selectedPropertyConfiguration)
+                    ? _selectedPropertyConfiguration
+                    : null,
+                underline: SizedBox(width: 0),
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: effectivePropertyConfigOptions.map((String item) {
+                  final isSelected = item == _selectedPropertyConfiguration;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPropertyConfiguration = value;
+                    if (value != null && dropdownData?.propertyConfiguration != null) {
+                      final selectedConfig = dropdownData!.propertyConfiguration!.firstWhere(
+                            (prop) => prop.propertyType == value,
+                        orElse: () => PropertyConfiguration(id: "", propertyType: ""),
+                      );
+                      _selectedPropertyConfigId = selectedConfig.id;
+                    }
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: true,
           ),
         ],
       ),
@@ -680,9 +1200,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
 
   Widget _buildInquiryInformationSection(
       List<InqType> inquiryTypeOptions,
-      List<String> inquirySourceOptions,
-      ) {
+      List<String> inquirySourceOptions) {
     final nextSlotProvider = Provider.of<UserProvider>(context);
+    final dropdownData = nextSlotProvider.dropdownData;
 
     return Padding(
       padding: const EdgeInsets.all(18.0),
@@ -693,148 +1213,298 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
             "Inquiry Type*",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<InqType>(
-            options: inquiryTypeOptions,
-            displayString: (InqType type) => type.inquiryDetails,
-            onSelected: (InqType value) {
-              setState(() {
-                _selectedInquiryType = value;
-              });
+          SizedBox(height: 5),
+          FormField<InqType>(
+            initialValue: _selectedInquiryType,
+            validator: (value) => value == null ? "This field is required" : null,
+            builder: (FormFieldState<InqType> state) {
+              final effectiveInquiryTypeOptions = inquiryTypeOptions.isNotEmpty
+                  ? inquiryTypeOptions
+                  : [InqType(id: "0", inquiryDetails: "No inquiry types available")];
+
+              return DropdownButton2<InqType>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Inquiry Type',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                value: _selectedInquiryType,
+                underline: SizedBox(width: 0),
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: effectiveInquiryTypeOptions.map((InqType item) {
+                  final isSelected = item == _selectedInquiryType;
+                  return DropdownMenuItem<InqType>(
+                    value: item,
+                    child: Text(
+                      item.inquiryDetails,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedInquiryType = value;
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: true,
           ),
           const SizedBox(height: 16),
           const Text(
             "Inquiry Source*",
             style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
           ),
-          CombinedDropdownTextField<String>(
-            options: inquirySourceOptions,
-            onSelected: (String value) {
-              setState(() {
-                _selectedInqSource = value;
-              });
+          SizedBox(height: 5),
+          FormField<String>(
+            initialValue: _selectedInqSource,
+            validator: (value) => value == null || value.isEmpty ? "This field is required" : null,
+            builder: (FormFieldState<String> state) {
+              final effectiveInquirySourceOptions = dropdownData?.inqSource
+                  ?.map((source) => source.source)
+                  .toList() ??
+                  ['No sources available'];
+
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Inquiry Source',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
+                  ),
+                ),
+                value: effectiveInquirySourceOptions.contains(_selectedInqSource)
+                    ? _selectedInqSource
+                    : null,
+                underline: SizedBox(width: 0),
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: effectiveInquirySourceOptions.map((String item) {
+                  final isSelected = item == _selectedInqSource;
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected ? Colors.black : Colors.grey.shade600,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedInqSource = value;
+                    if (value != null && dropdownData?.inqSource != null) {
+                      final selectedSource = dropdownData!.inqSource!.firstWhere(
+                            (source) => source.source == value,
+                        orElse: () => InqSource(id: "", source: ""),
+                      );
+                      _selectedInqSourceId = selectedSource.id;
+                    }
+                    state.didChange(value);
+                  });
+                },
+              );
             },
-            isRequired: true,
           ),
+          widget.isEdit == false ? SizedBox(height: 16) : SizedBox(height: 0),
+          widget.isEdit == false
+              ? Text(
+            "Next Follow Up*",
+            style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          )
+              : SizedBox(height: 0),
+          widget.isEdit == false
+              ? TextFormField(
+            controller: _dateController,
+            decoration: InputDecoration(
+              hintText: "Select Next Follow Up Date",
+              hintStyle: const TextStyle(fontFamily: "poppins_light"),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              suffixIcon: const Icon(Icons.calendar_today),
+            ),
+            readOnly: true,
+            onTap: () async {
+              DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() {
+                  nextFollowUp = picked;
+                  _dateController.text = DateFormat('yyyy-MM-dd').format(nextFollowUp!);
+                  nextSlotProvider.fetchNextSlots(_dateController.text);
+                });
+              }
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Next follow-up date is required";
+              }
+              return null;
+            },
+          )
+              : SizedBox(height: 0),
           const SizedBox(height: 16),
-          if (widget.isEdit == false) ...[
-            const Text(
-              "Next Follow Up*",
-              style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
-            ),
-            TextFormField(
-              controller: _dateController,
-              decoration: InputDecoration(
-                hintText: "Select Next Follow Up Date",
-                hintStyle: const TextStyle(fontFamily: "poppins_light"),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: const Icon(Icons.calendar_today),
-              ),
-              readOnly: true,
-              onTap: () async {
-                DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) {
-                  setState(() {
-                    nextFollowUp = picked;
-                    _dateController.text = DateFormat('yyyy-MM-dd').format(nextFollowUp!);
-                    nextSlotProvider.fetchNextSlots(_dateController.text);
-                  });
-                }
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Next follow-up date is required";
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Follow Up Time*",
-              style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
-            ),
-            nextSlotProvider.isLoading
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : DropdownButton2<String>(
-              isExpanded: true,
-              hint: const Text(
-                'Select Time',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontFamily: "poppins_thin",
-                ),
-              ),
-              value: _selectedFollowUpTime,
-              buttonStyleData: ButtonStyleData(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade200,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-              underline: const SizedBox(),
-              dropdownStyleData: DropdownStyleData(
-                offset: const Offset(-5, -10),
-                maxHeight: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 10,
-                scrollbarTheme: ScrollbarThemeData(
-                  radius: const Radius.circular(40),
-                  thickness: MaterialStateProperty.all(6),
-                  thumbVisibility: MaterialStateProperty.all(true),
-                ),
-              ),
-              items: nextSlotProvider.nextSlots.isEmpty
-                  ? [
-                const DropdownMenuItem(
-                  value: 'None',
-                  child: Text(
-                    'No slots available',
-                    style: TextStyle(fontFamily: "poppins_thin"),
+          widget.isEdit == false
+              ? Text(
+            "Follow Up Time*",
+            style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          )
+              : SizedBox(height: 0),
+          SizedBox(height: 5),
+          widget.isEdit == false
+              ? nextSlotProvider.isLoading
+              ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : FormField<String>(
+            initialValue: _selectedFollowUpTime,
+            validator: (value) => value == null ? "This field is required" : null,
+            builder: (FormFieldState<String> state) {
+              return DropdownButton2<String>(
+                isExpanded: true,
+                hint: const Text(
+                  'Select Time',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: "poppins_thin",
                   ),
                 ),
-              ]
-                  : nextSlotProvider.nextSlots.map((slot) {
-                return DropdownMenuItem<String>(
-                  value: slot.disabled ? slot.source : null,
-                  enabled: slot.disabled,
-                  child: Text(
-                    slot.source ?? '',
-                    style: TextStyle(
-                      fontFamily: "poppins_thin",
-                      color: slot.disabled ? Colors.black : Colors.grey,
+                underline: SizedBox(width: 0),
+                value: _selectedFollowUpTime,
+                buttonStyleData: ButtonStyleData(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.shade200,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 4,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                dropdownStyleData: DropdownStyleData(
+                  offset: const Offset(-5, -10),
+                  maxHeight: 200,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+                  elevation: 10,
+                  scrollbarTheme: ScrollbarThemeData(
+                    radius: const Radius.circular(40),
+                    thickness: MaterialStateProperty.all(6),
+                    thumbVisibility: MaterialStateProperty.all(true),
+                  ),
+                ),
+                items: nextSlotProvider.nextSlots.isEmpty
+                    ? [
+                  const DropdownMenuItem(
+                    value: 'None',
+                    child: Text(
+                      'No slots available',
+                      style: TextStyle(fontFamily: "poppins_thin"),
                     ),
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedFollowUpTime = value;
-                  });
-                }
-              },
-            ),
-          ],
+                ]
+                    : nextSlotProvider.nextSlots.map((slot) {
+                  final isSelected = slot.source == _selectedFollowUpTime;
+                  return DropdownMenuItem<String>(
+                    value: slot.disabled ? slot.source : null,
+                    enabled: slot.disabled,
+                    child: Text(
+                      slot.source ?? '',
+                      style: TextStyle(
+                        fontFamily: "poppins_thin",
+                        fontSize: 16,
+                        color: isSelected
+                            ? Colors.black
+                            : (slot.disabled ? Colors.black : Colors.grey.shade600),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedFollowUpTime = value;
+                      state.didChange(value);
+                    });
+                  }
+                },
+              );
+            },
+          )
+              : SizedBox(height: 0),
         ],
       ),
     );
@@ -870,6 +1540,7 @@ class CombinedDropdownTextField<T> extends StatefulWidget {
   final String Function(T)? displayString;
   final Function(T) onSelected;
   final bool isRequired;
+  final T? initialValue;
 
   const CombinedDropdownTextField({
     super.key,
@@ -877,6 +1548,7 @@ class CombinedDropdownTextField<T> extends StatefulWidget {
     this.displayString,
     required this.onSelected,
     this.isRequired = false,
+    this.initialValue,
   });
 
   @override
@@ -896,6 +1568,24 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
     super.initState();
     _focusNode.addListener(_onFocusChange);
     _filteredOptions = widget.options;
+    if (widget.initialValue != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.text = _getDisplayString(widget.initialValue as T);
+        print("CombinedDropdown Initial Value: ${_controller.text}");
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(CombinedDropdownTextField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue && widget.initialValue != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.text = _getDisplayString(widget.initialValue as T);
+        _filteredOptions = widget.options;
+        print("CombinedDropdown Updated Value: ${_controller.text}");
+      });
+    }
   }
 
   @override
@@ -911,6 +1601,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
     setState(() {
       _isDropdownVisible = _focusNode.hasFocus;
       if (_isDropdownVisible) {
+        _filteredOptions = widget.options;
         _showOverlay(context);
       } else {
         _hideOverlay();
@@ -921,23 +1612,19 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
   void _filterOptions(String query) {
     setState(() {
       _filteredOptions = widget.options
-          .where((option) => _getDisplayString(option)
-          .toLowerCase()
-          .contains(query.toLowerCase()))
+          .where((option) => _getDisplayString(option).toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
 
   String _getDisplayString(T option) {
-    return widget.displayString != null
-        ? widget.displayString!(option)
-        : option.toString();
+    return widget.displayString != null ? widget.displayString!(option) : option.toString();
   }
 
   void _selectOption(T option) {
     setState(() {
       _controller.text = _getDisplayString(option);
-      _filteredOptions = [];
+      _filteredOptions = widget.options;
       _isDropdownVisible = false;
     });
     widget.onSelected(option);
@@ -964,7 +1651,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: ListView.builder(
-                padding: EdgeInsets.zero,
+                padding: EdgeInsets.all(8),
                 shrinkWrap: true,
                 itemCount: _filteredOptions.length,
                 itemBuilder: (context, index) {
@@ -1005,8 +1692,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
             decoration: InputDecoration(
               hintText: 'Select or Type',
               hintStyle: const TextStyle(fontFamily: "poppins_light"),
-              border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(20))),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
               suffixIcon: _isDropdownVisible
                   ? IconButton(
                 icon: const Icon(Icons.arrow_drop_up),
@@ -1024,7 +1710,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
                   setState(() {
                     _isDropdownVisible = true;
                     _focusNode.requestFocus();
-                    _filterOptions(_controller.text);
+                    _filteredOptions = widget.options;
                     _showOverlay(context);
                   });
                 },
@@ -1035,7 +1721,7 @@ class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField
               setState(() {
                 _isDropdownVisible = true;
                 _focusNode.requestFocus();
-                _filterOptions(_controller.text);
+                _filteredOptions = widget.options;
                 _showOverlay(context);
               });
             },

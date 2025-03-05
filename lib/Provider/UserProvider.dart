@@ -1,33 +1,46 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Api_services/api_service.dart';
-import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
-import 'package:hr_app/Inquiry_Management/Model/Api%20Model/fetch_Transfer_Inquiry_Model.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
-import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/dismiss_Model.dart';
+// import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import '../Inquiry_Management/Model/Api Model/add_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
+import '../Inquiry_Management/Model/Api Model/dismiss_Model.dart';
+import '../Inquiry_Management/Model/Api Model/dismiss_dropdown_Model.dart';
+import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
-import '../Inquiry_Management/Model/Api Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
+import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
+import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
+import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+import '../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 
 class UserProvider with ChangeNotifier {
-  bool _isLoggedIn = false;
-  bool get isLoggedIn => _isLoggedIn;
 
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
-  final ApiService _apiService = ApiService();
+  bool _isLoggedIn=false;
+  bool get isLoggedIn=> _isLoggedIn;
+
+  // final ApiService _apiService=ApiService();
+  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
 
   Realtostaffprofilemodel? _profileData;
   Realtostaffprofilemodel? get profileData => _profileData;
-
-  Realtostaffprofilemodel? _sendTransferInqData;
-  Realtostaffprofilemodel? get sendTransferInqData => _sendTransferInqData;
 
   Realtoofficelocationmodel? _officeLocationData;
   Realtoofficelocationmodel? get officeLocationData => _officeLocationData;
@@ -38,20 +51,13 @@ class UserProvider with ChangeNotifier {
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
 
-  List<Realtostaffattendancemodel>? _staffAttendanceData;
-  List<Realtostaffattendancemodel>? get staffAttendanceData => _staffAttendanceData;
-
-  Realtoallstaffleavesmodel? _allStaffLeavesData;
-  Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
-
-  fetchTransferInquiryModel? _transferInquiryData;
-  fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
+  final ApiService _apiService = ApiService();
 
   List<Inquiry> _inquiries = [];
   int _currentPage = 1;
   bool _isLoading = false;
   bool _hasMore = true;
-  final int _limit = 20; // Number of items per API call
+  final int _limit = 20;  // Number of items per API call
 
   List<Inquiry> get inquiries => _inquiries;
   bool get isLoading => _isLoading;
@@ -74,38 +80,140 @@ class UserProvider with ChangeNotifier {
   List<NextSlot> _nextSlots = [];
   List<NextSlot> get nextSlots => _nextSlots;
 
-  followup_Cnr_Model? _followupCnrData;
-  followup_Cnr_Model? get followupCnrData => _followupCnrData;
+  DashboardpermissionModel? _dashboardpermission;
+  DashboardpermissionModel? get dashboardpermissionModel => _dashboardpermission;
+  RealtosmartdashboardModel? _DashBoarddata;
+  RealtosmartdashboardModel? get DashBoarddata => _DashBoarddata;
 
-  // New function to fetch follow-up inquiries
-  Future<void> fetchFollowupCnrInquiries({
-    required int status,
-    required String followupDay,
-  }) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners(); // Notify UI that loading has started
+  Realtoallstaffleavesmodel? _allStaffLeavesData;
+  Realtoallstaffleavesmodel? get allStaffLeavesData => _allStaffLeavesData;
 
+  List<Realtostaffattendancemodel>? _staffAttendanceData;
+  List<Realtostaffattendancemodel>? get staffAttendanceData => _staffAttendanceData;
+
+
+  InquiryFilter? _filterData;
+  // String? _error;
+
+  InquiryFilter? get filterData => _filterData;
+  // String? get _error => _error;
+
+  FetchBookingData2? _bookingData;
+  FetchBookingData2? get bookingData => _bookingData;
+
+  VisitEntryModel? _visitData;
+  VisitEntryModel? get visitData => _visitData;
+
+  Future<void> fetchDashboardpermission() async {
     try {
-      final data = await _apiService.fetchFollowupCnrInquiries(
-        status,
-        followupDay: followupDay,
-      );
-      if (data != null) {
-        _followupCnrData = data;
-        print("Follow-up CNR data loaded successfully: ${data.tab?.length} inquiries");
+      _dashboardpermission = await _apiService.fetchDashboardpermission();
+      if (_dashboardpermission != null) {
+        // Print the top-level fields
+        print("fetchDashboardpermission");
+        print("ok: ${_dashboardpermission!.allDashboard}");
+        print("ok ID: ${_dashboardpermission!.appointmentCalender}");
+
+
       } else {
-        _errorMessage = "No follow-up inquiries received from the server";
-        print("Warning: No follow-up data fetched");
+        print("No data returned from API");
       }
+      notifyListeners();
     } catch (e) {
-      _errorMessage = "Error fetching follow-up inquiries: $e";
-      print("Error: $_errorMessage");
-    } finally {
-      _isLoading = false;
-      notifyListeners(); // Notify UI that loading is complete
+      print("Error in provider: $e");
+      _inquiryTimeline = null; // Reset on error
+      notifyListeners();
+    }
+
+  }
+  Future<void> fetchDashboard({required String countwise}) async {
+    try {
+      debugPrint('Fetching dashboard with countwise: $countwise');
+
+      _DashBoarddata = await _apiService.fetchDashboard(countwise:countwise );
+
+
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error in provider: $e");
+      _DashBoarddata = null; // Changed from inquiryTimeline to _DashBoarddata
+      notifyListeners();
     }
   }
+
+
+  Future<void> fetchTwoMonthsAttendance() async {
+    try {
+      _staffAttendanceData = await _apiService.fetchTwoMonthsAttendance();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff attendance data: $e");
+      _staffAttendanceData = null; // Optional: Reset data on error
+      notifyListeners();
+    }
+  }
+  Future<void> fetchAllStaffLeavesData () async {
+    try {
+      _allStaffLeavesData = await _apiService.fetchAllStaffLeavesData();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching staff leaves data: $e");
+    }
+  }
+  Future<bool> sendMemberAttendance({required String qrAttendance}) async {
+    try {
+      await _apiService.sendMemberAttendance(qrAttendance: qrAttendance);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+  Future<bool> sendLeaveRequest ({
+    required String head_name,
+    required String full_name,
+    required String under_team,
+    required String date,
+    required String reporting_to,
+    required String apply_days,
+    required String from_date,
+    required String to_date,
+    required String leave_reason,
+    required String leave_type,
+    required String leave_type_id,
+  }) async {
+    try {
+      bool success = await _apiService.sendLeaveRequest(
+        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id,
+      );
+
+      if (success) {
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
+  Future<bool> sendApproveReject({
+    required String leaveId,
+    required String action,
+  }) async {
+    try {
+      await _apiService.sendApproveReject(leaveId: leaveId, action: action);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
 
   Future<void> fetchInquiries({
     bool isLoadMore = false,
@@ -134,9 +242,8 @@ class UserProvider with ChangeNotifier {
       if (response != null && response.inquiries.isNotEmpty) {
         paginatedInquiries = response;
 
-        final newInquiries = response.inquiries
-            .where((newInquiry) => !_inquiries.any((existing) => existing.id == newInquiry.id))
-            .toList();
+        final newInquiries = response.inquiries.where((newInquiry) =>
+        !_inquiries.any((existing) => existing.id == newInquiry.id)).toList();
 
         if (isLoadMore) {
           _inquiries.addAll(newInquiries);
@@ -217,7 +324,6 @@ class UserProvider with ChangeNotifier {
         return 0;
     }
   }
-
   void resetPagination() {
     _currentPage = 1;
     _inquiries.clear();
@@ -245,7 +351,6 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
   Future<void> fetchNextSlots(String date) async {
     _isLoading = true;
     _errorMessage = null;
@@ -278,41 +383,64 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String username, String password) async {
-    bool success = await _apiService.login(username, password);
 
-    if (success) {
-      _isLoggedIn = true;
+  // Map<String, int> _stageCounts = {};
+  // Map<String, int> get stageCounts => _stageCounts;
+
+
+  Future<bool> login(String username,String password) async{
+    bool success=await _apiService.login(username, password);
+
+    if(success){
+      _isLoggedIn=true;
       notifyListeners();
       return true;
-    } else {
-      _isLoggedIn = false;
+    }else{
+      _isLoggedIn=false;
       notifyListeners();
       return false;
     }
-  }
 
+  }
   Future<void> checkLoginStatus() async {
+
     try {
+
       String? token = await _secureStorage.read(key: 'token');
+
       if (token != null) {
+
         _isLoggedIn = true;
+
         print(token);
+
         await fetchOfficeLocationData();
+
         fetchProfileData();
+
         fetchInquiries();
-        Future.wait([fetchTwoMonthsAttendance()]);
+
+        // ✅ Run first (waits for completion)
+
+        // Run remaining API calls in the background (parallel)
+        Future.wait([
+
+        ]);
+
       } else {
+
         _isLoggedIn = false;
+
       }
       notifyListeners();
     } catch (e) {
       _isLoggedIn = false;
       notifyListeners();
+
     }
   }
 
-  Future<void> fetchProfileData() async {
+  Future<void> fetchProfileData () async {
     try {
       _profileData = await _apiService.fetchProfileData();
       notifyListeners();
@@ -321,7 +449,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchOfficeLocationData() async {
+  Future<void> fetchOfficeLocationData () async {
     try {
       _officeLocationData = await _apiService.fetchOfficeLocationData();
       notifyListeners();
@@ -330,7 +458,30 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchStaffLeavesData() async {
+  InquiryStatusModel? _inquiryStatus;
+  InquiryStatusModel? get inquiryStatus => _inquiryStatus;
+
+  Future<void> fetchInquiryStatus() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _apiService.fetchInquiryStatus();
+      if (data != null) {
+        _inquiryStatus = data;
+      } else {
+        _errorMessage = "Failed to load data";
+      }
+    } catch (e) {
+      _errorMessage = "Error: ${e.toString()}";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchStaffLeavesData () async {
     try {
       _staffLeavesData = await _apiService.fetchStaffLeavesData();
       notifyListeners();
@@ -339,16 +490,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchAllStaffLeavesData() async {
-    try {
-      _allStaffLeavesData = await _apiService.fetchAllStaffLeavesData();
-      notifyListeners();
-    } catch (e) {
-      print("Error fetching staff leaves data: $e");
-    }
-  }
-
-  Future<void> fetchLeaveTypesData() async {
+  Future<void> fetchLeaveTypesData () async {
     try {
       _leaveTypesData = await _apiService.fetchLeaveTypesData();
       notifyListeners();
@@ -357,44 +499,145 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendLeaveRequest({
-    required String head_name,
-    required String full_name,
-    required String under_team,
-    required String date,
-    required String reporting_to,
-    required String apply_days,
-    required String from_date,
-    required String to_date,
-    required String leave_reason,
-    required String leave_type,
-    required String leave_type_id,
-  }) async {
+
+  Future<EditLeadData?> fetchEditLeadData(String leadId) async {
     try {
-      bool success = await _apiService.sendLeaveRequest(
-        head_name: head_name,
-        full_name: full_name,
-        under_team: under_team,
-        date: date,
-        reporting_to: reporting_to,
-        apply_days: apply_days,
-        from_date: from_date,
-        to_date: to_date,
-        leave_reason: leave_reason,
-        leave_type: leave_type,
-        leave_type_id: leave_type_id,
+      final editData = await _apiService.fetchEditLeadData(leadId);
+      if (editData == null) {
+        throw Exception('Failed to fetch edit lead data');
+      }
+      return editData;
+    } catch (e) {
+      print('Error in provider fetching edit lead data: $e');
+      return null;
+    }
+  }
+  Future<bool> updateInquiryStatus({
+    required String inquiryId,
+    required String selectedTab,
+    required Map<String, dynamic> formData,
+    String? interestedProduct,
+    int? isSiteVisit,
+    int? interest,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _apiService.updateInquiryStatus(
+        inquiryId: inquiryId,
+        selectedTab: selectedTab,
+        formData: formData,
+        interestedProduct: interestedProduct,
+        isSiteVisit: isSiteVisit,
+        interest: interest,
       );
 
-      if (success) {
+      _isLoading = false;
+
+      if (result['success']) {
+        _error = 'Inquiry status updated successfully';
         notifyListeners();
         return true;
       } else {
+        _error = result['message'];
+        notifyListeners();
         return false;
       }
     } catch (e) {
-      print("Error sending leave request: $e");
+      _isLoading = false;
+      _error = 'Unexpected error: $e';
+      notifyListeners();
       return false;
     }
+  }
+  Future<bool> handleFollowUpUpdate({
+    required String inquiryId,
+    required Map<String, dynamic> formData,
+    required int interest,
+  }) async {
+    return await updateInquiryStatus(
+      inquiryId: inquiryId,
+      selectedTab: 'follow up',
+      formData: formData,
+      interest: interest,
+      isSiteVisit: formData['isSiteVisit'] as int?,
+      interestedProduct: formData['interestedProduct'] as String?,
+    );
+  }
+  Future<bool> updateLead({
+    required String action,
+    required String leadId,
+    required String fullName,
+    required String mobileno,
+    required String altmobileno,
+    required String email,
+    required String houseno,
+    required String society,
+    required String area,
+    required String city,
+    required String countryCode,
+    required String intrestedArea,
+    required String intrestedAreaName,
+    required String interstedSiteName,
+    required String budget,
+    required String purposeBuy,
+    required String approxBuy,
+    required String propertyConfiguration,
+    required String inquiryType,
+    required String inquirySourceType,
+    required String description,
+    required String intrestedProduct,
+    String? nxtFollowUp,
+  }) async {
+    try {
+      final success = await _apiService.updateLeadData(
+        leadId: leadId,
+        fullName: fullName,
+        mobileno: mobileno,
+        altmobileno: altmobileno,
+        email: email,
+        houseno: houseno,
+        society: society,
+        area: area,
+        city: city,
+        countryCode: countryCode,
+        intrestedArea: intrestedArea,
+        intrestedAreaName: intrestedAreaName,
+        interstedSiteName: interstedSiteName,
+        budget: budget,
+        purposeBuy: purposeBuy,
+        approxBuy: approxBuy,
+        propertyConfiguration: propertyConfiguration,
+        inquiryType: inquiryType,
+        inquirySourceType: inquirySourceType,
+        description: description,
+        intrestedProduct: intrestedProduct,
+        nxtFollowUp: nxtFollowUp,
+      );
+      print("Update Lead Result: $success");
+      notifyListeners();
+      return success;
+    } catch (e) {
+      print('Error in provider updating lead data: $e');
+      return false;
+    }
+  }
+  InquiryModel? _inquiryModel;
+  InquiryModel? get inquiryModel => _inquiryModel;
+  Future<void> loadInquiryData(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _inquiryModel = await _apiService.fetchInquiryData(id);
+    } catch (e) {
+      print('Error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> addLead({
@@ -417,32 +660,33 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno,
-    required String description,
+    required String altmobileno, required String description,
+    // required String intrested_product
+
   }) async {
     try {
       bool success = await _apiService.addLead(
-        action: action,
-        nxt_follow_up: nxt_follow_up,
-        time: time,
-        purpose_buy: purpose_buy,
-        city: city,
-        country_code: country_code,
-        intrested_area: intrested_area,
-        full_name: full_name,
-        budget: budget,
-        approx_buy: approx_buy,
-        area: area,
-        mobileno: mobileno,
-        inquiry_type: inquiry_type,
-        inquiry_source_type: inquiry_source_type,
-        intrested_area_name: intrested_area_name,
-        intersted_site_name: intersted_site_name,
+          action:action,
+          nxt_follow_up: nxt_follow_up,
+          time: time,
+          purpose_buy: purpose_buy,
+          city: city,
+          country_code: country_code,
+          intrested_area: intrested_area,
+          full_name: full_name,
+          budget: budget,
+          approx_buy: approx_buy,
+          area: area,
+          mobileno: mobileno,
+          inquiry_type:inquiry_type,
+          inquiry_source_type:inquiry_source_type,
+          intrested_area_name:intrested_area_name,
+          intersted_site_name:intersted_site_name,
         altmobileno: altmobileno,
         houseno: houseno,
         PropertyConfiguration: PropertyConfiguration,
-        society: society,
-        description: description,
+        society: society, description: ''
+
       );
 
       if (success) {
@@ -457,7 +701,6 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
-
   InquiryTimeLineModel? _inquiryTimeline;
   InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
 
@@ -465,9 +708,12 @@ class UserProvider with ChangeNotifier {
     try {
       _inquiryTimeline = await _apiService.fetchInquiryTimeline(inquiryId: inquiryId);
       if (_inquiryTimeline != null) {
+        // Print the top-level fields
         print("Inquiry Timeline Data:");
         print("Result: ${_inquiryTimeline!.result}");
         print("Inquiry ID: ${_inquiryTimeline!.inquiryId}");
+
+        // Print the list of Data objects
         if (inquiryTimeline!.data != null && inquiryTimeline!.data!.isNotEmpty) {
           print("Data List (${_inquiryTimeline!.data!.length} items):");
           for (var i = 0; i < _inquiryTimeline!.data!.length; i++) {
@@ -494,41 +740,113 @@ class UserProvider with ChangeNotifier {
       _inquiryTimeline = null; // Reset on error
       notifyListeners();
     }
-  }
 
+  }
   String? _error;
   String? get error => _error;
 
-  VisitEntryModel? _visitData;
-  VisitEntryModel? get visitData => _visitData;
 
-  Future<void> fetchVisitData() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
+  Future<void> fetchFilterData() async {
     try {
-      _visitData = await _apiService.fetchVisitData();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _filterData = await _apiService.fetchFilterData();
+
       _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
       notifyListeners();
     }
   }
-
-  Future<void> fetchTwoMonthsAttendance() async {
+  Future<void> fetchVisitData(String inquiryId) async {
     try {
-      _staffAttendanceData = await _apiService.fetchTwoMonthsAttendance();
+      _isLoading=true;
+
+      _visitData=await _apiService.fetchVisitData(inquiryId);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      throw e;
+    }
+  }
+
+
+  Future<void> fetchBookingData(String editId) async {
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _bookingData = await _apiService.fetchBookingData(editId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      throw e;
+    }
+  }
+
+  // Future<void> fetchStaffAttendanceData () async {
+  //   try {
+  //     _staffAttendanceData = (await _apiService.fetchStaffAttendanceData()) ;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     print("Error fetching staff attendance data: $e");
+  //   }
+  // }
+
+  DismissModel? _dismissmodel;
+  DismissModel? get dismissmodel => _dismissmodel;
+  Future<void> fetchDismissData(int pageNumber) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      _dismissmodel = null;
+      notifyListeners();
+
+      print('Fetching dismiss data for page: $pageNumber');
+      _dismissmodel = await _apiService.fetchDismissData(
+        pageNumber,
+      );
+      print('Dismiss data fetched: ${_dismissmodel?.toJson()}');
+
+      _isLoading = false;
+      if (_dismissmodel == null) {
+        _errorMessage = "No dismiss data returned from API";
+        print('Error: No data returned');
+      }
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _dismissmodel = null;
+      _errorMessage = "Error fetching dismiss data: $e";
+      print('Exception: $_errorMessage');
+      notifyListeners();
+    }
+  }
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  fetchTransferInquiryModel? _transferInquiryData;
+  fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
+
+  Future<void> fetchTransferInquiryData () async {
+    try {
+      _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");
-      _staffAttendanceData = null; // Optional: Reset data on error
-      notifyListeners();
     }
   }
-
-  Future<void> fetchTransferInquiryData() async {
+  Future<void> fetch () async {
     try {
       _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
@@ -537,7 +855,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> sendTransferInquiry({
+  Future<void> sendTransferInquiry ({
     required List<String> inqIds, // Changed to accept a list of IDs
     required String actionKey,
     required String employeeId,
@@ -551,28 +869,14 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendApproveReject({
-    required String leaveId,
-    required String action,
-  }) async {
-    try {
-      await _apiService.sendApproveReject(leaveId: leaveId, action: action);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      print("Error sending leave request: $e");
-      return false;
-    }
-  }
 
-  Future<bool> sendMemberAttendance({required String qrAttendance}) async {
-    try {
-      await _apiService.sendMemberAttendance(qrAttendance: qrAttendance);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      print("Error sending leave request: $e");
-      return false;
-    }
-  }
+
+//   void resetPagination() {
+//     _currentPage = 1;
+//     _inquiries.clear();
+//     _hasMore = true;
+//   }
 }
+
+// Add a getValue function to access the pagination data as a string and parse to int
+

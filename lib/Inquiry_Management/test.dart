@@ -1,13 +1,16 @@
 import 'dart:convert';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../Api_services/api_service.dart';
 import '../Provider/UserProvider.dart';
 
+// import 'Model/add_Lead_Model.dart';
+import 'Model/Api Model/add_Lead_Model.dart';
+import 'Utils/Colors/app_Colors.dart';
 
 class IntSiteOption {
   final String id;
@@ -16,10 +19,14 @@ class IntSiteOption {
   IntSiteOption({required this.id, required this.name});
 
   @override
-  String toString() => name; // For display in dropdown
+  String toString() => name;
 }
 
 class AddVisitScreen extends StatefulWidget {
+  final String? inquiryId;
+
+  const AddVisitScreen({Key? key, this.inquiryId}) : super(key: key);
+
   @override
   _AddVisitScreenState createState() => _AddVisitScreenState();
 }
@@ -45,24 +52,19 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
   String? _purposeOfBuying;
   String? _approxBuyingTime;
-  IntSiteOption? _selectedIntSite; // Updated to use IntSiteOption
+  IntSiteOption? _selectedIntSite;
   String? _cashPaymentCondition;
   String? _selectTime;
   String? _selectedPropertySubType;
   String? _selectedUnitNo;
   String? _selectedSize;
 
+  String? _iscountvisit;
+
   List<String> _propertySubTypeOptions = [];
   List<String> _unitNoOptions = [];
   List<String> _sizeOptions = [];
-  List<IntSiteOption> _intSiteOptions = []; // Store ID-name pairs
-
-  final List<DropdownMenuItem<String>> _timeOptions = [
-    DropdownMenuItem(value: "09:00:00", child: Text("9:00 AM")),
-    DropdownMenuItem(value: "12:00:00", child: Text("12:00 PM")),
-    DropdownMenuItem(value: "15:00:00", child: Text("3:00 PM")),
-    DropdownMenuItem(value: "18:00:00", child: Text("6:00 PM")),
-  ];
+  List<IntSiteOption> _intSiteOptions = [];
 
   final ApiService _apiService = ApiService();
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -72,79 +74,114 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     super.initState();
     Future.microtask(() {
       final provider = Provider.of<UserProvider>(context, listen: false);
-      provider.fetchVisitData().then((_) {
-        if (provider.visitData != null) {
-          final inquiry = provider.visitData!.inquiries;
-          final projects = provider.visitData!.projects;
-          final unitNos = provider.visitData!.unitNo;
-          setState(() {
-            _mobileNoController.text = inquiry.mobileno ?? '';
-            _nameController.text = inquiry.fullName ?? '';
-            _addressController.text = inquiry.address ?? '';
-            _intAreaController.text = inquiry.intrestedProduct ?? '';
-            _propertyTypeController.text = inquiry.propertyType ?? '';
-            _budgetController.text = inquiry.budget ?? '';
+      if (widget.inquiryId != null) {
+        provider.fetchVisitData(widget.inquiryId!).then((_) {
+          if (provider.visitData != null) {
+            final inquiry = provider.visitData!.inquiries;
+            final projects = provider.visitData!.projects;
+            final unitNos = provider.visitData!.unitNo;
+            setState(() {
+              _iscountvisit = inquiry.iscountvisit;
+              _mobileNoController.text = inquiry.mobileno ?? '';
+              _nameController.text = inquiry.fullName ?? '';
+              _addressController.text = inquiry.address ?? '';
+              _intAreaController.text = 'Olpad';
+              _propertyTypeController.text = inquiry.propertyType ?? '';
+              _budgetController.text = inquiry.budget ?? '';
 
-            _propertySubTypeOptions = projects
-                .map((project) => project.projectSubType.trim())
-                .where((subType) => subType.isNotEmpty)
-                .toSet()
-                .toList();
-            _selectedPropertySubType = inquiry.propertySubType.isNotEmpty
-                ? inquiry.propertySubType.trim()
-                : _propertySubTypeOptions.isNotEmpty
-                ? _propertySubTypeOptions.first
-                : null;
+              _propertySubTypeOptions = projects
+                  .map((project) => project.projectSubType.trim())
+                  .where((subType) => subType.isNotEmpty)
+                  .toSet()
+                  .toList();
+              _selectedPropertySubType = inquiry.propertySubType.isNotEmpty
+                  ? inquiry.propertySubType.trim()
+                  : _propertySubTypeOptions.isNotEmpty
+                  ? _propertySubTypeOptions.first
+                  : null;
 
-            _unitNoOptions = unitNos.isNotEmpty
-                ? unitNos
-                .map((unit) => unit.unitNo.trim())
-                .where((unit) => unit.isNotEmpty)
-                .toSet()
-                .toList()
-                : ['No Units Available'];
-            _selectedUnitNo = inquiry.unitNo.isNotEmpty
-                ? inquiry.unitNo.trim()
-                : _unitNoOptions.isNotEmpty
-                ? _unitNoOptions.first
-                : null;
+              _unitNoOptions = unitNos.isNotEmpty
+                  ? unitNos
+                  .map((unit) => unit.unitNo.trim())
+                  .where((unit) => unit.isNotEmpty)
+                  .toSet()
+                  .toList()
+                  : ['No Units Available'];
+              _selectedUnitNo = inquiry.unitNo.isNotEmpty
+                  ? inquiry.unitNo.trim()
+                  : _unitNoOptions.isNotEmpty
+                  ? _unitNoOptions.first
+                  : null;
 
-            _sizeOptions = unitNos.isNotEmpty
-                ? unitNos
-                .map((unit) => unit.propertySize.trim())
-                .where((size) => size.isNotEmpty)
-                .toSet()
-                .toList()
-                : ['No Size Available'];
-            _selectedSize = unitNos.isNotEmpty && _unitNoOptions.contains(inquiry.unitNo)
-                ? unitNos
-                .firstWhere((unit) => unit.unitNo == inquiry.unitNo)
-                .propertySize
-                .trim()
-                : _sizeOptions.isNotEmpty
-                ? _sizeOptions.first
-                : null;
-          });
-        }
-      });
+              _sizeOptions = unitNos.isNotEmpty
+                  ? unitNos
+                  .map((unit) => unit.propertySize.trim())
+                  .where((size) => size.isNotEmpty)
+                  .toSet()
+                  .toList()
+                  : ['No Size Available'];
+              _selectedSize = unitNos.isNotEmpty && _unitNoOptions.contains(inquiry.unitNo)
+                  ? unitNos
+                  .firstWhere((unit) => unit.unitNo == inquiry.unitNo)
+                  .propertySize
+                  .trim()
+                  : _sizeOptions.isNotEmpty
+                  ? _sizeOptions.first
+                  : null;
+            });
+          }
+        }).catchError((e) {
+          print('Error fetching visit data: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load visit data: $e')),
+          );
+        });
+      } else {
+        print('No inquiryId provided');
+      }
 
       provider.fetchAddLeadData().then((_) {
         if (provider.dropdownData != null) {
           setState(() {
             final dropdownData = provider.dropdownData!;
+            final inquiry = provider.visitData?.inquiries;
+
             _purposeOfBuying = dropdownData.purposeOfBuying?.investment?.trim() ??
                 dropdownData.purposeOfBuying?.personalUse?.trim();
+            if (inquiry != null && inquiry.purposeBuy.isNotEmpty) {
+              _purposeOfBuying = dropdownData.purposeOfBuying?.investment == inquiry.purposeBuy ||
+                  dropdownData.purposeOfBuying?.personalUse == inquiry.purposeBuy
+                  ? inquiry.purposeBuy
+                  : _purposeOfBuying;
+            }
+
             _approxBuyingTime = dropdownData.apxTime?.apxTimeData?.split(',')?.first.trim();
+            if (inquiry != null && inquiry.budget.isNotEmpty) {
+              final times = dropdownData.apxTime?.apxTimeData?.split(',')?.map((e) => e.trim()).toList();
+              if (times != null && times.isNotEmpty) {
+                int index = int.tryParse(inquiry.budget) ?? 1;
+                _approxBuyingTime = (index > 0 && index <= times.length) ? times[index - 1] : _approxBuyingTime;
+              }
+            }
+
             _intSiteOptions = dropdownData.intSite.isNotEmpty
                 ? dropdownData.intSite
                 .map((site) => IntSiteOption(
-              id: site.id ?? "6", // Assuming 'id' field exists; adjust if different
+              id: site.id ?? "6",
               name: site.productName.trim(),
             ))
                 .toList()
                 : [IntSiteOption(id: "6", name: "Default Site")];
-            _selectedIntSite = _intSiteOptions.isNotEmpty ? _intSiteOptions.first : null;
-            _selectTime = _timeOptions.first.value;
+            if (inquiry != null && inquiry.intrestedProduct.isNotEmpty) {
+              _selectedIntSite = _intSiteOptions.firstWhere(
+                    (option) => option.id == inquiry.intrestedProduct,
+                orElse: () => _intSiteOptions.first,
+              );
+            } else {
+              _selectedIntSite = _intSiteOptions.isNotEmpty ? _intSiteOptions.first : null;
+            }
+
+            _selectTime = null; // Initially null, updated by API
             print("IntSite Options: ${_intSiteOptions.map((e) => 'ID: ${e.id}, Name: ${e.name}').toList()}");
           });
         } else {
@@ -153,10 +190,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             _approxBuyingTime = '2-3 days';
             _intSiteOptions = [IntSiteOption(id: "6", name: "Default Site")];
             _selectedIntSite = _intSiteOptions.first;
-            _selectTime = _timeOptions.first.value;
+            _selectTime = null; // Initially null, updated by API
             print("IntSite Options (Default): ${_intSiteOptions.map((e) => 'ID: ${e.id}, Name: ${e.name}').toList()}");
           });
         }
+      }).catchError((e) {
+        print('Error fetching dropdown data: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load dropdown data: $e')),
+        );
       });
     });
   }
@@ -192,51 +234,62 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     }
   }
 
-  // Future<void> _submitData() async {
-  //   String? token = await _secureStorage.read(key: 'token');
-  //   print("Submit Data - Token: $token");
-  //
-  //   if (token == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("Error: No token found in secure storage")),
-  //     );
-  //     return;
-  //   }
-  //
-  //   final Map<String, dynamic> apiData = {
-  //     "token": token,
-  //     "remark": _afterVisitStatusController.text,
-  //     "intrested_product": _selectedIntSite?.id ?? "6", // Send ID instead of name
-  //     "budget": _budgetController.text.isNotEmpty ? "1" : "1",
-  //     "approx_buy": _approxBuyingTime ?? "2-3 days",
-  //     "inquiry_id": 95560,
-  //     "isSiteVisit": "3",
-  //     "intrested_area": "64",
-  //     "unit_no": _selectedUnitNo ?? "5",
-  //     "paymentref": isLoanSelected ? "loan" : "cash",
-  //     "dp_amount": _dpAmountController.text.isNotEmpty ? _dpAmountController.text : "2000000",
-  //     "nxt_follow_up": _followUpDateController.text.isNotEmpty ? _followUpDateController.text : "2025-02-28",
-  //     "time": _selectTime ?? "12:00:00",
-  //   };
-  //
-  //   print("Submit Data - API Data: ${jsonEncode(apiData)}");
-  //
-  //   final result = await _apiService.submitVisitData(apiData);
-  //   print("Submit Data - API Result: $result");
-  //
-  //   if (result["success"]) {
-  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
-  //     Navigator.pop(context);
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
-  //   }
-  // }
+  Future<void> _submitData() async {
+    String? token = await _secureStorage.read(key: 'token');
+    print("Submit Data - Token: $token");
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: No token found in secure storage")),
+      );
+      return;
+    }
+
+    if (widget.inquiryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: No inquiry ID provided")),
+      );
+      return;
+    }
+
+    final Map<String, dynamic> apiData = {
+      "token": token,
+      "remark": _afterVisitStatusController.text,
+      "intrested_product": _selectedIntSite?.id ?? "6",
+      "budget": _budgetController.text.isNotEmpty ? "1" : "1",
+      "approx_buy": _approxBuyingTime ?? "2-3 days",
+      "inquiry_id": widget.inquiryId,
+      "isSiteVisit": "3",
+      "intrested_area": _intAreaController.text.isNotEmpty ? _intAreaController.text : "64",
+      "unit_no": _selectedUnitNo ?? "5",
+      "paymentref": isLoanSelected ? "loan" : "cash",
+      "dp_amount": _dpAmountController.text.isNotEmpty ? _dpAmountController.text : "2000000",
+      "nxt_follow_up":
+      _followUpDateController.text.isNotEmpty ? _followUpDateController.text : "2025-02-28",
+      "time": _selectTime ?? "",
+    };
+
+    print("Submit Data - API Data: ${jsonEncode(apiData)}");
+
+    final result = await _apiService.submitVisitData(apiData);
+    print("Submit Data - API Result: $result");
+
+    if (result["success"]) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Visit Entry', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
+        title: Text(
+          'Visit Entry${_iscountvisit != null ? " ($_iscountvisit)" : ""}',
+          style: TextStyle(fontFamily: "poppins_thin", color: Colors.white),
+        ),
         backgroundColor: AppColor.Buttoncolor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -256,145 +309,161 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           final dropdownData = provider.dropdownData;
 
           List<DropdownMenuItem<String>> purposeOfBuyingItems = dropdownData != null
-          ? [
-          if (dropdownData.purposeOfBuying?.investment != null)
-            DropdownMenuItem<String>(
-              value: dropdownData.purposeOfBuying!.investment.trim(),
-              child: Text(dropdownData.purposeOfBuying!.investment.trim(),
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-          if (dropdownData.purposeOfBuying?.personalUse != null)
-          DropdownMenuItem<String>(
-          value: dropdownData.purposeOfBuying!.personalUse.trim(),
-          child: Text(dropdownData.purposeOfBuying!.personalUse.trim(),
-          style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+              ? [
+            if (dropdownData.purposeOfBuying?.investment != null)
+              DropdownMenuItem<String>(
+                value: dropdownData.purposeOfBuying!.investment.trim(),
+                child: Text(dropdownData.purposeOfBuying!.investment.trim(),
+                    style: TextStyle(fontFamily: "poppins_thin"),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            if (dropdownData.purposeOfBuying?.personalUse != null)
+              DropdownMenuItem<String>(
+                value: dropdownData.purposeOfBuying!.personalUse.trim(),
+                child: Text(dropdownData.purposeOfBuying!.personalUse.trim(),
+                    style: TextStyle(fontFamily: "poppins_thin"),
+                    overflow: TextOverflow.ellipsis),
+              ),
           ].where((item) => item.value!.isNotEmpty).toList()
               : [
-          DropdownMenuItem<String>(
-          value: 'Investment',
-          child: Text('Investment', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
-          DropdownMenuItem<String>(
-          value: 'Personal Use',
-          child: Text('Personal Use', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+            DropdownMenuItem<String>(
+              value: 'Investment',
+              child: Text('Investment',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
+            DropdownMenuItem<String>(
+              value: 'Personal Use',
+              child: Text('Personal Use',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
           ];
 
           List<DropdownMenuItem<String>> approxBuyingTimeItems = dropdownData != null &&
-          dropdownData.apxTime?.apxTimeData != null
-          ? dropdownData.apxTime!.apxTimeData
+              dropdownData.apxTime?.apxTimeData != null
+              ? dropdownData.apxTime!.apxTimeData
               .split(',')
               .map((time) => time.trim())
               .where((time) => time.isNotEmpty)
               .toSet()
               .map((time) => DropdownMenuItem<String>(
-          value: time,
-          child: Text(time, style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            value: time,
+            child: Text(time,
+                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
           ))
               .toList()
               : [
-          DropdownMenuItem<String>(
-          value: '2-3 days',
-          child: Text('2-3 days', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
-          DropdownMenuItem<String>(
-          value: '1 week',
-          child: Text('1 week', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
-          DropdownMenuItem<String>(
-          value: '1 month',
-          child: Text('1 month', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+            DropdownMenuItem<String>(
+              value: '2-3 days',
+              child: Text('2-3 days',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
+            DropdownMenuItem<String>(
+              value: '1 week',
+              child: Text('1 week',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
+            DropdownMenuItem<String>(
+              value: '1 month',
+              child: Text('1 month',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
           ];
 
           List<DropdownMenuItem<IntSiteOption>> intSiteItems = _intSiteOptions
               .map((option) => DropdownMenuItem<IntSiteOption>(
-          value: option,
-          child: Text(option.name, style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            value: option,
+            child: Text(option.name,
+                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
           ))
               .toList();
 
           List<DropdownMenuItem<String>> propertySubTypeItems = _propertySubTypeOptions.isNotEmpty
-          ? _propertySubTypeOptions
+              ? _propertySubTypeOptions
               .map((subType) => DropdownMenuItem<String>(
-          value: subType,
-          child: Text(subType, style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            value: subType,
+            child: Text(subType,
+                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
           ))
               .toList()
               : [
-          DropdownMenuItem<String>(
-          value: 'Residential',
-          child: Text('Residential', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
-          DropdownMenuItem<String>(
-          value: 'Commercial',
-          child: Text('Commercial', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+            DropdownMenuItem<String>(
+              value: 'Residential',
+              child: Text('Residential',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
+            DropdownMenuItem<String>(
+              value: 'Commercial',
+              child: Text('Commercial',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
           ];
 
           List<DropdownMenuItem<String>> unitNoItems = _unitNoOptions.isNotEmpty
-          ? _unitNoOptions
+              ? _unitNoOptions
               .map((unit) => DropdownMenuItem<String>(
-          value: unit,
-          child: Text(unit, style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            value: unit,
+            child: Text(unit,
+                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
           ))
               .toList()
               : [
-          DropdownMenuItem<String>(
-          value: 'Default Unit',
-          child: Text('Default Unit', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+            DropdownMenuItem<String>(
+              value: 'Default Unit',
+              child: Text('Default Unit',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
           ];
 
           List<DropdownMenuItem<String>> sizeItems = _sizeOptions.isNotEmpty
-          ? _sizeOptions
+              ? _sizeOptions
               .map((size) => DropdownMenuItem<String>(
-          value: size,
-          child: Text(size, style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            value: size,
+            child: Text(size,
+                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
           ))
               .toList()
               : [
-          DropdownMenuItem<String>(
-          value: 'Default Size',
-          child: Text('Default Size', style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ),
+            DropdownMenuItem<String>(
+              value: 'Default Size',
+              child: Text('Default Size',
+                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
+            ),
           ];
 
           _purposeOfBuying = purposeOfBuyingItems.any((item) => item.value == _purposeOfBuying)
-          ? _purposeOfBuying
+              ? _purposeOfBuying
               : purposeOfBuyingItems.isNotEmpty
-          ? purposeOfBuyingItems.first.value
+              ? purposeOfBuyingItems.first.value
               : null;
           _approxBuyingTime = approxBuyingTimeItems.any((item) => item.value == _approxBuyingTime)
-          ? _approxBuyingTime
+              ? _approxBuyingTime
               : approxBuyingTimeItems.isNotEmpty
-          ? approxBuyingTimeItems.first.value
+              ? approxBuyingTimeItems.first.value
               : null;
           _selectedPropertySubType =
           propertySubTypeItems.any((item) => item.value == _selectedPropertySubType)
-          ? _selectedPropertySubType
+              ? _selectedPropertySubType
               : propertySubTypeItems.isNotEmpty
-          ? propertySubTypeItems.first.value
+              ? propertySubTypeItems.first.value
               : null;
           _selectedUnitNo = unitNoItems.any((item) => item.value == _selectedUnitNo)
-          ? _selectedUnitNo
+              ? _selectedUnitNo
               : unitNoItems.isNotEmpty
-          ? unitNoItems.first.value
+              ? unitNoItems.first.value
               : null;
           _selectedSize = sizeItems.any((item) => item.value == _selectedSize)
-          ? _selectedSize
+              ? _selectedSize
               : sizeItems.isNotEmpty
-          ? sizeItems.first.value
+              ? sizeItems.first.value
               : null;
 
           return PageView(
-          controller: _pageController,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-          _buildCustomerInformationPage(purposeOfBuyingItems, approxBuyingTimeItems, propertySubTypeItems),
-          _buildInterestSuggestionPage(intSiteItems, unitNoItems, sizeItems),
-          ],
+            controller: _pageController,
+            physics: NeverScrollableScrollPhysics(),
+            children: [
+              _buildCustomerInformationPage(purposeOfBuyingItems, approxBuyingTimeItems, propertySubTypeItems),
+              _buildInterestSuggestionPage(intSiteItems, unitNoItems, sizeItems, provider),
+            ],
           );
         },
       ),
@@ -483,7 +552,19 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Widget _buildInterestSuggestionPage(
       List<DropdownMenuItem<IntSiteOption>> intSiteItems,
       List<DropdownMenuItem<String>> unitNoItems,
-      List<DropdownMenuItem<String>> sizeItems) {
+      List<DropdownMenuItem<String>> sizeItems,
+      UserProvider provider) {
+    // Filter nextSlots to unique source values, preferring available slots
+    final uniqueSlots = <String, NextSlot>{};
+    for (var slot in provider.nextSlots) {
+      if (!uniqueSlots.containsKey(slot.source)) {
+        uniqueSlots[slot.source] = slot;
+      } else if (!slot.disabled) {
+        uniqueSlots[slot.source] = slot; // Prefer available slot
+      }
+    }
+    final filteredSlots = uniqueSlots.values.toList();
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView(
@@ -542,22 +623,195 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     _buildTextField('DP Amount*', controller: _dpAmountController),
                     _buildTextField('Loan Amount*', controller: _loanAmountController),
                     _buildTextField('After Visit Status*', controller: _afterVisitStatusController),
-                    _buildDatePickerField('Next Followup Date*', controller: _followUpDateController),
-                    _buildDropdown<String>(
-                      'Select Time*',
-                      items: _timeOptions,
+                    TextFormField(
+                      controller: _followUpDateController,
+                      decoration: InputDecoration(
+                        hintText: "Select Next Follow Up Date",
+                        hintStyle: const TextStyle(fontFamily: "poppins_light"),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: const Icon(Icons.calendar_today),
+                      ),
+                      readOnly: true,
+                      onTap: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            nextFollowUp = picked;
+                            _followUpDateController.text = DateFormat('yyyy-MM-dd').format(nextFollowUp!);
+                            provider.fetchNextSlots(_followUpDateController.text);
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Next follow-up date is required";
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    provider.isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : DropdownButton2<String>(
+                      isExpanded: true,
+                      hint: const Text(
+                        'Select Time',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontFamily: "poppins_thin",
+                        ),
+                      ),
                       value: _selectTime,
-                      onChanged: (value) => setState(() => _selectTime = value),
+                      buttonStyleData: ButtonStyleData(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.grey.shade200,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.shade300,
+                              blurRadius: 4,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      underline: const SizedBox(),
+                      dropdownStyleData: DropdownStyleData(
+                        offset: const Offset(-5, -10),
+                        maxHeight: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        elevation: 10,
+                        scrollbarTheme: ScrollbarThemeData(
+                          radius: const Radius.circular(40),
+                          thickness: MaterialStateProperty.all(6),
+                          thumbVisibility: MaterialStateProperty.all(true),
+                        ),
+                      ),
+                      items: filteredSlots.isEmpty
+                          ? [
+                        const DropdownMenuItem(
+                          value: 'None',
+                          enabled: false,
+                          child: Text(
+                            'No slots available',
+                            style: TextStyle(fontFamily: "poppins_thin", color: Colors.grey),
+                          ),
+                        ),
+                      ]
+                          : filteredSlots.map((slot) {
+                        return DropdownMenuItem<String>(
+                          value: slot.source,
+                          enabled: !slot.disabled,
+                          child: Text(
+                            slot.source ?? '',
+                            style: TextStyle(
+                              fontFamily: "poppins_thin",
+                              color: !slot.disabled ? Colors.black : Colors.grey,
+                              fontWeight: !slot.disabled ? FontWeight.normal : FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectTime = value;
+                          });
+                        }
+                      },
                     ),
                   ] else ...[
                     _buildTextField('DP Amount*', controller: _dpAmountController),
                     _buildTextField('After Visit Status*', controller: _afterVisitStatusController),
                     _buildDatePickerField('Next Followup Date*', controller: _followUpDateController),
-                    _buildDropdown<String>(
-                      'Select Time*',
-                      items: _timeOptions,
+                    provider.isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : DropdownButton2<String>(
+                      isExpanded: true,
+                      hint: const Text(
+                        'Select Time',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontFamily: "poppins_thin",
+                        ),
+                      ),
                       value: _selectTime,
-                      onChanged: (value) => setState(() => _selectTime = value),
+                      buttonStyleData: ButtonStyleData(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.grey.shade200,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.shade300,
+                              blurRadius: 4,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      underline: const SizedBox(),
+                      dropdownStyleData: DropdownStyleData(
+                        offset: const Offset(-5, -10),
+                        maxHeight: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        elevation: 10,
+                        scrollbarTheme: ScrollbarThemeData(
+                          radius: const Radius.circular(40),
+                          thickness: MaterialStateProperty.all(6),
+                          thumbVisibility: MaterialStateProperty.all(true),
+                        ),
+                      ),
+                      items: filteredSlots.isEmpty
+                          ? [
+                        const DropdownMenuItem(
+                          value: 'None',
+                          enabled: false,
+                          child: Text(
+                            'No slots available',
+                            style: TextStyle(fontFamily: "poppins_thin", color: Colors.grey),
+                          ),
+                        ),
+                      ]
+                          : filteredSlots.map((slot) {
+                        return DropdownMenuItem<String>(
+                          value: slot.source,
+                          enabled: !slot.disabled,
+                          child: Text(
+                            slot.source ?? '',
+                            style: TextStyle(
+                              fontFamily: "poppins_thin",
+                              color: !slot.disabled ? Colors.black : Colors.grey,
+                              fontWeight: !slot.disabled ? FontWeight.normal : FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectTime = value;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ],
@@ -573,10 +827,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
               ElevatedButton(
-                // onPressed: _submitData,
-                onPressed: () {
-
-                },
+                onPressed: _submitData,
                 child: Text('Submit', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
