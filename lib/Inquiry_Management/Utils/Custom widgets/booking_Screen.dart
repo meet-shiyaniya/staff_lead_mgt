@@ -283,115 +283,115 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  Future<void> _submitForm() async {
-    if (_mobileNoController.text.isEmpty ||
-        _partyNameController.text.isEmpty ||
-        _houseNoController.text.isEmpty ||
-        _societyController.text.isEmpty ||
-        _selectedAreaId == null ||
-        _landMarkController.text.isEmpty ||
-        _cityController.text.isEmpty ||
-        _pincodeController.text.isEmpty ||
-        _intAreaController.text.isEmpty ||
-        _selectedPropertySubType == null ||
-        _propertyTypeController.text.isEmpty ||
-        _budgetController.text.isEmpty ||
-        _selectedPurposeOfBuying == null ||
-        _selectedApproxBuyingTime == null ||
-        _priceController.text.isEmpty ||
-        _extraWorkController.text.isEmpty ||
-        _totalPriceController.text.isEmpty ||
-        _discountController.text.isEmpty ||
-        _finalPriceController.text.isEmpty ||
-        _remainingTotalAmountController.text.isEmpty ||
-        _totalAmountOfPurchaseController.text.isEmpty ||
-        _tokenAmountController.text.isEmpty ||
-        _tokenDateController.text.isEmpty ||
-        _selectedTokenBy == null ||
-        _bookingDateController.text.isEmpty ||
-        _selectedHastakSource == null) {
-      debugPrint('Validation Failed: Missing required fields');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields')),
-      );
-      return;
-    }
-
-    // Parse the area ID from _selectedAreaId
-    String areaId = '0';
-    if (_selectedAreaId != null) {
-      final RegExp idRegex = RegExp(r'\((\d+)\)');
-      final match = idRegex.firstMatch(_selectedAreaId!);
-      areaId = match != null ? match.group(1)! : '0';
-      debugPrint('Parsed Area ID for submission: $areaId');
-    }
-
-    final Map<String, dynamic> requestBody = {
-      "inquiry_id": 95557,
-      "booking_date": _bookingDateController.text,
-      "product_name": 1,
-      "unitno": int.tryParse(_houseNoController.text) ?? 0,
-      "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
-      "payment_date": _tokenDateController.text.isNotEmpty
-          ? _tokenDateController.text
-          : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
-      "duration_day": 3,
-      "remaining_amount": double.tryParse(_remainingTotalAmountController.text) ?? 0,
-      "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
-      "token_amount_date": _tokenDateController.text.isNotEmpty
-          ? _tokenDateController.text
-          : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
-      "token_by": _selectedTokenBy ?? "",
-      "booking_by_ssm": "",
-      "booking_by_sse": "",
-      "booking_by_broker": "",
-      "booking_by_customer": "",
-      "mobileno": _mobileNoController.text,
-      "partyname": _partyNameController.text,
-      "houseno": int.tryParse(_houseNoController.text) ?? 0,
-      "societyname": _societyController.text,
-      "area": int.tryParse(areaId) ?? 0,
-      "landmark": _landMarkController.text,
-      "city": _cityController.text,
-      "pincode": int.tryParse(_pincodeController.text) ?? 0,
-      "unitsize": "345",
-      "construction": 2,
-      "price": double.tryParse(_priceController.text) ?? 0,
-      "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
-      "total_price": double.tryParse(_totalPriceController.text) ?? 0,
-      "discount_price": double.tryParse(_discountController.text) ?? 0,
-      "switcher_amount": isLoanSelected ? "loan" : "cash",
-      "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
-    };
-
-    debugPrint('=== Submit Form Start ===');
-    debugPrint('Form Data Prepared: ${jsonEncode(requestBody)}');
-
-    try {
-      final result = await _apiService.submitBookingData(requestBody);
-      debugPrint('API Call Result: ${jsonEncode(result)}');
-
-      if (result['status'] == 1) {
-        debugPrint('Booking Success: ${result['message']}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking submitted successfully!')),
-        );
-        Navigator.pop(context);
-      } else {
-        debugPrint('Booking Failed: ${result['message']}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${result['message']}')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Exception in Submit Form: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error submitting booking: $e')),
-      );
-    }
-
-    debugPrint('=== Submit Form End ===');
-  }
+  // Future<void> _submitForm() async {
+  //   if (_mobileNoController.text.isEmpty ||
+  //       _partyNameController.text.isEmpty ||
+  //       _houseNoController.text.isEmpty ||
+  //       _societyController.text.isEmpty ||
+  //       _selectedAreaId == null ||
+  //       _landMarkController.text.isEmpty ||
+  //       _cityController.text.isEmpty ||
+  //       _pincodeController.text.isEmpty ||
+  //       _intAreaController.text.isEmpty ||
+  //       _selectedPropertySubType == null ||
+  //       _propertyTypeController.text.isEmpty ||
+  //       _budgetController.text.isEmpty ||
+  //       _selectedPurposeOfBuying == null ||
+  //       _selectedApproxBuyingTime == null ||
+  //       _priceController.text.isEmpty ||
+  //       _extraWorkController.text.isEmpty ||
+  //       _totalPriceController.text.isEmpty ||
+  //       _discountController.text.isEmpty ||
+  //       _finalPriceController.text.isEmpty ||
+  //       _remainingTotalAmountController.text.isEmpty ||
+  //       _totalAmountOfPurchaseController.text.isEmpty ||
+  //       _tokenAmountController.text.isEmpty ||
+  //       _tokenDateController.text.isEmpty ||
+  //       _selectedTokenBy == null ||
+  //       _bookingDateController.text.isEmpty ||
+  //       _selectedHastakSource == null) {
+  //     debugPrint('Validation Failed: Missing required fields');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Please fill all required fields')),
+  //     );
+  //     return;
+  //   }
+  //
+  //   // Parse the area ID from _selectedAreaId
+  //   String areaId = '0';
+  //   if (_selectedAreaId != null) {
+  //     final RegExp idRegex = RegExp(r'\((\d+)\)');
+  //     final match = idRegex.firstMatch(_selectedAreaId!);
+  //     areaId = match != null ? match.group(1)! : '0';
+  //     debugPrint('Parsed Area ID for submission: $areaId');
+  //   }
+  //
+  //   final Map<String, dynamic> requestBody = {
+  //     "inquiry_id": 95557,
+  //     "booking_date": _bookingDateController.text,
+  //     "product_name": 1,
+  //     "unitno": int.tryParse(_houseNoController.text) ?? 0,
+  //     "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
+  //     "payment_date": _tokenDateController.text.isNotEmpty
+  //         ? _tokenDateController.text
+  //         : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
+  //     "duration_day": 3,
+  //     "remaining_amount": double.tryParse(_remainingTotalAmountController.text) ?? 0,
+  //     "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
+  //     "token_amount_date": _tokenDateController.text.isNotEmpty
+  //         ? _tokenDateController.text
+  //         : DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now()),
+  //     "token_by": _selectedTokenBy ?? "",
+  //     "booking_by_ssm": "",
+  //     "booking_by_sse": "",
+  //     "booking_by_broker": "",
+  //     "booking_by_customer": "",
+  //     "mobileno": _mobileNoController.text,
+  //     "partyname": _partyNameController.text,
+  //     "houseno": int.tryParse(_houseNoController.text) ?? 0,
+  //     "societyname": _societyController.text,
+  //     "area": int.tryParse(areaId) ?? 0,
+  //     "landmark": _landMarkController.text,
+  //     "city": _cityController.text,
+  //     "pincode": int.tryParse(_pincodeController.text) ?? 0,
+  //     "unitsize": "345",
+  //     "construction": 2,
+  //     "price": double.tryParse(_priceController.text) ?? 0,
+  //     "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
+  //     "total_price": double.tryParse(_totalPriceController.text) ?? 0,
+  //     "discount_price": double.tryParse(_discountController.text) ?? 0,
+  //     "switcher_amount": isLoanSelected ? "loan" : "cash",
+  //     "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
+  //   };
+  //
+  //   debugPrint('=== Submit Form Start ===');
+  //   debugPrint('Form Data Prepared: ${jsonEncode(requestBody)}');
+  //
+  //   try {
+  //     final result = await _apiService.submitBookingData(requestBody);
+  //     debugPrint('API Call Result: ${jsonEncode(result)}');
+  //
+  //     if (result['status'] == 1) {
+  //       debugPrint('Booking Success: ${result['message']}');
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Booking submitted successfully!')),
+  //       );
+  //       Navigator.pop(context);
+  //     } else {
+  //       debugPrint('Booking Failed: ${result['message']}');
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Error: ${result['message']}')),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Exception in Submit Form: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error submitting booking: $e')),
+  //     );
+  //   }
+  //
+  //   debugPrint('=== Submit Form End ===');
+  // }
 
   void _addCashField() {
     TextEditingController amountController = TextEditingController()..addListener(_updateRemainingAmount);
@@ -970,7 +970,10 @@ class _BookingScreenState extends State<BookingScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
               ElevatedButton(
-                onPressed: _submitForm,
+                // onPressed: _submitForm,
+                onPressed: () {
+
+                },
                 child: Text('Submit', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),

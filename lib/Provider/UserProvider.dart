@@ -615,14 +615,6 @@ class UserProvider with ChangeNotifier {
       print("Error fetching staff attendance data: $e");
     }
   }
-  Future<void> fetch () async {
-    try {
-      _transferInquiryData = await _apiService.fetchTransferInquiryData();
-      notifyListeners();
-    } catch (e) {
-      print("Error fetching staff attendance data: $e");
-    }
-  }
 
   Future<void> sendTransferInquiry ({
     required List<String> inqIds, // Changed to accept a list of IDs

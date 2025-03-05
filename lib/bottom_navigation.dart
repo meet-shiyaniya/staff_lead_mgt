@@ -77,7 +77,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
               if (_selectedIndex == 0)
                 GestureDetector(
                     onTap: (){
-                       Navigator.push(context, MaterialPageRoute(builder: (context)=>ProfessionalCalendar()));
+                       // Navigator.push(context, MaterialPageRoute(builder: (context)=>ProfessionalCalendar()));
                     },
                     child: Image.asset("asset/Dashboard/booking.png",height: 25,width: 25,)),
               SizedBox(width: 10,),

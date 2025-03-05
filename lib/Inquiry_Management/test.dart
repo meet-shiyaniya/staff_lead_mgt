@@ -192,45 +192,45 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     }
   }
 
-  Future<void> _submitData() async {
-    String? token = await _secureStorage.read(key: 'token');
-    print("Submit Data - Token: $token");
-
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: No token found in secure storage")),
-      );
-      return;
-    }
-
-    final Map<String, dynamic> apiData = {
-      "token": token,
-      "remark": _afterVisitStatusController.text,
-      "intrested_product": _selectedIntSite?.id ?? "6", // Send ID instead of name
-      "budget": _budgetController.text.isNotEmpty ? "1" : "1",
-      "approx_buy": _approxBuyingTime ?? "2-3 days",
-      "inquiry_id": 95560,
-      "isSiteVisit": "3",
-      "intrested_area": "64",
-      "unit_no": _selectedUnitNo ?? "5",
-      "paymentref": isLoanSelected ? "loan" : "cash",
-      "dp_amount": _dpAmountController.text.isNotEmpty ? _dpAmountController.text : "2000000",
-      "nxt_follow_up": _followUpDateController.text.isNotEmpty ? _followUpDateController.text : "2025-02-28",
-      "time": _selectTime ?? "12:00:00",
-    };
-
-    print("Submit Data - API Data: ${jsonEncode(apiData)}");
-
-    final result = await _apiService.submitVisitData(apiData);
-    print("Submit Data - API Result: $result");
-
-    if (result["success"]) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
-    }
-  }
+  // Future<void> _submitData() async {
+  //   String? token = await _secureStorage.read(key: 'token');
+  //   print("Submit Data - Token: $token");
+  //
+  //   if (token == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text("Error: No token found in secure storage")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   final Map<String, dynamic> apiData = {
+  //     "token": token,
+  //     "remark": _afterVisitStatusController.text,
+  //     "intrested_product": _selectedIntSite?.id ?? "6", // Send ID instead of name
+  //     "budget": _budgetController.text.isNotEmpty ? "1" : "1",
+  //     "approx_buy": _approxBuyingTime ?? "2-3 days",
+  //     "inquiry_id": 95560,
+  //     "isSiteVisit": "3",
+  //     "intrested_area": "64",
+  //     "unit_no": _selectedUnitNo ?? "5",
+  //     "paymentref": isLoanSelected ? "loan" : "cash",
+  //     "dp_amount": _dpAmountController.text.isNotEmpty ? _dpAmountController.text : "2000000",
+  //     "nxt_follow_up": _followUpDateController.text.isNotEmpty ? _followUpDateController.text : "2025-02-28",
+  //     "time": _selectTime ?? "12:00:00",
+  //   };
+  //
+  //   print("Submit Data - API Data: ${jsonEncode(apiData)}");
+  //
+  //   final result = await _apiService.submitVisitData(apiData);
+  //   print("Submit Data - API Result: $result");
+  //
+  //   if (result["success"]) {
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
+  //     Navigator.pop(context);
+  //   } else {
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +573,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),
               ElevatedButton(
-                onPressed: _submitData,
+                // onPressed: _submitData,
+                onPressed: () {
+
+                },
                 child: Text('Submit', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple.shade300),
               ),

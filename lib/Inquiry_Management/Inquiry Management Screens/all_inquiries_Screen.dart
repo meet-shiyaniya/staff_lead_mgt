@@ -1,9 +1,6 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/lead_Detail_Screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../Provider/UserProvider.dart';
@@ -801,13 +798,13 @@ class _AllInquiriesScreenState extends State<AllInquiriesScreen> {
                                   toggleSelection(index);
                                 },
                                 onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => LeadDetailScreen(
-                                          InquiryInfoList: inquiry,
-                                        ),
-                                      ));
+                                  // Navigator.push(
+                                  //     context,
+                                  //     MaterialPageRoute(
+                                  //       builder: (context) => LeadDetailScreen(
+                                  //         InquiryInfoList: inquiry,
+                                  //       ),
+                                  //     ));
                                 },
                                 child: TestCard(
                                   id: inquiry.id,
