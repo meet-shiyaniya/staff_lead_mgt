@@ -15,12 +15,14 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
   static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
+  static const String followupCnrInqUrl="$baseUrl/show_list_Dismiss_allinquiry";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
   final String updateProfilePicUrl = "$baseUrl/uploadProfileImage";
 
@@ -508,12 +510,13 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(int limit, int status,  {required int page, required String search}) async {
-    
-    final url = Uri.parse("$childUrl?limit=$limit&status=$status&page=$page&search=$search");
-    print("API URL: $url"); //
-
-
+  Future<PaginatedInquiries?> fetchInquiries(
+      int status, {
+        required int page,
+        required String search,
+        String stages = '', // Added stages parameter
+      }) async {
+    final url = Uri.parse("$childUrl?&status=$status&page=$page&search=$search");
     try {
       String? token = await _secureStorage.read(key: 'token');
       print("Token: $token");
@@ -522,23 +525,18 @@ class ApiService{
         return null;
       }
       final response = await http.post(
-          url,
-          headers: {
-
-            'Content-Type': "application/json",
-
-          },
-          body: jsonEncode({'token': token})
-
-
-
-
+        url,
+        headers: {
+          'Content-Type': "application/json",
+        },
+        body: jsonEncode({
+          'token': token,
+          'stages': stages, // Pass stages in the body
+        }),
       );
 
       if (response.statusCode == 200) {
-        print("resoponse json${response.body}");
         print("Response Status Code: ${response.statusCode}");
-        // Ensure response is valid JSON before parsing
         if (response.body.startsWith('{') || response.body.startsWith('[')) {
           final Map<String, dynamic> jsonData = jsonDecode(response.body);
           return PaginatedInquiries.fromJson(jsonData);
@@ -554,6 +552,58 @@ class ApiService{
     } catch (e) {
       print("API error: $e");
       return null;
+    }
+  }
+
+  Future<followup_Cnr_Model?> fetchFollowupCnrInquiries(
+      int status, {
+        required String followupDay,
+      }) async {
+    final url = Uri.parse("$followupCnrInqUrl"); // Ensure followupCnrInqUrl is defined elsewhere
+    try {
+      // Retrieve token from secure storage
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        print("Error: No authentication token found");
+        throw Exception("Authentication token is missing");
+      }
+
+      // Prepare and send the HTTP POST request
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json', // Fixed typo: "application/json"
+        },
+        body: jsonEncode({
+          'token': token,
+          'follow_up_day': followupDay,
+          // 'status': status, // Uncomment and use if the API expects this
+        }),
+      );
+
+      // Check response status
+      if (response.statusCode == 200) {
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+
+        // Parse JSON response
+        try {
+          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+          return followup_Cnr_Model.fromJson(jsonData);
+        } on FormatException catch (e) {
+          print("Error: Invalid JSON format - $e");
+          return null; // Return null for malformed JSON
+        }
+      } else {
+        print("Error fetching data: ${response.statusCode} - ${response.body}");
+        return null; // Return null for non-200 responses
+      }
+    } on http.ClientException catch (e) {
+      print("Network error: $e");
+      return null; // Return null for network-related errors
+    } on Exception catch (e) {
+      print("API error: $e");
+      throw Exception("Failed to fetch follow-up inquiries: $e"); // Rethrow for critical errors
     }
   }
 

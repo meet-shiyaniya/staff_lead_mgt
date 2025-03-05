@@ -69,6 +69,7 @@ dependencies:
   syncfusion_flutter_charts: ^28.2.7
   timelines_plus: ^1.0.6
   table_calendar:
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
