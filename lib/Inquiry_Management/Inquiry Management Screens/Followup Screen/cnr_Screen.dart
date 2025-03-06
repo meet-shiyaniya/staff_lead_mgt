@@ -46,24 +46,24 @@ class _CnrScreenState extends State<CnrScreen> {
   void initState() {
     super.initState();
 
-      Future.microtask(() {
-        Provider.of<UserProvider>(context, listen: false).fetchInquiries();
-      });
+    Future.microtask(() {
+      Provider.of<UserProvider>(context, listen: false).fetchInquiries();
+    });
 
-      _scrollController = ScrollController();
-      _scrollController.addListener(_onScroll);
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      Provider.of<UserProvider>(context, listen: false).fetchInquiries();
     }
+  }
 
-    void _onScroll() {
-      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-        Provider.of<UserProvider>(context, listen: false).fetchInquiries();
-      }
-    }
-
-    @override
-    void dispose() {
-      _scrollController.dispose();
-      super.dispose();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
 
     selectedCards = List.generate(LeadList.length, (index) => false);
     categoryList = [
@@ -122,7 +122,7 @@ class _CnrScreenState extends State<CnrScreen> {
             (index) => false,
       );
 
-  }
+    }
     return Column(
       children: [
         if (anySelected)
@@ -287,48 +287,48 @@ class _CnrScreenState extends State<CnrScreen> {
 
             itemCount: filteredLeads.length,
             itemBuilder: (context, index) {
-    if (index < inquiryProvider.inquiries.length) {
-      Inquiry inquiry = inquiryProvider.inquiries[index];
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return GestureDetector(
-            onLongPress: () {
-              toggleSelection(index);
-            },
-            child: TestCard(
-              id: filteredLeads[index].id,
-              name: filteredLeads[index].name,
-              username: filteredLeads[index].username,
-              label: filteredLeads[index].label,
-              followUpDate: filteredLeads[index].followUpDate,
-              nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-              inquiryType: filteredLeads[index].inquiryType,
-              intArea: inquiry.InqArea,
-              purposeBuy: inquiry.PurposeBuy,
-              daySkip: inquiry.dayskip,
-              hourSkip: inquiry.hourskip,
-              // phone: filteredLeads[index].phone,
-              // email: filteredLeads[index].email,
-              source: filteredLeads[index].source,
-              isSelected: selectedCards[index],
-              onSelect: () {
-                toggleSelection(index);
-              },
-              callList: callList,
-              // selectedTime: selectedTime,
-              // selectedPurpose: selectedPurpose,
-              // selectedApx: selectedApx,
-              // selectedAction: selectedAction,
-              selectedcallFilter: selectedcallFilter,
-              // selectedEmployee: selectedEmployee,
-              data: inquiry,
-              isTiming: true,
-              nextFollowupcontroller: nextFollowupcontroller,
-            ),
-          );
-        },
-      );
-    }},
+              if (index < inquiryProvider.inquiries.length) {
+                Inquiry inquiry = inquiryProvider.inquiries[index];
+                return StatefulBuilder(
+                  builder: (context, setState) {
+                    return GestureDetector(
+                      onLongPress: () {
+                        toggleSelection(index);
+                      },
+                      child: TestCard(
+                        id: filteredLeads[index].id,
+                        name: filteredLeads[index].name,
+                        username: filteredLeads[index].username,
+                        label: filteredLeads[index].label,
+                        followUpDate: filteredLeads[index].followUpDate,
+                        nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+                        inquiryType: filteredLeads[index].inquiryType,
+                        intArea: inquiry.InqArea,
+                        purposeBuy: inquiry.PurposeBuy,
+                        daySkip: inquiry.dayskip,
+                        hourSkip: inquiry.hourskip,
+                        // phone: filteredLeads[index].phone,
+                        // email: filteredLeads[index].email,
+                        source: filteredLeads[index].source,
+                        isSelected: selectedCards[index],
+                        onSelect: () {
+                          toggleSelection(index);
+                        },
+                        callList: callList,
+                        // selectedTime: selectedTime,
+                        // selectedPurpose: selectedPurpose,
+                        // selectedApx: selectedApx,
+                        // selectedAction: selectedAction,
+                        selectedcallFilter: selectedcallFilter,
+                        // selectedEmployee: selectedEmployee,
+                        data: inquiry,
+                        isTiming: true,
+                        nextFollowupcontroller: nextFollowupcontroller,
+                      ),
+                    );
+                  },
+                );
+              }},
           ),
         ),
       ],

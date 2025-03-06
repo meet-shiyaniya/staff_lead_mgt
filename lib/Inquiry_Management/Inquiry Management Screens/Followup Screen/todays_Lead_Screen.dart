@@ -59,6 +59,7 @@ class _ShiftsListState extends State<ShiftsList> {
 
     try {
       await userProvider.fetchTransferInquiryData();
+      await userProvider.fetchFollowupCnrInquiry(followupDay: "today");
       final data = userProvider.transferInquiryData;
 
       if (data == null) {

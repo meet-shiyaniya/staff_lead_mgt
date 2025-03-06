@@ -19,6 +19,7 @@ import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
@@ -33,6 +34,7 @@ class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
   static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
+  static const String followupCnrInqUrl="$baseUrl/show_list_Dismiss_allinquiry";
   final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
 
 
@@ -81,6 +83,69 @@ class ApiService{
     }
 
   }
+
+  Future<bool> sendMannualAttendanceData () async {
+
+    String editBioStatus = "0";
+    String createdAtDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
+    String entryDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()).toString();
+
+    final url = Uri.parse('$baseUrl/insert_attendance_newday');
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return false;
+
+      }
+
+      Map<String, String> bodyData = {
+
+        "token": token,
+        "edit_bio": editBioStatus,
+        "created_at": createdAtDateTime,
+        "entry_date_time": entryDateTime,
+
+      };
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode(bodyData)
+
+      );
+
+      if (response.statusCode == 200) {
+
+        // final data = jsonDecode(response.body);
+
+        Fluttertoast.showToast(msg: "✅ Attendance marked: Present");
+        return true;
+
+      } else {
+
+        Fluttertoast.showToast(msg: "Failed to send attendance data!");
+        return false;
+
+      }
+
+    } catch (e) {
+
+      Fluttertoast.showToast(msg: "Something Went Wrong!");
+      return false;
+
+    }
+
+  }
+
   Future<Realtoallstaffleavesmodel?> fetchAllStaffLeavesData () async {
 
     final url = Uri.parse('$baseUrl/child_leave_request');
@@ -270,6 +335,54 @@ class ApiService{
       return false;
     }
   }
+
+  Future<bool> sendAppUseRequest () async {
+
+    final url = Uri.parse("$baseUrl/sendAccessRequest");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return false;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        Fluttertoast.showToast(msg: "Request sent successfully");
+        return true;
+
+      } else {
+
+        Fluttertoast.showToast(msg: "Request not sent!");
+        return false;
+
+      }
+
+    } catch (e) {
+
+      Fluttertoast.showToast(msg: "Something Went Wrong!");
+      return false;
+
+    }
+
+  }
+
   Future<int> sendMemberAttendance({required String qrAttendance}) async {
     final url = Uri.parse('$baseUrl/memberAttendanceInsert');
     try {
@@ -948,6 +1061,54 @@ class ApiService{
       return null;
     }
   }
+
+  Future<PaginatedInquiries?> fetchFollowupCnrInquiry(
+      int status, {
+        required String followupDay,
+        required int page,
+        required String search,
+        String stages = '', // Added stages parameter
+      }) async {
+    final url = Uri.parse("$followupCnrInqUrl?&status=$status&page=$page&search=$search");
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+      if (token == null) {
+        print("Error: No token found");
+        return null;
+      }
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': "application/json",
+        },
+        body: jsonEncode({
+          'token': token,
+          'stages': stages, // Pass stages in the body
+          'follow_up_day': followupDay
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Response Status Code: ${response.statusCode}");
+        if (response.body.startsWith('{') || response.body.startsWith('[')) {
+          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+          return PaginatedInquiries.fromJson(jsonData);
+        } else {
+          print(response.body);
+          print("Error: Received non-JSON response");
+          return null;
+        }
+      } else {
+        print("Error fetching data: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("API error: $e");
+      return null;
+    }
+  }
+
   Future<bool> sendLeaveRequest ({
 
     required String head_name,

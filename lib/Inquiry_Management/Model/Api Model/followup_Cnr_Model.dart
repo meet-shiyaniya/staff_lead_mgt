@@ -1,4 +1,4 @@
-class followup_Cnr_Model {
+class followupCnrModel {
   String? rowCountHtml;
   String? html;
   int? totalPage;
@@ -12,7 +12,7 @@ class followup_Cnr_Model {
   List<Data>? data;
   int? totalMembersCount;
 
-  followup_Cnr_Model(
+  followupCnrModel(
       {this.rowCountHtml,
         this.html,
         this.totalPage,
@@ -26,7 +26,7 @@ class followup_Cnr_Model {
         this.data,
         this.totalMembersCount});
 
-  followup_Cnr_Model.fromJson(Map<String, dynamic> json) {
+  followupCnrModel.fromJson(Map<String, dynamic> json) {
     rowCountHtml = json['row_count_html'];
     html = json['html'];
     totalPage = json['total_page'];

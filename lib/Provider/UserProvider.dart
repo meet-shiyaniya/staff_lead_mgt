@@ -1,16 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
-import 'package:hr_app/Inquiry_Management/Model/Api%20Model/dismiss_Model.dart';
-// import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../Inquiry_Management/Model/Api Model/add_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 import '../Inquiry_Management/Model/Api Model/dismiss_Model.dart';
@@ -19,9 +12,12 @@ import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
+import '../Inquiry_Management/Model/Api Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
+import '../Inquiry_Management/Model/category_Model.dart';
+import '../Inquiry_Management/Model/followup_Model.dart';
 import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
 import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
@@ -41,6 +37,15 @@ class UserProvider with ChangeNotifier {
 
   Realtostaffprofilemodel? _profileData;
   Realtostaffprofilemodel? get profileData => _profileData;
+
+  followupCnrModel? _followupCnrData;
+  bool _isLoadingInq = false;
+  String? _errorInq;
+  List<CategoryModel> _stages = [];
+  followupCnrModel? get followupCnrData => _followupCnrData;
+  bool get isLoadingInq => _isLoadingInq;
+  String? get errorInq => _errorInq;
+  List<CategoryModel> get stages => _stages;
 
   Realtoofficelocationmodel? _officeLocationData;
   Realtoofficelocationmodel? get officeLocationData => _officeLocationData;
@@ -170,6 +175,18 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> sendMannualAttendanceData () async {
+    try {
+      await _apiService.sendMannualAttendanceData();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
   Future<bool> sendLeaveRequest ({
     required String head_name,
     required String full_name,
@@ -214,6 +231,17 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> sendAppUseRequest () async {
+    try {
+      await _apiService.sendAppUseRequest();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Error sending leave request: $e");
+      return false;
+    }
+  }
+
 
   Future<void> fetchInquiries({
     bool isLoadMore = false,
@@ -242,8 +270,9 @@ class UserProvider with ChangeNotifier {
       if (response != null && response.inquiries.isNotEmpty) {
         paginatedInquiries = response;
 
-        final newInquiries = response.inquiries.where((newInquiry) =>
-        !_inquiries.any((existing) => existing.id == newInquiry.id)).toList();
+        final newInquiries = response.inquiries
+            .where((newInquiry) => !_inquiries.any((existing) => existing.id == newInquiry.id))
+            .toList();
 
         if (isLoadMore) {
           _inquiries.addAll(newInquiries);
@@ -329,6 +358,124 @@ class UserProvider with ChangeNotifier {
     _inquiries.clear();
     _hasMore = true;
   }
+
+  Future<void> fetchFollowupCnrInquiry({
+    required String followupDay,
+    bool isLoadMore = false,
+    int status = 0,
+    String search = '',
+    String stages = '', // Added stages parameter
+  }) async {
+    if (!isLoadMore) {
+      _currentPage = 1;
+      _inquiries.clear();
+      _stageCounts.clear();
+    }
+    if (isLoadMore && !_hasMore) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.fetchFollowupCnrInquiry(
+        followupDay: followupDay,
+        status,
+        page: _currentPage,
+        search: search,
+        stages: stages, // Pass stages to API
+      );
+
+      if (response != null && response.inquiries.isNotEmpty) {
+        paginatedInquiries = response;
+
+        final newInquiries = response.inquiries
+            .where((newInquiry) => !_inquiries.any((existing) => existing.id == newInquiry.id))
+            .toList();
+
+        if (isLoadMore) {
+          _inquiries.addAll(newInquiries);
+        } else {
+          _inquiries = List.from(newInquiries);
+        }
+
+        _hasMore = _currentPage < response.totalPages! && newInquiries.isNotEmpty;
+        if (hasMore) _currentPage++;
+
+        _stageCounts = {
+          "Total_Sum": getStageCount(status, "Total_Sum", response), // Add Total_Sum
+          "Fresh": getStageCount(status, "Fresh", response),
+          "Contacted": getStageCount(status, "Contacted", response),
+          "Appointment": getStageCount(status, "Appointment", response),
+          "Visited": getStageCount(status, "Visited", response),
+          "Negotiation": getStageCount(status, "Negotiation", response),
+          "Feedback": getStageCount(status, "Feedback", response),
+          "Re_Appointment": getStageCount(status, "Re_Appointment", response),
+          "reVisited": getStageCount(status, "reVisited", response),
+          "Converted": getStageCount(status, "Converted", response),
+        };
+
+        print("Fetched ${_inquiries.length} unique inquiries, HasMore: $_hasMore, Page: $_currentPage");
+      } else {
+        _hasMore = false;
+        print("No new inquiries to fetch");
+      }
+    } catch (e) {
+      print("Error fetching inquiries: $e");
+      _hasMore = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // int getStageCountInq(int status, String stage, PaginatedInquiries data) {
+  //   InquiryStatus? statusData = data.inquiryStatus.firstWhere(
+  //         (s) => s.inquiryStatus == status.toString(),
+  //     orElse: () => InquiryStatus(
+  //       inquiryStatus: status.toString(),
+  //       fresh: '0',
+  //       contacted: '0',
+  //       appointment: '0',
+  //       visited: '0',
+  //       negotiations: '0',
+  //       feedBack: '0',
+  //       reAppointment: '0',
+  //       reVisited: '0',
+  //       converted: '0',
+  //       Total_Sum: '0', // Default to '0' as string
+  //     ),
+  //   );
+  //
+  //   switch (stage) {
+  //     case "Total_Sum":
+  //       return int.parse(statusData.Total_Sum);
+  //     case "Fresh":
+  //       return int.parse(statusData.fresh);
+  //     case "Contacted":
+  //       return int.parse(statusData.contacted);
+  //     case "Appointment":
+  //       return int.parse(statusData.appointment);
+  //     case "Visited":
+  //       return int.parse(statusData.visited);
+  //     case "Negotiation":
+  //       return int.parse(statusData.negotiations);
+  //     case "Feedback":
+  //       return int.parse(statusData.feedBack);
+  //     case "Re_Appointment":
+  //       return int.parse(statusData.reAppointment);
+  //     case "reVisited":
+  //       return int.parse(statusData.reVisited);
+  //     case "Converted":
+  //       return int.parse(statusData.converted);
+  //     default:
+  //       return 0;
+  //   }
+  // }
+  // void resetPaginationInq() {
+  //   _currentPage = 1;
+  //   _inquiries.clear();
+  //   _hasMore = true;
+  // }
 
   Future<void> fetchAddLeadData() async {
     _isLoadingDropdown = true;
