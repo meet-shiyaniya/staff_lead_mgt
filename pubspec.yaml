@@ -44,7 +44,7 @@ dependencies:
   flutter_chat_types: ^3.6.2
   google_fonts:
   emoji_picker_flutter:
-  rive:
+#  rive:
   lottie: ^3.3.1
   flutter_animate: ^4.5.2
   auto_size_text: ^3.0.0

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../../Provider/UserProvider.dart';
-
-// import '../../Provider/UserProvider.dart';
+import '../../Utils/Custom widgets/booking_Screen.dart';
+import '../../test.dart';
 
 // Model for filtered inquiries
 class AllInquiryFilter {
@@ -299,7 +299,7 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
                             intArea: inquiry['intrested_area'] ?? 'N/A',
                             purposeBuy: inquiry['purpose_buy'] ?? 'N/A',
                             followUpDate: inquiry['nxt_follow_up'] ?? 'N/A',
-                            nextFollowUpDate: inquiry['next_follow_up'] ?? 'N/A',
+                            nextFollowUpDate: inquiry['nxt_follow_up'] ?? 'N/A',
                             daySkip: inquiry['day_skip'] ?? '0',
                             hourSkip: inquiry['hour_skip'] ?? '0',
                             isSelected: false,
@@ -417,7 +417,7 @@ class InquiryCard extends StatelessWidget {
                         Text(
                           name,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontFamily: "poppins_thin",
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
@@ -437,7 +437,7 @@ class InquiryCard extends StatelessWidget {
                             Text(
                               username,
                               style: const TextStyle(
-                                fontSize: 14,
+                                fontSize: 12,
                                 fontFamily: "poppins_thin",
                                 color: Colors.grey,
                               ),
@@ -448,6 +448,7 @@ class InquiryCard extends StatelessWidget {
                     ),
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       IconButton(
                         icon: Image.asset(
@@ -519,7 +520,7 @@ class InquiryCard extends StatelessWidget {
                   Text(
                     "Next Follow-up: $nextFollowUpDate",
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 11,
                       fontFamily: "poppins_thin",
                       color: Colors.grey,
                     ),
@@ -1380,30 +1381,3 @@ class InquiryScreen extends StatelessWidget {
   }
 }
 
-class AddVisitScreen extends StatelessWidget {
-  final String inquiryId;
-
-  const AddVisitScreen({super.key, required this.inquiryId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Add Visit")),
-      body: Center(child: Text("Add Visit Screen for Inquiry ID: $inquiryId")),
-    );
-  }
-}
-
-class BookingScreen extends StatelessWidget {
-  final String inquiryId;
-
-  const BookingScreen({super.key, required this.inquiryId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Booking")),
-      body: Center(child: Text("Booking Screen for Inquiry ID: $inquiryId")),
-    );
-  }
-}

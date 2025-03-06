@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../../../Api_services/api_service.dart';
 import '../../../Provider/UserProvider.dart';
-import '../Colors/app_Colors.dart';
-
+import '../../Model/Api Model/add_Lead_Model.dart';
 
 class BookingScreen extends StatefulWidget {
   final String? inquiryId;
@@ -77,8 +77,19 @@ class _BookingScreenState extends State<BookingScreen> {
       final provider = Provider.of<UserProvider>(context, listen: false);
       if (widget.inquiryId != null) {
         provider.fetchBookingData(widget.inquiryId!);
-        provider.fetchVisitData(widget.inquiryId!); // Keep this if needed elsewhere
+        provider.fetchVisitData(widget.inquiryId!).then((_) {
+          _populateVisitData(provider); // Populate data after fetch
+        });
       }
+      // Pre-fill booking data
+      if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty && _mobileNoController.text.isEmpty) {
+        final booking = provider.bookingData!.data[0];
+        _houseNoController.text = booking.houseno;
+        _societyController.text = booking.society;
+        _selectedAreaId = "${booking.area}";
+        _cityController.text = booking.city;
+      }
+
       provider.fetchAddLeadData();
       _addCashField();
       _addLoanField();
@@ -95,7 +106,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
       _updatePrices();
     });
-
   }
 
   @override
@@ -140,13 +150,47 @@ class _BookingScreenState extends State<BookingScreen> {
     super.dispose();
   }
 
+  void _populateVisitData(UserProvider provider) {
 
+    if (provider.visitData != null) {
+
+      final address=provider.bookingData?.data;
+      final inquiries = provider.visitData!.inquiries;
+      final propertySubTypeItems = provider.visitData!.projects.map((config) => config.projectSubType).toList() ?? ['Type 1', 'Type 2', 'Type 3'];
+      final purposeBuyingItems = provider.dropdownData!.purposeOfBuying != null
+          ? [provider.dropdownData!.purposeOfBuying!.investment, provider.dropdownData!.purposeOfBuying!.personalUse]
+          : ['Purpose 1', 'Purpose 2', 'Purpose 3'];
+      final approxBuyingTimeItems = provider.dropdownData!.apxTime != null
+          ? provider.dropdownData!.apxTime!.apxTimeData.split(',').map((time) => time.trim()).toList()
+          : ['Time 1', 'Time 2', 'Time 3'];
+
+      setState(() {
+        // Customer Information Page
+        _mobileNoController.text = inquiries.mobileno;
+        _partyNameController.text = inquiries.fullName;
+
+        // _societyController.text = inquiries.address.split(', ').length > 1 ? inquiries.address.split(', ')[1] : inquiries.address;
+        // _landMarkController.text = inquiries.address.split(', ').length > 2 ? inquiries.address.split(', ')[2] : '';
+        // _cityController.text = inquiries.address.split(', ').last;
+
+        // Interest Suggestion Page
+        // _intAreaController.text = provider.visitData!.unitNo.isNotEmpty ? provider.visitData!.unitNo[0].propertySize : '';
+        _selectedPropertySubType = propertySubTypeItems.contains(inquiries.propertySubType) ? inquiries.propertySubType : null;
+        _propertyTypeController.text = inquiries.propertyType;
+        _budgetController.text = inquiries.budget;
+        _selectedPurposeOfBuying = purposeBuyingItems.contains(inquiries.purposeBuy) ? inquiries.purposeBuy : null;
+        _selectedApproxBuyingTime = approxBuyingTimeItems.contains(provider.dropdownData?.apxTime?.apxTimeData.split(',').first.trim())
+            ? provider.dropdownData!.apxTime!.apxTimeData.split(',').first.trim()
+            : approxBuyingTimeItems.isNotEmpty
+            ? approxBuyingTimeItems.first
+            : null;
+      });
+    }
+  }
 
   Future<void> _submitForm() async {
-    // Log the start of the submission process
     print('Starting form submission...');
 
-    // Validation for required fields
     if (_mobileNoController.text.isEmpty ||
         _partyNameController.text.isEmpty ||
         _houseNoController.text.isEmpty ||
@@ -166,8 +210,6 @@ class _BookingScreenState extends State<BookingScreen> {
         _totalPriceController.text.isEmpty ||
         _discountController.text.isEmpty ||
         _finalPriceController.text.isEmpty ||
-        _remainingTotalAmountController.text.isEmpty ||
-        _totalAmountOfPurchaseController.text.isEmpty ||
         _tokenAmountController.text.isEmpty ||
         _tokenDateController.text.isEmpty ||
         _selectedTokenBy == null ||
@@ -182,24 +224,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
     print('Validation passed, preparing request body...');
 
-    // Extract IDs from dropdowns where necessary
-    String areaId = _selectedAreaId != null
-        ? _selectedAreaId!.split('(').last.replaceAll(')', '').trim()
-        : '0';
-    String? managerId = _selectedManager != null
-        ? _selectedManager!.split('(').last.replaceAll(')', '').trim()
-        : null;
-    String? staffId = _selectedStaff != null
-        ? _selectedStaff!.split('(').last.replaceAll(')', '').trim()
-        : null;
-    String? channelPartnerId = _selectedChannelPartner != null
-        ? _selectedChannelPartner!.split('(').last.replaceAll(')', '').trim()
-        : null;
-    String? customerId = _selectedCustomer != null
-        ? _selectedCustomer!.split('(').last.replaceAll(')', '').trim()
-        : null;
+    String areaId = _selectedAreaId != null ? _selectedAreaId!.split('(').last.replaceAll(')', '').trim() : '0';
+    String? managerId = _selectedManager != null ? _selectedManager!.split('(').last.replaceAll(')', '').trim() : '';
+    String? staffId = _selectedStaff != null ? _selectedStaff!.split('(').last.replaceAll(')', '').trim() : '';
+    String? channelPartnerId = _selectedChannelPartner != null ? _selectedChannelPartner!.split('(').last.replaceAll(')', '').trim() : '';
+    String? customerId = _selectedCustomer != null ? _selectedCustomer!.split('(').last.replaceAll(')', '').trim() : '';
 
-    // Collect payment details (cash or loan fields)
     List<Map<String, dynamic>> paymentFields = isLoanSelected
         ? loanFields.map((field) => {
       'amount': double.tryParse(field['amount']!.text) ?? 0,
@@ -212,10 +242,10 @@ class _BookingScreenState extends State<BookingScreen> {
       'duration': int.tryParse(field['duration']!.text) ?? 0,
     }).toList();
 
-    // Prepare the API request body with screen data only
     final Map<String, dynamic> requestBody = {
       "inquiry_id": widget.inquiryId ?? "",
       "booking_date": _bookingDateController.text,
+      "product_name": "1",
       "unitno": int.tryParse(_houseNoController.text) ?? 0,
       "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
       "payment_date": _tokenDateController.text,
@@ -224,10 +254,10 @@ class _BookingScreenState extends State<BookingScreen> {
       "token_amount": double.tryParse(_tokenAmountController.text) ?? 0,
       "token_amount_date": _tokenDateController.text,
       "token_by": _selectedTokenBy ?? "",
-      "booking_by_ssm": managerId ?? "",
-      "booking_by_sse": staffId ?? "",
-      "booking_by_broker": channelPartnerId ?? "",
-      "booking_by_customer": customerId ?? "",
+      "booking_by_ssm": managerId,
+      "booking_by_sse": staffId,
+      "booking_by_broker": channelPartnerId,
+      "booking_by_customer": customerId,
       "mobileno": _mobileNoController.text,
       "partyname": _partyNameController.text,
       "houseno": int.tryParse(_houseNoController.text) ?? 0,
@@ -237,25 +267,15 @@ class _BookingScreenState extends State<BookingScreen> {
       "city": _cityController.text,
       "pincode": int.tryParse(_pincodeController.text) ?? 0,
       "unitsize": _intAreaController.text,
-      "property_sub_type": _selectedPropertySubType ?? "",
-      "property_type": _propertyTypeController.text,
-      "budget": double.tryParse(_budgetController.text) ?? 0,
-      "purpose_of_buying": _selectedPurposeOfBuying ?? "",
-      "approx_buying_time": _selectedApproxBuyingTime ?? "",
+      "construction": 2,
       "price": double.tryParse(_priceController.text) ?? 0,
       "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
-      "extra_expense": !isIncludeSelected ? (double.tryParse(_extraExpenseController.text) ?? 0) : 0,
       "total_price": double.tryParse(_totalPriceController.text) ?? 0,
       "discount_price": double.tryParse(_discountController.text) ?? 0,
-      "final_price": double.tryParse(_finalPriceController.text) ?? 0,
       "switcher_amount": isLoanSelected ? "loan" : "cash",
-      "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0) : 0,
-      "cash_amount": !isLoanSelected ? (double.tryParse(_amountController.text) ?? 0) : 0,
-      "payment_fields": paymentFields,
-      "hastak_source": _selectedHastakSource ?? "",
+      "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
     };
 
-    // Log the request body for debugging
     print('Request Body: ${json.encode(requestBody)}');
 
     try {
@@ -282,8 +302,6 @@ class _BookingScreenState extends State<BookingScreen> {
       );
     }
   }
-
-
 
   void _updatePrices() {
     double price = double.tryParse(_priceController.text) ?? 0;
@@ -424,8 +442,6 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-
-
   void _addCashField() {
     TextEditingController amountController = TextEditingController()..addListener(_updateRemainingAmount);
     TextEditingController dateController = TextEditingController();
@@ -485,14 +501,6 @@ class _BookingScreenState extends State<BookingScreen> {
             return Center(child: Text('Error: ${provider.error}'));
           }
 
-          // Pre-fill text fields from booking data
-          if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty && _mobileNoController.text.isEmpty) {
-            final booking = provider.bookingData!.data[0];
-            _houseNoController.text = booking.houseno;
-            _societyController.text = booking.society;
-            _selectedAreaId = "${booking.area} (${booking.area})"; // Assuming area is an ID or name
-            _cityController.text = booking.city;
-          }
 
           return SafeArea(
             child: PageView(
