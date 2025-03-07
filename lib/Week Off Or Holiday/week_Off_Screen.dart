@@ -5,14 +5,14 @@ import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
-class WeekOffScreen extends StatefulWidget {
-  const WeekOffScreen({super.key});
+class weekOffScreen extends StatefulWidget {
+  const weekOffScreen({super.key});
 
   @override
-  State<WeekOffScreen> createState() => _WeekOffScreenState();
+  State<weekOffScreen> createState() => _weekOffScreenState();
 }
 
-class _WeekOffScreenState extends State<WeekOffScreen> {
+class _weekOffScreenState extends State<weekOffScreen> {
   bool _isRequestSent = false;
   bool _isLoading = false; // Track loading state for both profile fetch and request
   String title = "Loading...";

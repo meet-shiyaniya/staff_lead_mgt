@@ -3,6 +3,7 @@ import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/bottom_navigation.dart';
 import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class mannualAttendanceScreen extends StatefulWidget {
   const mannualAttendanceScreen({super.key});
@@ -12,20 +13,51 @@ class mannualAttendanceScreen extends StatefulWidget {
 }
 
 class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
-  bool _isLoading = false; // Track loading state
+  bool _isLoading = false;
+  bool _isCheckingAttendance = true; // New flag to track initial check
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAttendanceStatus();
+  }
+
+  Future<void> _checkAttendanceStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastAttendanceDate = prefs.getString('last_attendance_date');
+    final currentDate = DateTime.now().toString().split(' ')[0];
+
+    if (lastAttendanceDate == currentDate) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+        );
+      }
+    }
+
+    // After checking is complete, update the state
+    if (mounted) {
+      setState(() {
+        _isCheckingAttendance = false;
+      });
+    }
+  }
 
   Future<void> _markAttendance() async {
     setState(() {
-      _isLoading = true; // Show loading indicator
+      _isLoading = true;
     });
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
-      // Await the attendance submission
       await userProvider.sendMannualAttendanceData();
 
-      // Navigate to BottomNavScreen after successful submission
+      final prefs = await SharedPreferences.getInstance();
+      final currentDate = DateTime.now().toString().split(' ')[0];
+      await prefs.setString('last_attendance_date', currentDate);
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -33,7 +65,6 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
         );
       }
     } catch (e) {
-      // Handle errors (e.g., network failure, API error)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -48,7 +79,7 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false; // Hide loading indicator
+          _isLoading = false;
         });
       }
     }
@@ -56,6 +87,14 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show blank white screen while checking attendance
+    if (_isCheckingAttendance) {
+      return Container(
+        color: Colors.white,
+      );
+    }
+
+    // Main UI after checking is complete
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -108,7 +147,7 @@ class _mannualAttendanceScreenState extends State<mannualAttendanceScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   GestureDetector(
-                    onTap: _isLoading ? null : _markAttendance, // Disable tap when loading
+                    onTap: _isLoading ? null : _markAttendance,
                     child: Container(
                       width: 90,
                       height: 90,

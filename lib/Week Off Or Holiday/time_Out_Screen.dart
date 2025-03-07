@@ -5,14 +5,14 @@ import 'package:hr_app/staff_HRM_module/Screen/Color/app_Color.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
-class TimeOutScreen extends StatefulWidget {
-  const TimeOutScreen({super.key});
+class timeOutScreen extends StatefulWidget {
+  const timeOutScreen({super.key});
 
   @override
-  State<TimeOutScreen> createState() => _TimeOutScreenState();
+  State<timeOutScreen> createState() => _timeOutScreenState();
 }
 
-class _TimeOutScreenState extends State<TimeOutScreen> {
+class _timeOutScreenState extends State<timeOutScreen> {
   bool _isLoading = false; // Track loading state
   String? activeTimeFrom;
   String? activeTimeTo;

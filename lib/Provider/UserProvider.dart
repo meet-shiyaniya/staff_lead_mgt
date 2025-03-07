@@ -1,23 +1,22 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hr_app/Api_services/api_service.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/add_Lead_Model.dart';
-import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 import '../Inquiry_Management/Model/Api Model/dismiss_Model.dart';
 import '../Inquiry_Management/Model/Api Model/dismiss_dropdown_Model.dart';
 import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
-import '../Inquiry_Management/Model/Api Model/followup_Cnr_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
 import '../Inquiry_Management/Model/category_Model.dart';
-import '../Inquiry_Management/Model/followup_Model.dart';
 import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
 import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
@@ -26,23 +25,19 @@ import '../staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart' as AllInquiry;
 
 class UserProvider with ChangeNotifier {
+  bool _isLoggedIn = false;
+  bool get isLoggedIn => _isLoggedIn;
 
-  bool _isLoggedIn=false;
-  bool get isLoggedIn=> _isLoggedIn;
-
-  // final ApiService _apiService=ApiService();
-  final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   Realtostaffprofilemodel? _profileData;
   Realtostaffprofilemodel? get profileData => _profileData;
-
-  followupCnrModel? _followupCnrData;
   bool _isLoadingInq = false;
   String? _errorInq;
   List<CategoryModel> _stages = [];
-  followupCnrModel? get followupCnrData => _followupCnrData;
   bool get isLoadingInq => _isLoadingInq;
   String? get errorInq => _errorInq;
   List<CategoryModel> get stages => _stages;
@@ -58,20 +53,25 @@ class UserProvider with ChangeNotifier {
 
   final ApiService _apiService = ApiService();
 
-  List<Inquiry> _inquiries = [];
+  List<AllInquiry.Inquiry> _inquiries = [];
+  List<FollowupInquiry> _followupInquiries = [];
   int _currentPage = 1;
   bool _isLoading = false;
   bool _hasMore = true;
-  final int _limit = 20;  // Number of items per API call
 
-  List<Inquiry> get inquiries => _inquiries;
+  List<AllInquiry.Inquiry> get inquiries => _inquiries;
+  List<FollowupInquiry> get followupInquiries => UnmodifiableListView(_followupInquiries);
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
 
-  PaginatedInquiries? paginatedInquiries;
+  AllInquiry.PaginatedInquiries? paginatedInquiries;
+  PaginatedInquiries? paginatedFollowupInquiries;
 
   Map<String, int> _stageCounts = {};
-  Map<String, int> get stageCounts => _stageCounts;
+  Map<String, int> get stageCounts => UnmodifiableMapView(_stageCounts);
+
+  Map<String, int> _followupStageCounts = {};
+  Map<String, int> get followupStageCounts => UnmodifiableMapView(_followupStageCounts);
 
   AddLeadDataModel? _dropdownData;
   bool _isLoadingDropdown = false;
@@ -96,12 +96,8 @@ class UserProvider with ChangeNotifier {
   List<Realtostaffattendancemodel>? _staffAttendanceData;
   List<Realtostaffattendancemodel>? get staffAttendanceData => _staffAttendanceData;
 
-
   InquiryFilter? _filterData;
-  // String? _error;
-
   InquiryFilter? get filterData => _filterData;
-  // String? get _error => _error;
 
   FetchBookingData2? _bookingData;
   FetchBookingData2? get bookingData => _bookingData;
@@ -113,39 +109,30 @@ class UserProvider with ChangeNotifier {
     try {
       _dashboardpermission = await _apiService.fetchDashboardpermission();
       if (_dashboardpermission != null) {
-        // Print the top-level fields
         print("fetchDashboardpermission");
         print("ok: ${_dashboardpermission!.allDashboard}");
         print("ok ID: ${_dashboardpermission!.appointmentCalender}");
-
-
       } else {
         print("No data returned from API");
       }
       notifyListeners();
     } catch (e) {
       print("Error in provider: $e");
-      _inquiryTimeline = null; // Reset on error
       notifyListeners();
     }
-
   }
+
   Future<void> fetchDashboard({required String countwise}) async {
     try {
       debugPrint('Fetching dashboard with countwise: $countwise');
-
-      _DashBoarddata = await _apiService.fetchDashboard(countwise:countwise );
-
-
-
+      _DashBoarddata = await _apiService.fetchDashboard(countwise: countwise);
       notifyListeners();
     } catch (e) {
       debugPrint("Error in provider: $e");
-      _DashBoarddata = null; // Changed from inquiryTimeline to _DashBoarddata
+      _DashBoarddata = null;
       notifyListeners();
     }
   }
-
 
   Future<void> fetchTwoMonthsAttendance() async {
     try {
@@ -153,11 +140,12 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print("Error fetching staff attendance data: $e");
-      _staffAttendanceData = null; // Optional: Reset data on error
+      _staffAttendanceData = null;
       notifyListeners();
     }
   }
-  Future<void> fetchAllStaffLeavesData () async {
+
+  Future<void> fetchAllStaffLeavesData() async {
     try {
       _allStaffLeavesData = await _apiService.fetchAllStaffLeavesData();
       notifyListeners();
@@ -165,6 +153,7 @@ class UserProvider with ChangeNotifier {
       print("Error fetching staff leaves data: $e");
     }
   }
+
   Future<bool> sendMemberAttendance({required String qrAttendance}) async {
     try {
       await _apiService.sendMemberAttendance(qrAttendance: qrAttendance);
@@ -176,7 +165,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendMannualAttendanceData () async {
+  Future<bool> sendMannualAttendanceData() async {
     try {
       await _apiService.sendMannualAttendanceData();
       notifyListeners();
@@ -187,7 +176,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendLeaveRequest ({
+  Future<bool> sendLeaveRequest({
     required String head_name,
     required String full_name,
     required String under_team,
@@ -202,7 +191,17 @@ class UserProvider with ChangeNotifier {
   }) async {
     try {
       bool success = await _apiService.sendLeaveRequest(
-        head_name: head_name, full_name: full_name, under_team: under_team, date: date, reporting_to: reporting_to, apply_days: apply_days, from_date: from_date, to_date: to_date, leave_reason: leave_reason, leave_type: leave_type, leave_type_id: leave_type_id,
+        head_name: head_name,
+        full_name: full_name,
+        under_team: under_team,
+        date: date,
+        reporting_to: reporting_to,
+        apply_days: apply_days,
+        from_date: from_date,
+        to_date: to_date,
+        leave_reason: leave_reason,
+        leave_type: leave_type,
+        leave_type_id: leave_type_id,
       );
 
       if (success) {
@@ -231,7 +230,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> sendAppUseRequest () async {
+  Future<bool> sendAppUseRequest() async {
     try {
       await _apiService.sendAppUseRequest();
       notifyListeners();
@@ -242,12 +241,11 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> fetchInquiries({
     bool isLoadMore = false,
     int status = 0,
     String search = '',
-    String stages = '', // Added stages parameter
+    String stages = '',
   }) async {
     if (!isLoadMore) {
       _currentPage = 1;
@@ -264,7 +262,7 @@ class UserProvider with ChangeNotifier {
         status,
         page: _currentPage,
         search: search,
-        stages: stages, // Pass stages to API
+        stages: stages,
       );
 
       if (response != null && response.inquiries.isNotEmpty) {
@@ -284,7 +282,7 @@ class UserProvider with ChangeNotifier {
         if (hasMore) _currentPage++;
 
         _stageCounts = {
-          "Total_Sum": getStageCount(status, "Total_Sum", response), // Add Total_Sum
+          "Total_Sum": getStageCount(status, "Total_Sum", response),
           "Fresh": getStageCount(status, "Fresh", response),
           "Contacted": getStageCount(status, "Contacted", response),
           "Appointment": getStageCount(status, "Appointment", response),
@@ -310,10 +308,10 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  int getStageCount(int status, String stage, PaginatedInquiries data) {
-    InquiryStatus? statusData = data.inquiryStatus.firstWhere(
+  int getStageCount(int status, String stage, AllInquiry.PaginatedInquiries data) {
+    AllInquiry.InquiryStatus? statusData = data.inquiryStatus.firstWhere(
           (s) => s.inquiryStatus == status.toString(),
-      orElse: () => InquiryStatus(
+      orElse: () => AllInquiry.InquiryStatus(
         inquiryStatus: status.toString(),
         fresh: '0',
         contacted: '0',
@@ -324,35 +322,41 @@ class UserProvider with ChangeNotifier {
         reAppointment: '0',
         reVisited: '0',
         converted: '0',
-        Total_Sum: '0', // Default to '0' as string
+        Total_Sum: '0',
       ),
     );
 
-    switch (stage) {
-      case "Total_Sum":
-        return int.parse(statusData.Total_Sum);
-      case "Fresh":
-        return int.parse(statusData.fresh);
-      case "Contacted":
-        return int.parse(statusData.contacted);
-      case "Appointment":
-        return int.parse(statusData.appointment);
-      case "Visited":
-        return int.parse(statusData.visited);
-      case "Negotiation":
-        return int.parse(statusData.negotiations);
-      case "Feedback":
-        return int.parse(statusData.feedBack);
-      case "Re_Appointment":
-        return int.parse(statusData.reAppointment);
-      case "reVisited":
-        return int.parse(statusData.reVisited);
-      case "Converted":
-        return int.parse(statusData.converted);
-      default:
-        return 0;
+    try {
+      switch (stage) {
+        case "Total_Sum":
+          return int.parse(statusData.Total_Sum);
+        case "Fresh":
+          return int.parse(statusData.fresh);
+        case "Contacted":
+          return int.parse(statusData.contacted);
+        case "Appointment":
+          return int.parse(statusData.appointment);
+        case "Visited":
+          return int.parse(statusData.visited);
+        case "Negotiation":
+          return int.parse(statusData.negotiations);
+        case "Feedback":
+          return int.parse(statusData.feedBack);
+        case "Re_Appointment":
+          return int.parse(statusData.reAppointment);
+        case "reVisited":
+          return int.parse(statusData.reVisited);
+        case "Converted":
+          return int.parse(statusData.converted);
+        default:
+          return 0;
+      }
+    } catch (e) {
+      print("Error parsing stage count for $stage: $e");
+      return 0; // Fallback value
     }
   }
+
   void resetPagination() {
     _currentPage = 1;
     _inquiries.clear();
@@ -364,12 +368,13 @@ class UserProvider with ChangeNotifier {
     bool isLoadMore = false,
     int status = 0,
     String search = '',
-    String stages = '', // Added stages parameter
+    String stages = '',
   }) async {
     if (!isLoadMore) {
       _currentPage = 1;
-      _inquiries.clear();
+      _followupInquiries.clear();
       _stageCounts.clear();
+      _hasMore = true;
     }
     if (isLoadMore && !_hasMore) return;
 
@@ -378,46 +383,37 @@ class UserProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.fetchFollowupCnrInquiry(
+        status: status,
         followupDay: followupDay,
-        status,
         page: _currentPage,
         search: search,
-        stages: stages, // Pass stages to API
+        stages: stages,
       );
 
-      if (response != null && response.inquiries.isNotEmpty) {
-        paginatedInquiries = response;
+      if (response != null && response.status == 1 && response.inquiries.isNotEmpty) {
+        paginatedFollowupInquiries = response;
 
+        // Handle inquiries
         final newInquiries = response.inquiries
-            .where((newInquiry) => !_inquiries.any((existing) => existing.id == newInquiry.id))
+            .where((newInquiry) => !_followupInquiries.any((existing) => existing.id == newInquiry.id))
             .toList();
 
         if (isLoadMore) {
-          _inquiries.addAll(newInquiries);
+          _followupInquiries.addAll(newInquiries);
         } else {
-          _inquiries = List.from(newInquiries);
+          _followupInquiries = List.from(newInquiries);
         }
 
-        _hasMore = _currentPage < response.totalPages! && newInquiries.isNotEmpty;
-        if (hasMore) _currentPage++;
+        _hasMore = _currentPage < response.totalPages && newInquiries.isNotEmpty;
+        if (_hasMore) _currentPage++;
 
-        _stageCounts = {
-          "Total_Sum": getStageCount(status, "Total_Sum", response), // Add Total_Sum
-          "Fresh": getStageCount(status, "Fresh", response),
-          "Contacted": getStageCount(status, "Contacted", response),
-          "Appointment": getStageCount(status, "Appointment", response),
-          "Visited": getStageCount(status, "Visited", response),
-          "Negotiation": getStageCount(status, "Negotiation", response),
-          "Feedback": getStageCount(status, "Feedback", response),
-          "Re_Appointment": getStageCount(status, "Re_Appointment", response),
-          "reVisited": getStageCount(status, "reVisited", response),
-          "Converted": getStageCount(status, "Converted", response),
-        };
+        // Process stage counts from inquiry_status
+        _stageCounts = _processStageCounts(status, response);
 
-        print("Fetched ${_inquiries.length} unique inquiries, HasMore: $_hasMore, Page: $_currentPage");
+        print("Fetched ${_followupInquiries.length} inquiries, Stage Counts: $_stageCounts, HasMore: $_hasMore, Page: $_currentPage");
       } else {
         _hasMore = false;
-        print("No new inquiries to fetch");
+        print("No inquiries or unsuccessful response: ${response?.status}");
       }
     } catch (e) {
       print("Error fetching inquiries: $e");
@@ -428,54 +424,37 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // int getStageCountInq(int status, String stage, PaginatedInquiries data) {
-  //   InquiryStatus? statusData = data.inquiryStatus.firstWhere(
-  //         (s) => s.inquiryStatus == status.toString(),
-  //     orElse: () => InquiryStatus(
-  //       inquiryStatus: status.toString(),
-  //       fresh: '0',
-  //       contacted: '0',
-  //       appointment: '0',
-  //       visited: '0',
-  //       negotiations: '0',
-  //       feedBack: '0',
-  //       reAppointment: '0',
-  //       reVisited: '0',
-  //       converted: '0',
-  //       Total_Sum: '0', // Default to '0' as string
-  //     ),
-  //   );
-  //
-  //   switch (stage) {
-  //     case "Total_Sum":
-  //       return int.parse(statusData.Total_Sum);
-  //     case "Fresh":
-  //       return int.parse(statusData.fresh);
-  //     case "Contacted":
-  //       return int.parse(statusData.contacted);
-  //     case "Appointment":
-  //       return int.parse(statusData.appointment);
-  //     case "Visited":
-  //       return int.parse(statusData.visited);
-  //     case "Negotiation":
-  //       return int.parse(statusData.negotiations);
-  //     case "Feedback":
-  //       return int.parse(statusData.feedBack);
-  //     case "Re_Appointment":
-  //       return int.parse(statusData.reAppointment);
-  //     case "reVisited":
-  //       return int.parse(statusData.reVisited);
-  //     case "Converted":
-  //       return int.parse(statusData.converted);
-  //     default:
-  //       return 0;
-  //   }
-  // }
-  // void resetPaginationInq() {
-  //   _currentPage = 1;
-  //   _inquiries.clear();
-  //   _hasMore = true;
-  // }
+  Map<String, int> _processStageCounts(int status, PaginatedInquiries data) {
+    final statusData = data.inquiryStatus.firstWhere(
+          (s) => s.inquiryStatus == status.toString(),
+      orElse: () => InquiryStatus(
+        inquiryStatus: status.toString(),
+        totalSum: 0,
+        fresh: 0,
+        contacted: 0,
+        appointment: 0,
+        visited: 0,
+        negotiations: 0,
+        feedback: 0,
+        reAppointment: 0,
+        reVisited: 0,
+        converted: 0,
+      ),
+    );
+
+    return {
+      'Total_Sum': statusData.totalSum,
+      'Fresh': statusData.fresh,
+      'Contacted': statusData.contacted,
+      'Appointment': statusData.appointment,
+      'Visited': statusData.visited,
+      'Negotiations': statusData.negotiations,
+      'Feed_Back': statusData.feedback,
+      'Re_Appointment': statusData.reAppointment,
+      'Re_Visited': statusData.reVisited,
+      'Converted': statusData.converted,
+    };
+  }
 
   Future<void> fetchAddLeadData() async {
     _isLoadingDropdown = true;
@@ -498,6 +477,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> fetchNextSlots(String date) async {
     _isLoading = true;
     _errorMessage = null;
@@ -530,64 +510,40 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> login(String username, String password) async {
+    bool success = await _apiService.login(username, password);
 
-  // Map<String, int> _stageCounts = {};
-  // Map<String, int> get stageCounts => _stageCounts;
-
-
-  Future<bool> login(String username,String password) async{
-    bool success=await _apiService.login(username, password);
-
-    if(success){
-      _isLoggedIn=true;
+    if (success) {
+      _isLoggedIn = true;
       notifyListeners();
       return true;
-    }else{
-      _isLoggedIn=false;
+    } else {
+      _isLoggedIn = false;
       notifyListeners();
       return false;
     }
-
   }
+
   Future<void> checkLoginStatus() async {
-
     try {
-
       String? token = await _secureStorage.read(key: 'token');
-
       if (token != null) {
-
         _isLoggedIn = true;
-
         print(token);
-
         await fetchOfficeLocationData();
-
         fetchProfileData();
-
         fetchInquiries();
-
-        // ✅ Run first (waits for completion)
-
-        // Run remaining API calls in the background (parallel)
-        Future.wait([
-
-        ]);
-
       } else {
-
         _isLoggedIn = false;
-
       }
       notifyListeners();
     } catch (e) {
       _isLoggedIn = false;
       notifyListeners();
-
     }
   }
 
-  Future<void> fetchProfileData () async {
+  Future<void> fetchProfileData() async {
     try {
       _profileData = await _apiService.fetchProfileData();
       notifyListeners();
@@ -596,7 +552,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchOfficeLocationData () async {
+  Future<void> fetchOfficeLocationData() async {
     try {
       _officeLocationData = await _apiService.fetchOfficeLocationData();
       notifyListeners();
@@ -628,7 +584,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchStaffLeavesData () async {
+  Future<void> fetchStaffLeavesData() async {
     try {
       _staffLeavesData = await _apiService.fetchStaffLeavesData();
       notifyListeners();
@@ -637,7 +593,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchLeaveTypesData () async {
+  Future<void> fetchLeaveTypesData() async {
     try {
       _leaveTypesData = await _apiService.fetchLeaveTypesData();
       notifyListeners();
@@ -645,7 +601,6 @@ class UserProvider with ChangeNotifier {
       print("Error fetching leave types data: $e");
     }
   }
-
 
   Future<EditLeadData?> fetchEditLeadData(String leadId) async {
     try {
@@ -659,6 +614,7 @@ class UserProvider with ChangeNotifier {
       return null;
     }
   }
+
   Future<bool> updateInquiryStatus({
     required String inquiryId,
     required String selectedTab,
@@ -699,6 +655,7 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+
   Future<bool> handleFollowUpUpdate({
     required String inquiryId,
     required Map<String, dynamic> formData,
@@ -713,6 +670,7 @@ class UserProvider with ChangeNotifier {
       interestedProduct: formData['interestedProduct'] as String?,
     );
   }
+
   Future<bool> updateLead({
     required String action,
     required String leadId,
@@ -771,8 +729,10 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+
   InquiryModel? _inquiryModel;
   InquiryModel? get inquiryModel => _inquiryModel;
+
   Future<void> loadInquiryData(String id) async {
     _isLoading = true;
     notifyListeners();
@@ -807,33 +767,32 @@ class UserProvider with ChangeNotifier {
     required String PropertyConfiguration,
     required String society,
     required String houseno,
-    required String altmobileno, required String description,
-    // required String intrested_product
-
+    required String altmobileno,
+    required String description,
   }) async {
     try {
       bool success = await _apiService.addLead(
-          action:action,
-          nxt_follow_up: nxt_follow_up,
-          time: time,
-          purpose_buy: purpose_buy,
-          city: city,
-          country_code: country_code,
-          intrested_area: intrested_area,
-          full_name: full_name,
-          budget: budget,
-          approx_buy: approx_buy,
-          area: area,
-          mobileno: mobileno,
-          inquiry_type:inquiry_type,
-          inquiry_source_type:inquiry_source_type,
-          intrested_area_name:intrested_area_name,
-          intersted_site_name:intersted_site_name,
+        action: action,
+        nxt_follow_up: nxt_follow_up,
+        time: time,
+        purpose_buy: purpose_buy,
+        city: city,
+        country_code: country_code,
+        intrested_area: intrested_area,
+        full_name: full_name,
+        budget: budget,
+        approx_buy: approx_buy,
+        area: area,
+        mobileno: mobileno,
+        inquiry_type: inquiry_type,
+        inquiry_source_type: inquiry_source_type,
+        intrested_area_name: intrested_area_name,
+        intersted_site_name: intersted_site_name,
         altmobileno: altmobileno,
         houseno: houseno,
         PropertyConfiguration: PropertyConfiguration,
-        society: society, description: ''
-
+        society: society,
+        description: '',
       );
 
       if (success) {
@@ -848,6 +807,7 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+
   InquiryTimeLineModel? _inquiryTimeline;
   InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
 
@@ -855,12 +815,10 @@ class UserProvider with ChangeNotifier {
     try {
       _inquiryTimeline = await _apiService.fetchInquiryTimeline(inquiryId: inquiryId);
       if (_inquiryTimeline != null) {
-        // Print the top-level fields
         print("Inquiry Timeline Data:");
         print("Result: ${_inquiryTimeline!.result}");
         print("Inquiry ID: ${_inquiryTimeline!.inquiryId}");
 
-        // Print the list of Data objects
         if (inquiryTimeline!.data != null && inquiryTimeline!.data!.isNotEmpty) {
           print("Data List (${_inquiryTimeline!.data!.length} items):");
           for (var i = 0; i < _inquiryTimeline!.data!.length; i++) {
@@ -884,14 +842,13 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print("Error in provider: $e");
-      _inquiryTimeline = null; // Reset on error
+      _inquiryTimeline = null;
       notifyListeners();
     }
-
   }
+
   String? _error;
   String? get error => _error;
-
 
   Future<void> fetchFilterData() async {
     try {
@@ -909,11 +866,11 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> fetchVisitData(String inquiryId) async {
     try {
-      _isLoading=true;
-
-      _visitData=await _apiService.fetchVisitData(inquiryId);
+      _isLoading = true;
+      _visitData = await _apiService.fetchVisitData(inquiryId);
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -922,9 +879,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> fetchBookingData(String editId) async {
-
     try {
       _isLoading = true;
       notifyListeners();
@@ -939,17 +894,9 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> fetchStaffAttendanceData () async {
-  //   try {
-  //     _staffAttendanceData = (await _apiService.fetchStaffAttendanceData()) ;
-  //     notifyListeners();
-  //   } catch (e) {
-  //     print("Error fetching staff attendance data: $e");
-  //   }
-  // }
-
   DismissModel? _dismissmodel;
   DismissModel? get dismissmodel => _dismissmodel;
+
   Future<void> fetchDismissData(int pageNumber) async {
     try {
       _isLoading = true;
@@ -958,9 +905,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
 
       print('Fetching dismiss data for page: $pageNumber');
-      _dismissmodel = await _apiService.fetchDismissData(
-        pageNumber,
-      );
+      _dismissmodel = await _apiService.fetchDismissData(pageNumber);
       print('Dismiss data fetched: ${_dismissmodel?.toJson()}');
 
       _isLoading = false;
@@ -977,6 +922,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -985,15 +931,7 @@ class UserProvider with ChangeNotifier {
   fetchTransferInquiryModel? _transferInquiryData;
   fetchTransferInquiryModel? get transferInquiryData => _transferInquiryData;
 
-  Future<void> fetchTransferInquiryData () async {
-    try {
-      _transferInquiryData = await _apiService.fetchTransferInquiryData();
-      notifyListeners();
-    } catch (e) {
-      print("Error fetching staff attendance data: $e");
-    }
-  }
-  Future<void> fetch () async {
+  Future<void> fetchTransferInquiryData() async {
     try {
       _transferInquiryData = await _apiService.fetchTransferInquiryData();
       notifyListeners();
@@ -1002,8 +940,8 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> sendTransferInquiry ({
-    required List<String> inqIds, // Changed to accept a list of IDs
+  Future<void> sendTransferInquiry({
+    required List<String> inqIds,
     required String actionKey,
     required String employeeId,
   }) async {
@@ -1012,18 +950,6 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print("Error sending leave request: $e");
-      return null;
     }
   }
-
-
-
-//   void resetPagination() {
-//     _currentPage = 1;
-//     _inquiries.clear();
-//     _hasMore = true;
-//   }
 }
-
-// Add a getValue function to access the pagination data as a string and parse to int
-

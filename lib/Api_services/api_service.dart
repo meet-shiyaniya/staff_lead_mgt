@@ -8,8 +8,6 @@ import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart'
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/dismiss_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
-// import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -28,7 +26,8 @@ import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtostaffattendancemodel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
-// import '../staff_HRM_module/staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart' as AllInquiry;
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/followup_Cnr_Model.dart' as Followup;
 
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
@@ -1017,7 +1016,7 @@ class ApiService{
   }
 
 
-  Future<PaginatedInquiries?> fetchInquiries(
+  Future<AllInquiry.PaginatedInquiries?> fetchInquiries(
       int status, {
         required int page,
         required String search,
@@ -1046,7 +1045,7 @@ class ApiService{
         print("Response Status Code: ${response.statusCode}");
         if (response.body.startsWith('{') || response.body.startsWith('[')) {
           final Map<String, dynamic> jsonData = jsonDecode(response.body);
-          return PaginatedInquiries.fromJson(jsonData);
+          return AllInquiry.PaginatedInquiries.fromJson(jsonData);
         } else {
           print(response.body);
           print("Error: Received non-JSON response");
@@ -1062,45 +1061,45 @@ class ApiService{
     }
   }
 
-  Future<PaginatedInquiries?> fetchFollowupCnrInquiry(
-      int status, {
-        required String followupDay,
-        required int page,
-        required String search,
-        String stages = '', // Added stages parameter
-      }) async {
-    final url = Uri.parse("$followupCnrInqUrl?&status=$status&page=$page&search=$search");
+  Future<Followup.PaginatedInquiries?> fetchFollowupCnrInquiry({
+    required int status,
+    required String followupDay,
+    required int page,
+    required String search,
+    String stages = '',
+  }) async {
+    final url = Uri.parse("$followupCnrInqUrl?status=$status&page=$page&search=$search");
     try {
       String? token = await _secureStorage.read(key: 'token');
-      print("Token: $token");
       if (token == null) {
         print("Error: No token found");
         return null;
       }
+
       final response = await http.post(
         url,
         headers: {
-          'Content-Type': "application/json",
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Assuming token-based auth
         },
         body: jsonEncode({
           'token': token,
-          'stages': stages, // Pass stages in the body
-          'follow_up_day': followupDay
+          'stages': stages,
+          'follow_up_day': followupDay,
         }),
       );
 
       if (response.statusCode == 200) {
         print("Response Status Code: ${response.statusCode}");
-        if (response.body.startsWith('{') || response.body.startsWith('[')) {
-          final Map<String, dynamic> jsonData = jsonDecode(response.body);
-          return PaginatedInquiries.fromJson(jsonData);
+        final jsonData = jsonDecode(response.body);
+        if (jsonData is Map<String, dynamic>) {
+          return Followup.PaginatedInquiries.fromJson(jsonData);
         } else {
-          print(response.body);
-          print("Error: Received non-JSON response");
+          print("Error: Received non-JSON response: ${response.body}");
           return null;
         }
       } else {
-        print("Error fetching data: ${response.statusCode}");
+        print("Error fetching data: ${response.statusCode} - ${response.body}");
         return null;
       }
     } catch (e) {

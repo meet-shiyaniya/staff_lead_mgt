@@ -1,165 +1,71 @@
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/followup_Cnr_Model.dart'; // Adjust path
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../Provider/UserProvider.dart';
-import '../../Model/Api Model/allInquiryModel.dart';
 import '../../Model/category_Model.dart';
 import '../../Utils/Colors/app_Colors.dart';
 import '../../Utils/Custom widgets/add_lead_Screen.dart';
-import '../../Utils/Custom widgets/pending_Card.dart';
+import '../../Utils/Custom widgets/booking_Screen.dart';
 
 class ShiftsList extends StatefulWidget {
-  const ShiftsList({Key? key});
+  const ShiftsList({Key? key}) : super(key: key);
 
   @override
   State<ShiftsList> createState() => _ShiftsListState();
 }
 
 class _ShiftsListState extends State<ShiftsList> {
-  String selectedList = "All";
+  String selectedList = "All"; // Default to "All"
   String selectedValue = "0";
   int? selectedIndex = 0;
-
-  List<Map<String, String>> actionList = []; // Stores key-value pairs for actions
-  List<Map<String, String>> employeeList = []; // Stores key-value pairs for employees
-  String? selectedAction; // Stores selected action value
-  String? selectedEmployee; //
-
-  String? getStageValue(String stageTitle) {
-    const stageMap = {
-      "Fresh": "1",
-      "Contacted": "2",
-      "Appointment": "3",
-      "Negotiation": "4",
-      "Visited": "5",
-      "Feedback": "6",
-      "Re_Appointment": "7",
-      "reVisited": "8",
-      "Converted": "9"
-    };
-    return stageMap[stageTitle];
-  }
-
-  List<CategoryModel> categoryList = [];
-  List<Inquiry> filteredLeads = [];
-  List<bool> selectedCards = [];
-  bool anySelected = false;
+  String selectedMainFilter = "Live"; // Default status
+  int currentStatus = 1; // Default to "Live" (status 1)
+  String? currentStage; // No stage filter by default
 
   late ScrollController _scrollController;
-
-
-  bool isStatusFilterActive = false;
-  String? currentStage;
-  int currentStatus = 1;
-  String selectedMainFilter = "Live";
-  Future<void> loadData() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    try {
-      await userProvider.fetchTransferInquiryData();
-      await userProvider.fetchFollowupCnrInquiry(followupDay: "today");
-      final data = userProvider.transferInquiryData;
-
-      if (data == null) {
-        print('No data received');
-        return;
-      }
-
-      setState(() {
-        actionList = [];
-        selectedAction = null;
-
-        if (data.action != null) {
-          actionList = [
-            if (data.action!.assignFollowups != null)
-              {'key': 'assign_followups', 'value': data.action!.assignFollowups!},
-            if (data.action!.transferOwnership != null)
-              {'key': 'transfer_ownership', 'value': data.action!.transferOwnership!},
-          ];
-          selectedAction = actionList.isNotEmpty ? actionList.first['value'] : null;
-        } else {
-          print('No action data available');
-        }
-
-        print('Actions Loaded: $actionList');
-        print('Selected Action: $selectedAction');
-
-        employeeList = (data.employee ?? [])
-            .where((e) => e.id != null && e.firstname != null)
-            .map((e) => {'id': e.id!, 'name': e.firstname!})
-            .toList();
-        selectedEmployee = employeeList.isNotEmpty ? employeeList.first['name'] : null;
-
-        print('Employees Loaded: $employeeList');
-        print('Selected Employee: $selectedEmployee');
-      });
-    } catch (e) {
-      print('Error fetching data: $e');
-    }
-  }
-
+  bool _isFetchingMore = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Load data in background first
-
-    // Then schedule loadAllInquiries after frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await loadAllInquiries();
-      loadData();
-
-    });
-
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+
+    // Load initial data after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
   }
 
-  Future<void> loadAllInquiries() async {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    await inquiryProvider.fetchInquiries(status: currentStatus, stages: '');
+  Future<void> _loadInitialData() async {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    await provider.fetchFollowupCnrInquiry(
+      followupDay: "today",
+      status: currentStatus,
+      stages: '', // Empty stages to fetch all data by default
+    );
     setState(() {
-      filteredLeads = inquiryProvider.inquiries;
-      isStatusFilterActive = currentStatus != 0;
-      selectedMainFilter = "Live";
-      selectedValue = inquiryProvider.stageCounts["Total_Sum"]?.toString() ?? "0";
-      selectedList = "All";
-      selectedIndex = 0;
+      selectedValue = provider.stageCounts["Total_Sum"]?.toString() ?? "0";
     });
   }
 
   void _onScroll() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300 &&
-        !inquiryProvider.isLoading &&
-        inquiryProvider.hasMore) {
-      inquiryProvider
-          .fetchInquiries(
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300 &&
+        !provider.isLoading &&
+        provider.hasMore &&
+        !_isFetchingMore) {
+      setState(() => _isFetchingMore = true);
+      provider
+          .fetchFollowupCnrInquiry(
+        followupDay: "today",
         isLoadMore: true,
         status: currentStatus,
         stages: currentStage ?? '',
       )
-          .then((_) {
-        setState(() {
-          filteredLeads = inquiryProvider.inquiries;
-        });
-      });
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final inquiryProvider = Provider.of<UserProvider>(context);
-    if (selectedCards.length != inquiryProvider.inquiries.length) {
-      selectedCards = List<bool>.generate(
-        inquiryProvider.inquiries.length,
-            (index) => false,
-      );
+          .then((_) => setState(() => _isFetchingMore = false));
     }
   }
 
@@ -169,756 +75,83 @@ class _ShiftsListState extends State<ShiftsList> {
     super.dispose();
   }
 
-  Future<void> filterLeadsByStatus(int status) async {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+  Future<void> _filterByStatus(String filter) async {
     setState(() {
-      currentStatus = status;
+      selectedMainFilter = filter;
+      currentStatus = filter == "Live" ? 1 : 2;
       currentStage = null;
-    });
-    await inquiryProvider.fetchInquiries(status: status, stages: '');
-    setState(() {
-      filteredLeads = inquiryProvider.inquiries;
       selectedList = "All";
-      selectedValue = inquiryProvider.stageCounts["Total_Sum"]?.toString() ?? "0";
-      selectedIndex = 0;
-      isStatusFilterActive = true;
-      selectedMainFilter = status == 1 ? "Live" : "Due";
     });
-  }
 
-  String? getInquiryStageFromCategory(String category) {
-    switch (category) {
-      case "Fresh":
-        return "1";
-      case "Contacted":
-        return "2";
-      case "Appointment":
-        return "3";
-      case "Visited":
-        return "4";
-      case "Negotiation":
-        return "6";
-      case "Feedback":
-        return "9";
-      case "Re_Appointment":
-        return "10";
-      case "reVisited":
-        return "11";
-      case "Converted":
-        return "12";
-      default:
-        return null;
-    }
-  }
-
-  void handleAction(String action, String employee) {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    await provider.fetchFollowupCnrInquiry(
+      followupDay: "today",
+      status: currentStatus,
+      stages: '',
+    );
     setState(() {
-      selectedAction = null;
-      selectedEmployee = null;
-    });
-    print('Action: $action, Employee: $employee');
-  }
-
-  void toggleSelection(int index) {
-    setState(() {
-      selectedCards[index] = !selectedCards[index];
-      anySelected = selectedCards.contains(true);
-      print("anySelected: $anySelected");
+      selectedValue = provider.stageCounts["Total_Sum"]?.toString() ?? "0";
     });
   }
 
-
-  Future<void> filterLeadsByStage(String stage) async {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+  Future<void> _filterByStage(String stage) async {
+    final provider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
       currentStage = stage;
+      selectedList = _mapStageToTitle(stage);
     });
-    await inquiryProvider.fetchInquiries(
+    await provider.fetchFollowupCnrInquiry(
+      followupDay: "today",
       status: currentStatus,
       stages: stage,
     );
     setState(() {
-      filteredLeads = inquiryProvider.inquiries;
-      selectedList = getInquiryStageText(stage);
-      selectedValue = inquiryProvider.stageCounts[selectedList]?.toString() ?? "0";
-      isStatusFilterActive = true;
+      selectedValue = provider.stageCounts[_mapStageToProviderKey(selectedList)]?.toString() ?? "0";
     });
   }
 
-  final TextEditingController nextFollowupcontroller = TextEditingController();
-  String selectedcallFilter = "Follow Up";
-  List<String> callList = ['Followup', 'Dismissed', 'Appointment', 'Cnr'];
-  String? selectedMembership;
-  String? selectedApx;
-  String? selectedPurpose;
-  String? selectedTime;
-  Map<String, dynamic> appliedFilters = {};
-  String? filteredId;
-  String? filteredName;
-  String? filteredPhone;
-  List<String> filteredStatus = [];
-  bool _isDialogLoading = false;
-  bool _isSubmitting = false;
-
-  void _updateSearchResults(List<Inquiry> results) {
-    setState(() {
-      filteredLeads = results;
-    });
-  }
-
-  void resetFilters() {
-    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() {
-      filteredLeads = List.from(inquiryProvider.inquiries);
-      appliedFilters.clear();
-      filteredId = null;
-      filteredName = null;
-      filteredPhone = null;
-      filteredStatus.clear();
-    });
-  }
-
-  void _updateAppliedFilters(Map<String, dynamic> filters) {
-    setState(() {
-      appliedFilters = filters;
-      filteredId =
-      (filters['Id'] != null && filters['Id'].toString().isNotEmpty)
-          ? filters['Id']
-          : null;
-      filteredName =
-      (filters['Name'] != null && filters['Name'].toString().isNotEmpty)
-          ? filters['Name']
-          : null;
-      filteredPhone =
-      (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty)
-          ? filters['Mobile']
-          : null;
-      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty
-          ? List.from(filters['Status'])
-          : [];
-    });
-  }
-  void showActionDialog(
-      BuildContext context,
-      bool anySelected,
-      Function(String, String) handleAction,
-      List<String> actions,
-      List<String> employeeNames,
-      ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        String? dialogSelectedAction = actions.isNotEmpty ? actions.first : null;
-        String? dialogSelectedEmployee =
-        employeeNames.isNotEmpty ? employeeNames.first : null;
-        bool isSubmitting = false;
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter dialogSetState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
-                'Perform Action',
-                style: TextStyle(
-                  fontFamily: "poppins_thin",
-                  fontSize: 19,
-                  fontWeight: FontWeight.w600,
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UserProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Column(
+            children: [
+              _buildMainButtonGroup(),
+              _buildStageSelector(provider),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _loadInitialData,
+                  child: _buildInquiryList(provider),
                 ),
               ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildDropdown(
-                      label: "Select Action",
-                      hint: "Choose Action",
-                      value: dialogSelectedAction,
-                      items: actions,
-                      onChanged: (value) {
-                        dialogSetState(() {
-                          dialogSelectedAction = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDropdown(
-                      label: "Select Employee",
-                      hint: "Choose Employee",
-                      value: dialogSelectedEmployee,
-                      items: employeeNames,
-                      onChanged: (value) {
-                        dialogSetState(() {
-                          dialogSelectedEmployee = value;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text(
-                        "Cancel",
-                        style: TextStyle(
-                          fontFamily: "poppins_thin",
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                        if (dialogSelectedAction == null || dialogSelectedEmployee == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "Please select both action and employee",
-                                style: TextStyle(fontFamily: 'poppins_thin'),
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // Get selected inquiry IDs
-                        List<String> selectedInquiryIds = [];
-                        for (int i = 0; i < selectedCards.length; i++) {
-                          if (selectedCards[i]) {
-                            selectedInquiryIds.add(filteredLeads[i].id ?? '');
-                          }
-                        }
-                        print('Selected Inquiry IDs: $selectedInquiryIds');
-
-                        if (selectedInquiryIds.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "No inquiries selected",
-                                style: TextStyle(fontFamily: 'poppins_thin'),
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // Get the action key and employee ID
-                        String actionKey = actionList
-                            .firstWhere(
-                                (action) => action['value'] == dialogSelectedAction,
-                            orElse: () => {'key': ''})['key'] ??
-                            '';
-                        String employeeId = employeeList
-                            .firstWhere(
-                                (e) => e['name'] == dialogSelectedEmployee,
-                            orElse: () => {'id': ''})['id'] ??
-                            '';
-
-                        dialogSetState(() => isSubmitting = true);
-
-                        try {
-                          final userProvider = Provider.of<UserProvider>(context, listen: false);
-                          await userProvider.sendTransferInquiry(
-                            inqIds: selectedInquiryIds,
-                            actionKey: actionKey,
-                            employeeId: employeeId,
-                          );
-
-                          handleAction(dialogSelectedAction!, dialogSelectedEmployee!);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "Inquiries transferred successfully",
-                                style: TextStyle(fontFamily: 'poppins_thin'),
-                              ),
-                            ),
-                          );
-                          setState(() {
-                            selectedCards = List<bool>.filled(filteredLeads.length, false);
-                            anySelected = false;
-                          });
-                          Navigator.of(dialogContext).pop();
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "Failed to transfer inquiries: $e",
-                                style: TextStyle(fontFamily: 'poppins_thin'),
-                              ),
-                            ),
-                          );
-                        } finally {
-                          dialogSetState(() => isSubmitting = false);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple.shade100,
-                        foregroundColor: Colors.deepPurple.shade700,
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        minimumSize: Size(100, 0),
-                      ),
-                      child: isSubmitting
-                          ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.deepPurple.shade700,
-                          strokeWidth: 2,
-                        ),
-                      )
-                          : Text(
-                        'Submit',
-                        style: TextStyle(
-                          fontFamily: 'poppins_thin',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: false)),
+              );
+            },
+            child: const Icon(Icons.add, color: Colors.white),
+            backgroundColor: Colors.deepPurple.shade400,
+          ),
         );
       },
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'poppins_thin',
-            color: Colors.grey[800],
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.shade100,
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton2<String>(
-              isExpanded: true,
-              hint: Text(
-                hint,
-                style: TextStyle(
-                  fontFamily: 'poppins_thin',
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-              value: value,
-              onChanged: items.isEmpty ? null : onChanged,
-              items: items.map((item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: TextStyle(
-                    fontFamily: 'poppins_thin',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
-                  ),
-                ),
-              )).toList(),
-              buttonStyleData: const ButtonStyleData(
-                height: 40,
-                width: double.infinity,
-              ),
-              iconStyleData: IconStyleData(
-                icon: Icon(
-                  Icons.arrow_drop_down,
-                  color: Colors.grey[700],
-                ),
-              ),
-              dropdownStyleData: DropdownStyleData(
-                maxHeight: 200,
-                width: MediaQuery.of(context).size.width / 1.65,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final inquiryProvider = Provider.of<UserProvider>(context);
-
-    if (selectedCards.length != inquiryProvider.inquiries.length) {
-      selectedCards = List<bool>.generate(
-        inquiryProvider.inquiries.length,
-            (index) => false,
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-      children: [
-
-        _buildMainButtonGroup(),
-        GestureDetector(
-          onTap: () async {
-            final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-            final Map<String, int> stageCounts = inquiryProvider.stageCounts;
-
-            List<Categorymodel> filteredOptions = [
-              Categorymodel("All", stageCounts["Total_Sum"] ?? 0),
-            ];
-            List<String> categoryTitles = [
-              "Fresh",
-              "Contacted",
-              "Appointment",
-              "Negotiation",
-              "Visited",
-              "Feedback",
-              "Re_Appointment",
-              "reVisited",
-              "Converted"
-            ];
-            if ([
-              "Live",
-              "Dismiss",
-              "Dismissed Request",
-              "Conversion Request",
-              "Due Appo",
-              "CNR"
-            ].contains(selectedMainFilter)) {
-              filteredOptions.addAll(categoryTitles.map(
-                      (title) => Categorymodel(title, stageCounts[title] ?? 0)));
-            }
-
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ListSelectionscreen(
-                  initialSelectedIndex: selectedIndex ?? 0,
-                  optionList: filteredOptions,
-                  currentStatus: currentStatus,
-                ),
-              ),
-            );
-
-            if (result != null && result["selectedCategory"] != null) {
-              final selectedCategory = result["selectedCategory"] as Categorymodel;
-              setState(() {
-                selectedList = selectedCategory.title;
-                selectedValue = selectedCategory.leads.toString();
-                selectedIndex = result["selectedIndex"];
-              });
-
-              if (selectedCategory.title != "All") {
-                final stage = getInquiryStageFromCategory(selectedCategory.title);
-                if (stage != null) await filterLeadsByStage(stage);
-              } else {
-                await inquiryProvider.fetchInquiries(status: currentStatus, stages: '');
-                setState(() {
-                  filteredLeads = inquiryProvider.inquiries;
-                  selectedValue = inquiryProvider.stageCounts["Total_Sum"]?.toString() ?? "0";
-                });
-              }
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Container(
-              height: 52,
-              padding: EdgeInsets.symmetric(horizontal: 26.0, vertical: 8.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.deepPurple.shade100,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    selectedList,
-                    style: TextStyle(fontFamily: "poppins_thin", fontSize: 16),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.group, color: Colors.black),
-                      SizedBox(width: 8.0),
-                      Text(
-                        selectedValue,
-                        style: TextStyle(fontFamily: "poppins_thin"),
-                      ),
-                      Icon(Icons.arrow_drop_down, color: Colors.black),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    if (filteredId != null && filteredId!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                        label: Text('ID: $filteredId'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredId = null;
-                            appliedFilters.remove('Id');
-                            loadAllInquiries();
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(width: 5),
-                    if (filteredName != null && filteredName!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                        label: Text('Name: $filteredName'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredName = null;
-                            appliedFilters.remove('Name');
-                            loadAllInquiries();
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(width: 5),
-                    if (filteredPhone != null && filteredPhone!.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                        label: Text('Phone: $filteredPhone'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredPhone = null;
-                            appliedFilters.remove('Mobile');
-                            loadAllInquiries();
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(width: 5),
-                    if (filteredStatus.isNotEmpty)
-                      FilterChip(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                        label: Text('Status: ${filteredStatus.join(', ')}'),
-                        onDeleted: () {
-                          setState(() {
-                            filteredStatus.clear();
-                            appliedFilters.remove('Status');
-                            loadAllInquiries();
-                          });
-                        },
-                        onSelected: (bool value) {},
-                      ),
-                    SizedBox(width: 5),
-                  ],
-                ),
-              ),
-              if (filteredId != null ||
-                  filteredName != null ||
-                  filteredPhone != null ||
-                  filteredStatus.isNotEmpty)
-                ElevatedButton(
-                  onPressed: resetFilters,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade300,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                  ),
-                  child: const Text('Clear All',
-                      style: TextStyle(fontFamily: 'poppins_thin', color: Colors.white)),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async => await loadAllInquiries(),
-            child: Builder(
-              builder: (context) {
-                if (inquiryProvider.isLoading && inquiryProvider.inquiries.isEmpty) {
-                  return ListView.builder(
-                    itemCount: 5,
-                    itemBuilder: (context, index) {
-                      return Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Container(
-                            height: 160,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                } else if (filteredLeads.isEmpty) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Center(
-                        child: Lottie.asset(
-                          'asset/Inquiry_module/no_result.json',
-                          fit: BoxFit.contain,
-                          width: 300,
-                          height: 300,
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          "No results found",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 22,
-                            fontFamily: "poppins_thin",
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  if (selectedCards.length != filteredLeads.length) {
-                    selectedCards = List<bool>.filled(filteredLeads.length, false);
-                  }
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: filteredLeads.length + (inquiryProvider.isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index < filteredLeads.length) {
-                        Inquiry inquiry = filteredLeads[index];
-                        return StatefulBuilder(
-                          builder: (context, setState) {
-                            return GestureDetector(
-                              onLongPress: () => toggleSelection(index),
-                              onTap: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context) => LeaddetailScreen(
-                                //       InquiryInfoList: inquiry,
-                                //     ),
-                                //   ),
-                                // );
-                              },
-                              child: TestCard(
-                                id: inquiry.id,
-                                name: inquiry.fullName,
-                                username: inquiry.assign_id,
-                                label: getInquiryStageText(inquiry.InqStage),
-                                followUpDate: inquiry.createdAt,
-                                nextFollowUpDate: inquiry.nxtfollowup,
-                                inquiryType: inquiry.InqType,
-                                intArea: inquiry.InqArea,
-                                purposeBuy: inquiry.PurposeBuy,
-                                daySkip: inquiry.day_skip,
-                                hourSkip: inquiry.hour_skip,
-                                source: inquiry.inquiry_source_type,
-                                isSelected: selectedCards[index],
-                                onSelect: () => toggleSelection(index),
-                                callList: callList,
-                                selectedcallFilter: selectedcallFilter,
-                                data: inquiry,
-                                isTiming: true,
-                                nextFollowupcontroller: nextFollowupcontroller,
-                              ),
-                            );
-                          },
-                        );
-                      }
-                      if (inquiryProvider.isLoading) {
-                        return Center(
-                          child: Lottie.asset(
-                            'asset/loader.json',
-                            fit: BoxFit.contain,
-                            width: 60,
-                            height: 60,
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  );
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddLeadScreen(isEdit: false),
-            ),
-          );
-        },
-        child: Icon(Icons.add, color: Colors.white),
-        backgroundColor: Colors.deepPurple.shade400,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-        elevation: 20,
-      ),
-    );
-  }
-
   Widget _buildMainButtonGroup() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            _buildMainButton("Live"),
-            _buildMainButton("Due"),
-            // _buildMainButton("Dismissed Request"),
-            // _buildMainButton("Conversion Request"),
-            // _buildMainButton("Due Appo"),
-            // _buildMainButton("CNR"),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          _buildMainButton("Live"),
+          _buildMainButton("Due"),
+        ],
       ),
     );
   }
@@ -934,37 +167,169 @@ class _ShiftsListState extends State<ShiftsList> {
           side: const BorderSide(color: Color(0xff6A0DAD)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         ),
-        onPressed: () async {
-          setState(() {
-            selectedMainFilter = text;
-          });
-          if (text == "Live") {
-            await filterLeadsByStatus(1);
-          } else if (text == "Dismiss") {
-            await filterLeadsByStatus(2);
-          } else if (text == "Dismissed Request") {
-            await filterLeadsByStatus(3);
-          } else if (text == "Conversion Request") {
-            await filterLeadsByStatus(4);
-          } else if (text == "Due Appo") {
-            await filterLeadsByStatus(5);
-          } else if (text == "CNR") {
-            await filterLeadsByStatus(6);
-          }
-        },
+        onPressed: () => _filterByStatus(text),
         child: Text(
           text,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: "poppins_thin",
-            fontWeight: FontWeight.w500,
+          style: const TextStyle(fontSize: 14, fontFamily: "poppins_thin", fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStageSelector(UserProvider provider) {
+    return GestureDetector(
+      onTap: () async {
+        final stageCounts = provider.stageCounts;
+        final options = [
+          Categorymodel("All", stageCounts["Total_Sum"] ?? 0),
+          Categorymodel("Fresh", stageCounts["Fresh"] ?? 0),
+          Categorymodel("Contacted", stageCounts["Contacted"] ?? 0),
+          Categorymodel("Appointment", stageCounts["Appointment"] ?? 0),
+          Categorymodel("Visited", stageCounts["Visited"] ?? 0),
+          Categorymodel("Negotiations", stageCounts["Negotiations"] ?? 0),
+          Categorymodel("Feed_Back", stageCounts["Feed_Back"] ?? 0),
+          Categorymodel("Re_Appointment", stageCounts["Re_Appointment"] ?? 0),
+          Categorymodel("Re_Visited", stageCounts["Re_Visited"] ?? 0),
+          Categorymodel("Converted", stageCounts["Converted"] ?? 0),
+        ];
+
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ListSelectionscreen(
+              initialSelectedIndex: selectedIndex ?? 0,
+              optionList: options,
+              currentStatus: currentStatus,
+            ),
+          ),
+        );
+
+        if (result != null && result["selectedCategory"] != null) {
+          final selectedCategory = result["selectedCategory"] as Categorymodel;
+          setState(() {
+            selectedList = selectedCategory.title;
+            selectedValue = selectedCategory.leads.toString();
+            selectedIndex = result["selectedIndex"];
+          });
+
+          if (selectedCategory.title != "All") {
+            final stage = _getStageValue(selectedCategory.title);
+            if (stage != null) await _filterByStage(stage);
+          } else {
+            await _filterByStatus(selectedMainFilter);
+          }
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 26.0, vertical: 8.0),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: Colors.deepPurple.shade100),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(selectedList, style: const TextStyle(fontFamily: "poppins_thin", fontSize: 16)),
+              Row(
+                children: [
+                  const Icon(Icons.group, color: Colors.black),
+                  const SizedBox(width: 8.0),
+                  Text(selectedValue, style: const TextStyle(fontFamily: "poppins_thin")),
+                  const Icon(Icons.arrow_drop_down, color: Colors.black),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  String getInquiryStageText(String? stage) {
+  Widget _buildInquiryList(UserProvider provider) {
+    if (provider.isLoading && provider.followupInquiries.isEmpty) {
+      return ListView.builder(
+        itemCount: 5,
+        itemBuilder: (context, index) => Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              height: 160,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+      );
+    } else if (provider.followupInquiries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Lottie.asset('asset/Inquiry_module/no_result.json', width: 300, height: 300),
+            const Text(
+              "No results found",
+              style: TextStyle(color: Colors.red, fontSize: 22, fontFamily: "poppins_thin"),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: provider.followupInquiries.length + (_isFetchingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index < provider.followupInquiries.length) {
+          final inquiry = provider.followupInquiries[index];
+          return TestCard(
+            id: inquiry.id,
+            name: inquiry.fullName ?? 'Unknown',
+            username: inquiry.assignId,
+            label: _mapStageToTitle(inquiry.inquiryStages),
+            followUpDate: inquiry.createdAt,
+            nextFollowUpDate: inquiry.nextFollowUp,
+            inquiryType: inquiry.inquiryType,
+            intArea: inquiry.area ?? '',
+            purposeBuy: inquiry.purposeBuy ?? '',
+            daySkip: inquiry.daySkip,
+            hourSkip: inquiry.hourSkip,
+            source: inquiry.inquirySourceType,
+            isSelected: false,
+            onSelect: () {},
+            callList: const ["Followup", "Dismissed", "Appointment", "Cnr"],
+            nextFollowupcontroller: TextEditingController(),
+            selectedcallFilter: "Followup",
+            data: inquiry,
+            isTiming: true,
+          );
+        }
+        return _isFetchingMore
+            ? const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Center(child: CircularProgressIndicator()),
+        )
+            : const SizedBox.shrink();
+      },
+    );
+  }
+
+  String? _getStageValue(String title) {
+    const stageMap = {
+      "Fresh": "1",
+      "Contacted": "2",
+      "Appointment": "3",
+      "Visited": "4",
+      "Negotiations": "6",
+      "Feed_Back": "9",
+      "Re_Appointment": "10",
+      "Re_Visited": "11",
+      "Converted": "12",
+    };
+    return stageMap[title];
+  }
+
+  String _mapStageToTitle(String? stage) {
     switch (stage) {
       case "1":
         return "Fresh";
@@ -974,27 +339,46 @@ class _ShiftsListState extends State<ShiftsList> {
         return "Appointment";
       case "4":
         return "Visited";
+      case "5":
+        return "Pending";
       case "6":
-        return "Negotiation";
+        return "Negotiations";
       case "9":
-        return "Feedback";
+        return "Feed_Back";
       case "10":
         return "Re_Appointment";
       case "11":
-        return "reVisited";
+        return "Re_Visited";
       case "12":
         return "Converted";
       default:
         return "Unknown";
     }
   }
+
+  String _mapStageToProviderKey(String title) {
+    const stageMap = {
+      "All": "Total_Sum",
+      "Fresh": "Fresh",
+      "Contacted": "Contacted",
+      "Appointment": "Appointment",
+      "Visited": "Visited",
+      "Negotiations": "Negotiations",
+      "Feed_Back": "Feed_Back",
+      "Re_Appointment": "Re_Appointment",
+      "Re_Visited": "Re_Visited",
+      "Converted": "Converted",
+    };
+    return stageMap[title] ?? "Total_Sum";
+  }
 }
+
 class ListSelectionscreen extends StatefulWidget {
   final int? initialSelectedIndex;
   final List<Categorymodel> optionList;
   final int currentStatus;
 
-  ListSelectionscreen({
+  const ListSelectionscreen({
     this.initialSelectedIndex,
     required this.optionList,
     required this.currentStatus,
@@ -1021,12 +405,11 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
         backgroundColor: Colors.deepPurple.shade300,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
-        title: Text(
+        title: const Text(
           "Choose Stage",
-          style: TextStyle(
-              fontFamily: "poppins_thin", color: Colors.white, fontSize: 18),
+          style: TextStyle(fontFamily: "poppins_thin", color: Colors.white, fontSize: 18),
         ),
       ),
       body: ListView.builder(
@@ -1039,19 +422,17 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
             child: Card(
               elevation: isSelected ? 6 : 4,
               color: isDisabled
-                  ? Colors.grey.shade200 // Light grey for disabled items
+                  ? Colors.grey.shade200
                   : isSelected
                   ? Colors.deepPurple.shade100
                   : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18.0),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
               child: ListTile(
                 title: Text(
                   widget.optionList[index].title,
                   style: TextStyle(
                     color: isDisabled
-                        ? Colors.grey.shade600 // Lighter text for disabled
+                        ? Colors.grey.shade600
                         : isSelected
                         ? Colors.deepPurple
                         : Colors.black,
@@ -1061,7 +442,7 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
                 ),
                 leading: CircleAvatar(
                   backgroundColor: isDisabled
-                      ? Colors.grey.shade400 // Lighter avatar for disabled
+                      ? Colors.grey.shade400
                       : isSelected
                       ? Colors.deepPurple.shade300
                       : Colors.grey.shade200,
@@ -1069,7 +450,7 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
                     widget.optionList[index].title[0],
                     style: TextStyle(
                       color: isDisabled
-                          ? Colors.grey.shade600 // Lighter text for disabled
+                          ? Colors.grey.shade600
                           : isSelected
                           ? Colors.white
                           : Colors.black,
@@ -1082,17 +463,17 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
                     Icon(
                       Icons.group,
                       color: isDisabled
-                          ? Colors.grey.shade600 // Lighter icon for disabled
+                          ? Colors.grey.shade600
                           : isSelected
                           ? Colors.deepPurple
                           : Colors.black,
                     ),
-                    SizedBox(width: 8.0),
+                    const SizedBox(width: 8.0),
                     Text(
                       widget.optionList[index].leads.toString(),
                       style: TextStyle(
                         color: isDisabled
-                            ? Colors.grey.shade600 // Lighter text for disabled
+                            ? Colors.grey.shade600
                             : isSelected
                             ? Colors.deepPurple
                             : Colors.black,
@@ -1101,7 +482,7 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
                   ],
                 ),
                 onTap: isDisabled
-                    ? null // Disable tap for 0 leads
+                    ? null
                     : () {
                   setState(() => selectedIndex = index);
                   Navigator.pop(context, {
@@ -1116,4 +497,315 @@ class _ListSelectionscreenState extends State<ListSelectionscreen> {
       ),
     );
   }
+}
+
+class TestCard extends StatelessWidget {
+  final String id;
+  final String name;
+  final String label;
+  final String username;
+  final String followUpDate;
+  final String nextFollowUpDate;
+  final String inquiryType;
+  final String intArea;
+  final String purposeBuy;
+  final String daySkip;
+  final String hourSkip;
+  final String source;
+  final bool isSelected;
+  final VoidCallback onSelect;
+  final List<String> callList;
+  final TextEditingController nextFollowupcontroller;
+  final String? selectedcallFilter;
+  final FollowupInquiry data;
+  final bool isTiming;
+
+  const TestCard({
+    Key? key,
+    required this.id,
+    required this.name,
+    required this.username,
+    required this.label,
+    required this.followUpDate,
+    required this.nextFollowUpDate,
+    required this.inquiryType,
+    required this.intArea,
+    required this.purposeBuy,
+    required this.daySkip,
+    required this.hourSkip,
+    required this.source,
+    this.isSelected = false,
+    required this.onSelect,
+    required this.callList,
+    required this.nextFollowupcontroller,
+    this.selectedcallFilter,
+    required this.data,
+    required this.isTiming,
+  }) : super(key: key);
+
+  void showDialogRemark(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Container(
+            height: 150,
+            child: Center(
+              child: Text(
+                data.remark ?? 'No remarks',
+                style: const TextStyle(fontFamily: "poppins_thin"),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(10.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      elevation: isSelected ? 14.0 : 4.0,
+      color: isSelected ? Colors.deepPurple.shade100 : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade300,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 9),
+                    child: Text(
+                      id,
+                      style: const TextStyle(fontSize: 13, fontFamily: "poppins_thin", color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(fontSize: 17, fontFamily: "poppins_thin"),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.person, size: 15),
+                          Text(
+                            ": $username",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: "poppins_thin",
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => InquiryScreen(inquiryId: id)));
+                  },
+                  child: const Image(
+                    image: AssetImage("asset/Inquiry_module/call-forwarding.png"),
+                    width: 30,
+                    height: 30,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => AddVisitScreen(inquiryId: id)));
+                  },
+                  child: const Image(
+                    image: AssetImage("asset/Inquiry_module/map.png"),
+                    width: 25,
+                    height: 25,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => BookingScreen(inquiryId: id)));
+                  },
+                  child: const Image(
+                    image: AssetImage("asset/Inquiry_module/rupee.png"),
+                    width: 25,
+                    height: 25,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  height: 30,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: getLabelColor(label),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(width: 1.0, color: getBorderColor(label)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: const TextStyle(fontFamily: "poppins_thin", color: Colors.black, fontSize: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  height: 30,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffebf0f4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(width: 1.0, color: Colors.white),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Inq Type: $inquiryType",
+                      style: const TextStyle(fontFamily: "poppins_thin", color: Colors.black, fontSize: 11),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                "Next Follow-up: $nextFollowUpDate",
+                style: TextStyle(color: Colors.grey.shade600, fontFamily: "poppins_thin", fontSize: 12),
+              ),
+            ),
+            Row(
+              children: [
+                const Text("Source: ", style: TextStyle(fontFamily: "poppins_thin", fontSize: 12)),
+                _buildSourceContainer(source),
+                const SizedBox(width: 7),
+                Image.asset("asset/Inquiry_module/calendar.png", height: 18, width: 18),
+                const SizedBox(width: 3),
+                Text(daySkip.isNotEmpty ? daySkip : "0"),
+                const SizedBox(width: 10),
+                Image.asset("asset/Inquiry_module/clock.png", height: 18, width: 18),
+                const SizedBox(width: 3),
+                Text(hourSkip.isNotEmpty ? hourSkip : "0"),
+                const Spacer(),
+                if (data.remark != null && data.remark!.isNotEmpty)
+                  GestureDetector(
+                    onTap: () => showDialogRemark(context),
+                    child: const Icon(Icons.info_outline, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color getLabelColor(String? stage) {
+    switch (stage) {
+      case "Fresh":
+        return const Color(0xff33b5e5);
+      case "Contacted":
+        return const Color(0xff4da8ff);
+      case "Appointment":
+        return const Color(0xff3d70b2);
+      case "Visited":
+        return const Color(0xff4da8ff);
+      case "Pending":
+        return const Color(0xfff1c40f);
+      case "Negotiations":
+        return const Color(0xffc966c3);
+      case "Feed_Back":
+        return const Color(0xff66d977);
+      case "Re_Appointment":
+        return const Color(0xff3d6ca3);
+      case "Re_Visited":
+        return const Color(0xfff1ba71);
+      case "Converted":
+        return const Color(0xff73e0b3);
+      default:
+        return Colors.grey.shade300;
+    }
+  }
+
+  Color getBorderColor(String? stage) {
+    switch (stage) {
+      case "Fresh":
+        return const Color(0xff00c4ff);
+      case "Contacted":
+        return const Color(0xff33aaff);
+      case "Appointment":
+        return const Color(0xff2b70c9);
+      case "Visited":
+        return const Color(0xff3399ff);
+      case "Pending":
+        return const Color(0xffffd700);
+      case "Negotiations":
+        return const Color(0xffd94ed1);
+      case "Feed_Back":
+        return const Color(0xff4cd964);
+      case "Re_Appointment":
+        return const Color(0xff2e62b3);
+      case "Re_Visited":
+        return const Color(0xffffca85);
+      case "Converted":
+        return const Color(0xff73e0b3);
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
+  Widget _buildSourceContainer(String source) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Text(source, style: const TextStyle(fontFamily: "poppins_thin", fontSize: 12)),
+    );
+  }
+}
+
+// Placeholder classes
+class Categorymodel {
+  final String title;
+  final int leads;
+
+  Categorymodel(this.title, this.leads);
+}
+
+class InquiryScreen extends StatelessWidget {
+  final String inquiryId;
+  const InquiryScreen({required this.inquiryId});
+  @override
+  Widget build(BuildContext context) => Scaffold(body: Center(child: Text("Inquiry: $inquiryId")));
+}
+
+class AddVisitScreen extends StatelessWidget {
+  final String inquiryId;
+  const AddVisitScreen({required this.inquiryId});
+  @override
+  Widget build(BuildContext context) => Scaffold(body: Center(child: Text("Visit: $inquiryId")));
 }

@@ -1,4 +1,4 @@
-import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart';
+// import 'package:hr_app/Inquiry_Management/Model/Api%20Model/allInquiryModel.dart';
 
 import 'followup_Model.dart';
 
