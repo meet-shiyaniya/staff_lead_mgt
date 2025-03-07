@@ -3,6 +3,9 @@ import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/more_activities.dart';
+import 'package:hr_app/Inquiry_Management/Inquiry%20Management%20Screens/more_followup.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/more_activity_Model.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -633,7 +636,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen>
             final date = DateTime.parse(rawDate.padRight(10, '-01'));
             return DateFormat('MMM').format(date);
           } catch (e) {
-            debugPrint('Monthly parsing error: $e');
+            // debugPrint('Monthly parsing error: $e');
             if (rawDate.length >= 7 && rawDate.contains('-')) {
               final parts = rawDate.split('-');
               if (parts.length >= 2) {
@@ -972,13 +975,18 @@ permissions?.appointmentCalender ?? true;
                                     color: Colors.deepPurple.shade300,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      "More Activities",
-                                      style: TextStyle(
-                                        fontFamily: "poppins_thin",
-                                        fontSize: 11,
-                                        color: Colors.white,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => MoreActivityLogScreen(),));
+                                    },
+                                    child: Center(
+                                      child: Text(
+                                        "More Activities",
+                                        style: TextStyle(
+                                          fontFamily: "poppins_thin",
+                                          fontSize: 11,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1024,6 +1032,7 @@ permissions?.appointmentCalender ?? true;
                               ),
                               ElevatedButton(
                                 onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => MoreFollowupScreen(),));
                                   // Add functionality for "More Follow Ups"
                                 },
                                 style: ElevatedButton.styleFrom(

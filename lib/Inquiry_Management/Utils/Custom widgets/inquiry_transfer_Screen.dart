@@ -153,6 +153,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
 
   Future<void> _pickAppointmentDate() async {
+    // Pick Date
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -161,9 +162,24 @@ class _InquiryScreenState extends State<InquiryScreen> {
     );
 
     if (pickedDate != null) {
-      setState(() {
-        appointmentDate = pickedDate;
-      });
+      // Pick Time after Date is selected
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        // Combine Date and Time into a single DateTime object
+        setState(() {
+          appointmentDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -401,7 +417,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                           'nextFollowUp': nextFollowUpController.text,
                           'callTime': selectedApxAppointment,
                           'appointDate': appointmentDate != null
-                              ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
+                              ? DateFormat('dd-MM-yyyy HH:mm').format(appointmentDate!) // Updated format with time
                               : '',
                           'interestedProduct': selectedProjectId, // Add selected project id
                         });
@@ -501,7 +517,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
         model.inquiryData.approxBuy == null ||
         model.inquiryData.approxBuy!.isEmpty;
 
-    // UPDATED: Set isEditing to true if fillInterstCheck is 1 and there are null fields
     if (hasNullField && model.fillInterstCheck == 1) {
       isEditing = true;
     }
@@ -528,7 +543,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
             Text(model.inquiryData.fullName,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Spacer(),
-            // UPDATED: Show edit/save button only if fillInterstCheck is 1 or there are null fields
             if (model.fillInterstCheck == 1 || hasNullField)
               CircleAvatar(
                 backgroundColor: AppColor.Buttoncolor,
@@ -545,7 +559,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
                     });
 
                     if (!isEditing) {
-                      // UPDATED: Validate if all fields are filled before saving
                       if ((selectedArea == null || selectedArea!['name']!.isEmpty) ||
                           (selectedSite == null || selectedSite!['name']!.isEmpty) ||
                           (selectedUnitType == null || selectedUnitType!['name']!.isEmpty) ||
@@ -556,7 +569,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                           SnackBar(content: Text("Please fill all fields before saving")),
                         );
                         setState(() {
-                          isEditing = true; // Keep editing mode if validation fails
+                          isEditing = true;
                         });
                         return;
                       }
@@ -582,8 +595,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
                         'area': inquiryData.area ?? '',
                         'city': inquiryData.city ?? '',
                         'countryCode': '',
-                        'intrestedArea': selectedArea?['name'] ?? '',
-                        'intrestedAreaName': selectedArea?['name'] ?? '',
+                        'intrestedArea': selectedArea?['name'] ?? '', // Updated to use name
+                        'intrestedAreaName': selectedArea?['name'] ?? '', // Updated to use name
                         'intrestedSiteId': selectedSite?['id'] ?? '',
                         'budget': selectedBudget?['id'] ?? '',
                         'purposeBuy': selectedPurpose?['name'] ?? '',
@@ -664,7 +677,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   const Text("Int Area:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 5),
-                  // UPDATED: Show dropdown only if isEditing is true
                   isEditing
                       ? CombinedDropdownTextField<AreaCityCountry>(
                     key: const ValueKey("intArea"),
@@ -726,7 +738,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   selectedSite = {'id': newValue.id, 'name': newValue.productName};
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
+              isEditing,
                   (site) => site.productName,
             ),
           ],
@@ -744,7 +756,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   selectedUnitType = {'id': newValue.id, 'name': newValue.propertyType};
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
+              isEditing,
                   (unit) => unit.propertyType,
             ),
             _infoTile<Map<String, String>>(
@@ -759,7 +771,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
+              isEditing,
                   (budget) => budget['name']!,
             ),
           ],
@@ -780,7 +792,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
+              isEditing,
                   (purpose) => purpose['name']!,
             ),
             _infoTile<Map<String, String>>(
@@ -795,7 +807,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
+              isEditing,
                   (time) => time['name']!,
             ),
           ],
@@ -1399,19 +1411,19 @@ class _InquiryScreenState extends State<InquiryScreen> {
             ),
             const SizedBox(height: 16.0),
             const Text(
-              "Appointment Date*",
+              "Appointment Date and Time*",
               style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
             ),
             TextFormField(
               decoration: InputDecoration(
-                hintText: "Select Appointment Date",
+                hintText: "Select Appointment Date and Time",
                 hintStyle: const TextStyle(fontFamily: "poppins_light"),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 suffixIcon: const Icon(Icons.calendar_today),
               ),
               controller: TextEditingController(
                 text: appointmentDate != null
-                    ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
+                    ? DateFormat('dd-MM-yyyy HH:mm').format(appointmentDate!)
                     : '',
               ),
               readOnly: true,
@@ -1420,7 +1432,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
               },
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return "Appointment date is required";
+                  return "Appointment date and time are required";
                 }
                 return null;
               },

@@ -22,6 +22,8 @@ import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
+import '../Inquiry_Management/Model/Api Model/more_activity_Model.dart';
+import '../Inquiry_Management/Model/Api Model/more_followup_Model.dart';
 import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
 import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
@@ -698,6 +700,101 @@ class ApiService{
   }
 
 
+  Future<bool> DeclineDismissLead({
+    required String edit_id,
+    required String remart
+
+  }) async {
+    final url = Uri.parse("$baseUrl/decline_request_api");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+
+      if (token == null) {
+        print("Token is null, aborting request");
+        return false;
+      }
+
+      Map<String, String> bodyData = {
+        "token": token,
+        "edit_id":edit_id,
+        "remart ":remart
+      };
+
+      print("Request URL: $url");
+      print("Request Body: ${jsonEncode(bodyData)}");
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(bodyData),
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        print("Lead added successfully");
+        return true;
+      } else {
+        print("Failed to decline lead. Status Code: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      print("Error decline lead: $e");
+      return false;
+    }
+  }
+
+  Future<bool> ApproveDismissLead({
+    required edit_id
+
+  }) async {
+    final url = Uri.parse("$baseUrl/approve_request_api");
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      print("Token: $token");
+
+      if (token == null) {
+        print("Token is null, aborting request");
+        return false;
+      }
+
+      Map<String, String> bodyData = {
+        "token": token,
+        "edit_id":edit_id
+      };
+
+      print("Request URL: $url");
+      print("Request Body: ${jsonEncode(bodyData)}");
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(bodyData),
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        print("Lead added successfully");
+        return true;
+      } else {
+        print("Failed to add lead. Status Code: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      print("Error approving lead: $e");
+      return false;
+    }
+  }
   Future<Map<String, dynamic>> updateInquiryStatus({
     required String inquiryId,
     required String selectedTab,
@@ -747,7 +844,7 @@ class ApiService{
             'nxt_follow_up': formData['nextFollowUp'] ?? '',
             'call_time': formData['callTime'] ?? '',
             'appointment_date': formData['appointDate'] ?? '',
-            'status_btn_click': (isSiteVisit != null && isSiteVisit > 0) ? '10' : '3',
+            'status_btn_click': (isSiteVisit != null && isSiteVisit > 0) ? '3' : '3',
             'tag_btn_click': 'Appointment',
           });
           break;
@@ -1111,19 +1208,19 @@ class ApiService{
       return null;
     }
   }
-  Future<DismissModel?> fetchDismissData(int pageNumber) async {
+
+  Future<DismissedRequestModel?> fetchDismissData(int pageNumber) async {
     final url = Uri.parse("$baseUrl/show_list_Dismiss_allinquiry?pageNumber=$pageNumber");
     print("API URL: $url");
 
     try {
-      String? token = await _secureStorage.read(key: 'token'); // Assuming _secureStorage is defined
+      String? token = await _secureStorage.read(key: 'token');
       print("Token: $token");
       if (token == null) {
         print("Error: No token found");
         return null;
       }
 
-      // Updated body with additional parameters
       final Map<String, dynamic> requestBody = {
         'token': token,
         'follow_up_day': 'closerequest',
@@ -1132,21 +1229,27 @@ class ApiService{
 
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': "application/json",
-        },
-        body: jsonEncode(requestBody), // Encode the updated body
+        headers: {'Content-Type': "application/json"},
+        body: jsonEncode(requestBody),
       );
 
       print("Response Status Code: ${response.statusCode}");
       print("Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.startsWith('{') || response.body.startsWith('[')) {
-          final Map<String, dynamic> jsonData = jsonDecode(response.body);
-          return DismissModel.fromJson(jsonData);
+        // Workaround: Remove any leading non-JSON characters
+        String cleanedResponse = response.body.trim();
+        int jsonStart = cleanedResponse.indexOf('{');
+        if (jsonStart > 0) {
+          cleanedResponse = cleanedResponse.substring(jsonStart);
+          print("Cleaned Response: $cleanedResponse");
+        }
+
+        if (cleanedResponse.startsWith('{') || cleanedResponse.startsWith('[')) {
+          final Map<String, dynamic> jsonData = jsonDecode(cleanedResponse);
+          return DismissedRequestModel.fromJson(jsonData);
         } else {
-          print("Error: Received non-JSON response");
+          print("Error: Received non-JSON response after cleaning");
           return null;
         }
       } else {
@@ -1209,7 +1312,7 @@ class ApiService{
   }
 
   Future<void> sendTransferInquiry({
-    required List<String> inqIds, // Changed to accept a list of IDs
+    required List<String> inqIds,
     required String actionKey,
     required String employeeId,
   }) async {
@@ -1219,7 +1322,7 @@ class ApiService{
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-        Fluttertoast.showToast(msg: "No authentication token found");
+        print("Error: No token found. User might not be logged in.");
         return;
       }
 
@@ -1228,33 +1331,33 @@ class ApiService{
 
       Map<String, String> bodyData = {
         "token": token,
-        "inquiry_id": inquiryIdsString, // Send as "123,456,789"
+        "inquiry_id": inquiryIdsString.toString(), // "123,456,789"
         "action_name": actionKey,
         "action": "assign",
         "assign_id": employeeId
       };
-
-      print('Sending to backend: $bodyData'); // Debug print
+      print("bodyData$actionKey");
 
       final response = await http.post(
         url,
-        body: bodyData,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode(bodyData), // Convert to JSON
       );
 
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print("Request Body: $bodyData");
 
       if (response.statusCode == 200) {
-        // Fluttertoast.showToast(msg: inqIds.toString());
-        Fluttertoast.showToast(msg: "Inquiries transferred successfully");
+        print("Response Data: ${response.body}");
       } else {
-        Fluttertoast.showToast(
-          msg: "Failed to transfer inquiries: ${response.statusCode}",
-        );
+        print("Error: Status Code ${response.statusCode}");
+        print("Response: ${response.body}"); // Show error response
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Something went wrong: $e");
-      rethrow;
+      print("Exception occurred: $e");
+      rethrow; // Keep throwing the error for higher-level handling
     }
   }
 
@@ -1559,6 +1662,69 @@ class ApiService{
     } catch (e) {
       print("Error fetching booking data: $e");
       rethrow;
+    }
+  }
+
+  Future<ActivityResponse> fetchFollowupData({String? date, int? employeeId}) async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/morefollowups'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+          'action': 'followups',
+          'date_dashboard': date ?? '',
+          'followup_user_list': employeeId ?? '',
+        }),
+      );
+
+      print("Raw JSON Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        print("Decoded JSON: $jsonData"); // Check if it's correct
+
+        return ActivityResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Failed to load activity data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching activity data: $e');
+    }
+  }
+  Future<MoreActivityResponse> fetchActivityData({String? date, int? employeeId}) async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/morefollowups'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+          'action': 'activitylogs',
+          'date_dashboard': date ?? '',
+          'followup_user_list': employeeId ?? '',
+        }),
+      );
+
+      print("Raw JSON Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        print("Decoded JSON: $jsonData"); // Check if it's correct
+
+        return MoreActivityResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Failed to load activity data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching activity data: $e');
     }
   }
   Future<InquiryFilter> fetchFilterData() async {

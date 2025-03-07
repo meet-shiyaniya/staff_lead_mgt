@@ -22,6 +22,8 @@ import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiryTimeLineModel.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_filter_model.dart';
 import '../Inquiry_Management/Model/Api Model/inquiry_transfer_Model.dart';
+import '../Inquiry_Management/Model/Api Model/more_activity_Model.dart';
+import '../Inquiry_Management/Model/Api Model/more_followup_Model.dart';
 import '../dashboard_ui/DashboardModels/RealtosmartdashboardModel.dart';
 import '../dashboard_ui/DashboardModels/dashboardpermissionModel.dart';
 import '../staff_HRM_module/Model/Realtomodels/Realtoallstaffleavesmodel.dart';
@@ -50,6 +52,12 @@ class UserProvider with ChangeNotifier {
 
   Realtoleavetypesmodel? _leaveTypesData;
   Realtoleavetypesmodel? get leaveTypesData => _leaveTypesData;
+
+  ActivityResponse? _activityResponse;
+  ActivityResponse? get activityResponse => _activityResponse;
+
+  MoreActivityResponse? _moreactivityResponse;
+  MoreActivityResponse? get moreactivityResponse => _moreactivityResponse;
 
   final ApiService _apiService = ApiService();
 
@@ -98,8 +106,8 @@ class UserProvider with ChangeNotifier {
   InquiryFilter? get filterData => _filterData;
   // String? get _error => _error;
 
-  FetchBookingData2? _bookingData;
-  FetchBookingData2? get bookingData => _bookingData;
+  // FetchBookingData2? _bookingData;
+  // FetchBookingData2? get bookingData => _bookingData;
 
   VisitEntryModel? _visitData;
   VisitEntryModel? get visitData => _visitData;
@@ -701,6 +709,54 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> DismissDecline({
+    required edit_id,
+    required remart
+  }) async {
+    try {
+      bool success = await _apiService.DeclineDismissLead(
+          edit_id: edit_id,
+        remart: remart
+
+
+      );
+
+      if (success) {
+        print("Dismiss Declined Successfully");
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error decline Lead  $e");
+      return false;
+    }
+  }
+
+  Future<bool> DismissApprove({
+    required edit_id
+  }) async {
+    try {
+      bool success = await _apiService.ApproveDismissLead(
+        edit_id: edit_id
+
+
+      );
+
+      if (success) {
+        print("Dismiss Approved Successfully");
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error adding Lead  $e");
+      return false;
+    }
+  }
   InquiryTimeLineModel? _inquiryTimeline;
   InquiryTimeLineModel? get inquiryTimeline => _inquiryTimeline;
 
@@ -775,6 +831,8 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  FetchBookingData2? _bookingData;
+  FetchBookingData2? get bookingData => _bookingData;
 
   Future<void> fetchBookingData(String editId) async {
 
@@ -801,32 +859,30 @@ class UserProvider with ChangeNotifier {
   //   }
   // }
 
-  DismissModel? _dismissmodel;
-  DismissModel? get dismissmodel => _dismissmodel;
+  DismissedRequestModel? _dismissedRequestModel;
+  DismissedRequestModel? get dismissedRequestmodel => _dismissedRequestModel;
+
   Future<void> fetchDismissData(int pageNumber) async {
     try {
       _isLoading = true;
       _errorMessage = null;
-      _dismissmodel = null;
+      _dismissedRequestModel = null; // Updated variable
       notifyListeners();
 
       print('Fetching dismiss data for page: $pageNumber');
-      _dismissmodel = await _apiService.fetchDismissData(
-        pageNumber,
-      );
-      print('Dismiss data fetched: ${_dismissmodel?.toJson()}');
+      _dismissedRequestModel = await _apiService.fetchDismissData(pageNumber); // Updated variable
+      print('Dismiss data fetched: ${_dismissedRequestModel?.toJson()}');
 
-      _isLoading = false;
-      if (_dismissmodel == null) {
-        _errorMessage = "No dismiss data returned from API";
+      if (_dismissedRequestModel == null) {
+        _errorMessage = "No valid dismiss data returned from API";
         print('Error: No data returned');
       }
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _dismissmodel = null;
       _errorMessage = "Error fetching dismiss data: $e";
       print('Exception: $_errorMessage');
+      _dismissedRequestModel = null; // Updated variable
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -868,7 +924,55 @@ class UserProvider with ChangeNotifier {
       return null;
     }
   }
+  Future<void> fetchActivityData({String? date, int? employeeId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
+    try {
+      final apiService = ApiService();
+      _moreactivityResponse = await apiService.fetchActivityData(date: date, employeeId: employeeId);
+
+      if ((_moreactivityResponse?.list?.isEmpty ?? true) &&
+          (_moreactivityResponse?.employees?.isEmpty ?? true)) {
+        _errorMessage = "No data available.";
+      }
+
+      print("Activity Data Count: ${_moreactivityResponse?.list?.length ?? 0}");
+      print("Employee Count: ${_moreactivityResponse?.employees?.length ?? 0}");
+    } catch (e) {
+      _errorMessage = 'Failed to load activity data: $e';
+      print("Error: $_errorMessage");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchFollowupData({String? date, int? employeeId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final apiService = ApiService();
+      _activityResponse = await apiService.fetchFollowupData(date: date, employeeId: employeeId);
+
+      if ((_activityResponse?.activityData?.isEmpty ?? true) &&
+          (_activityResponse?.employees?.isEmpty ?? true)) {
+        _errorMessage = "No data available.";
+      }
+
+      print("Activity Data Count: ${_activityResponse?.activityData?.length ?? 0}");
+      print("Employee Count: ${_activityResponse?.employees?.length ?? 0}");
+    } catch (e) {
+      _errorMessage = 'Failed to load activity data: $e';
+      print("Error: $_errorMessage");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
 
 //   void resetPagination() {
