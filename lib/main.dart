@@ -6,7 +6,6 @@ import 'package:hr_app/splash_screen/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'bottom_navigation.dart';
 
-
 void main() {
 
   runApp(

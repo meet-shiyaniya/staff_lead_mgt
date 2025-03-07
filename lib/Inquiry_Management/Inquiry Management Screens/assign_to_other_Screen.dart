@@ -93,8 +93,8 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
   bool anySelected = false;
 
 
-  String? selectedAction = null; // Set to null initially
-  String? selectedEmployee = null; // Set to null initially
+  String? selectedAction = null;
+  String? selectedEmployee = null;
   final List<String> actions = ['markAsComplete','assignToUser','delete'];
   final List<String> employees = ['employee 1','employee 2','employee 3'];
 
@@ -406,65 +406,75 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
             child: filteredLeads.isEmpty
                 ? Column(
               mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Center(
-                      child: Lottie.asset('asset/Inquiry_module/no_result.json', fit: BoxFit.contain, width: 300, height: 300),
+              children: [
+                Center(
+                  child: Lottie.asset(
+                    'asset/Inquiry_module/no_result.json',
+                    fit: BoxFit.contain,
+                    width: 300,
+                    height: 300,
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    "No results found",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 26,
+                      fontFamily: "poppins_thin",
                     ),
-                    Center(
-                                  child: Text(
-                                    "No results found",
-                                    style: TextStyle(color: Colors.red, fontSize: 26,fontFamily: "poppins_thin"),
-                                  ),
-                                ),
-                  ],
-                )
+                  ),
+                ),
+              ],
+            )
                 : ListView.builder(
               itemCount: filteredLeads.length,
               itemBuilder: (context, index) {
-    if (index < filteredLeads.length) {
-      Inquiry inquiry = inquiryProvider.inquiries[index];
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return GestureDetector(
-            onLongPress: () {
-              toggleSelection(index);
-            },
-            child: TestCard(
-              id: filteredLeads[index].id,
-              name: filteredLeads[index].name,
-              username: filteredLeads[index].username,
-              label: filteredLeads[index].label,
-              followUpDate: filteredLeads[index].followUpDate,
-              nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-              inquiryType: filteredLeads[index].inquiryType,
-              intArea: inquiry.InqArea,
-              purposeBuy: inquiry.PurposeBuy,
-              daySkip: inquiry.dayskip,
-              hourSkip: inquiry.hourskip,
-              // phone: filteredLeads[index].phone,
-              // email: filteredLeads[index].email,
-              source: filteredLeads[index].source,
-              isSelected: selectedCards[index],
-              onSelect: () {
-                toggleSelection(index);
+                if (index < filteredLeads.length && index < inquiryProvider.inquiries.length) {
+                  Inquiry inquiry = inquiryProvider.inquiries[index];
+                  return StatefulBuilder(
+                    builder: (context, setState) {
+                      return GestureDetector(
+                        onLongPress: () {
+                          toggleSelection(index);
+                        },
+                        child: TestCard(
+                          id: filteredLeads[index].id,
+                          name: filteredLeads[index].name,
+                          username: filteredLeads[index].username,
+                          label: filteredLeads[index].label,
+                          followUpDate: filteredLeads[index].followUpDate,
+                          nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
+                          inquiryType: filteredLeads[index].inquiryType,
+                          intArea: inquiry.InqArea,
+                          purposeBuy: inquiry.PurposeBuy,
+                          daySkip: inquiry.dayskip,
+                          hourSkip: inquiry.hourskip,
+                          source: filteredLeads[index].source,
+                          isSelected: selectedCards[index],
+                          onSelect: () {
+                            toggleSelection(index);
+                          },
+                          callList: [
+                            "Followup",
+                            "Dismissed",
+                            "Appointment",
+                            "Negotiation",
+                            "Feedback",
+                            "Cnr"
+                          ],
+                          selectedcallFilter: selectedcallFilter,
+                          data: inquiry,
+                          isTiming: true,
+                          nextFollowupcontroller: nextFollowupcontroller,
+                        ),
+                      );
+                    },
+                  );
+                } else {
+                  return SizedBox.shrink(); // Return an empty widget if index is out of bounds
+                }
               },
-              callList: [
-                "Followup",
-                "Dismissed",
-                "Appointment",
-                "Negotiation",
-                "Feedback",
-                "Cnr"
-              ],
-              selectedcallFilter: selectedcallFilter,
-              data: inquiry,
-              isTiming: true,
-              nextFollowupcontroller: nextFollowupcontroller,
-            ),
-          );
-        },
-      );
-    }},
             ),
           ),
 
