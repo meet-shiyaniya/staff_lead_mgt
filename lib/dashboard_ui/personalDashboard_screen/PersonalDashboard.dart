@@ -587,7 +587,8 @@ class _DashboardScreenState extends State<PersonalDashboardScreen>
         }
       } catch (e) {
         value = 0.0;
-        debugPrint('Error parsing chart data: $e');
+
+
       }
 
       return BarChartGroupData(
@@ -621,7 +622,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen>
             final date = DateTime.parse(rawDate);
             return DateFormat('dd-MM').format(date);
           } catch (e) {
-            debugPrint('Weekly parsing error: $e');
+
             if (rawDate.length >= 10 && rawDate.contains('-')) {
               final parts = rawDate.split('-');
               if (parts.length == 3) return '${parts[2]}-${parts[1]}';
@@ -633,7 +634,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen>
             final date = DateTime.parse(rawDate.padRight(10, '-01'));
             return DateFormat('MMM').format(date);
           } catch (e) {
-            debugPrint('Monthly parsing error: $e');
+
             if (rawDate.length >= 7 && rawDate.contains('-')) {
               final parts = rawDate.split('-');
               if (parts.length >= 2) {
@@ -648,7 +649,7 @@ class _DashboardScreenState extends State<PersonalDashboardScreen>
             final date = DateTime.parse(rawDate.padRight(10, '-01'));
             return DateFormat('yyyy').format(date);
           } catch (e) {
-            debugPrint('Yearly parsing error: $e');
+
             if (rawDate.length == 4) return rawDate;
             return '';
           }

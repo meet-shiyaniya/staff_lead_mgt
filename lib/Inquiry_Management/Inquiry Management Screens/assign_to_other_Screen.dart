@@ -1,314 +1,661 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/assignToOther_Model.dart';
+import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/textCard_assignToOther.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-
-import '../../Provider/UserProvider.dart';
-import '../Model/Api Model/allInquiryModel.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../../Provider/UserProvider.dart';
 import '../Model/category_Model.dart';
-import '../Model/followup_Model.dart';
 import '../Utils/Colors/app_Colors.dart';
-import '../Utils/Custom widgets/custom_buttons.dart';
-import '../Utils/Custom widgets/custom_dialog.dart';
-import '../Utils/Custom widgets/custom_search.dart';
-import '../Utils/Custom widgets/filter_Bottomsheet.dart';
-import '../Utils/Custom widgets/pending_Card.dart';
-// import '../test_Screen.dart';
+import '../Utils/Custom widgets/add_lead_Screen.dart';
+import '../Utils/Custom widgets/search_Screen.dart';
+import 'Filters/inquiry_Filter_Screen.dart';
+
 
 class AssignToOtherScreen extends StatefulWidget {
-  const AssignToOtherScreen({super.key});
+  const AssignToOtherScreen({Key? key});
 
   @override
-  State<AssignToOtherScreen> createState() => _AssignToOtherScreenState();
+  State<AssignToOtherScreen> createState() => _ShiftsListState();
 }
 
-class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
+class _ShiftsListState extends State<AssignToOtherScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String selectedList = "All";
+  String selectedValue = "0";
+  int? selectedIndex = 0;
 
+  List<Map<String, String>> actionList = [];
+  List<Map<String, String>> employeeList = [];
+  String? selectedAction;
+  String? selectedEmployee;
 
-  void handleAction(String action, String employee) {
-    // print("Action: $action on items: $selectedItemsPerFilter");
-    setState(() {
-      // selectedItemsPerFilter[selectedIndex]?.clear();
-      // isSelectionMode = false;
-      selectedAction = null;
-      selectedEmployee=null;
-    });
+  String? getStageValue(String stageTitle) {
+    const stageMap = {
+      "Fresh": "1",
+      "Contacted": "2",
+      "Appointment": "3",
+      "Negotiations": "4",
+      "Visited": "5",
+      "FeedBack": "6",
+      "Re_Appointment": "7",
+      "Re_Visited": "8",
+      "Converted": "9"
+    };
+    return stageMap[stageTitle];
   }
-  void toggleSelection(int index) {
-    selectedCards[index] = !selectedCards[index];
-    anySelected = selectedCards.contains(true);
-    print("anySelected : $anySelected");
-    setState(() {});
-  }
 
+  List<Categorymodel> categoryList = [];
+  List<InquiryFollowup> filteredLeads = [];
+  List<bool> selectedCards = [];
+  bool anySelected = false;
+
+  late ScrollController _scrollController;
+
+  bool isStatusFilterActive = false;
+  String? currentStage;
+  String currentFollowUpDay = 'assign_to_other'; // Default tab
+  int currentStatus = 1; // 1 for Live, 5 for Due (only for Today and Pending)x
+  int currentStatuscnr = 1; // 1 for Live, 5 for Due (only for Today and Pending)x
+
+  String selectedMainFilter = "Live";
 
   @override
   void initState() {
     super.initState();
-    selectedCards = List.generate(LeadList.length, (index) => false);
-    categoryList = [
-      CategoryModel("Feedback", LeadList.where((lead) => lead.label == "Feedback").toList()),
-      CategoryModel("Negotiations", LeadList.where((lead) => lead.label == "Negotiation").toList()),
-      CategoryModel("Appointment", LeadList.where((lead) => lead.label == "Appointment").toList()),
-      CategoryModel("Qualified", LeadList.where((lead) => lead.label == "Qualified").toList()),
-      CategoryModel("Fresh", LeadList.where((lead) => lead.label == "Fresh").toList()),
-      CategoryModel("All Lead", LeadList),
-    ];
-    filteredLeads = List.from(LeadList);
+    // _tabController = TabController(length: 3, vsync: this);
+    // _tabController.addListener(_handleTabSelection);
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await loadAllInquiriesFollowup();
+      loadData();
+    });
+
+    Future.wait([userProvider.fetchAddLeadData()]);
+
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
   }
 
-  final TextEditingController nextFollowupcontroller=TextEditingController();
+  Future<void> loadData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    try {
+      await userProvider.fetchTransferInquiryData();
+      final data = userProvider.transferInquiryData;
+
+      if (data == null) {
+        print('No data received');
+        return;
+      }
+
+      setState(() {
+        actionList = [];
+        selectedAction = null;
+
+        if (data.action != null) {
+          actionList = [
+            if (data.action!.assignFollowups != null)
+              {'key': 'assign_followups', 'value': data.action!.assignFollowups!},
+            if (data.action!.transferOwnership != null)
+              {'key': 'transfer_ownership', 'value': data.action!.transferOwnership!},
+          ];
+          selectedAction = actionList.isNotEmpty ? actionList.first['value'] : null;
+        }
+
+        employeeList = (data.employee ?? [])
+            .where((e) => e.id != null && e.firstname != null)
+            .map((e) => {'id': e.id!, 'name': e.firstname!})
+            .toList();
+        selectedEmployee = employeeList.isNotEmpty ? employeeList.first['name'] : null;
+      });
+    } catch (e) {
+      print('Error fetching data: $e');
+    }
+  }
+
+  Future<void> loadAllInquiriesFollowup() async {
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    print('Loading inquiries: followUpDay=$currentFollowUpDay, status=$currentStatus, stages=$currentStage');
+    await inquiryProvider.fetchInquiriesFollowup(
+      status: currentFollowUpDay == 'cnr' ? 6 : currentStatus,
+      stages: currentStage ?? "",
+      followUpDay: currentFollowUpDay,
+    );
+    setState(() {
+      filteredLeads = inquiryProvider.inquiriesFollowup;
+      print('Loaded inquiries: ${filteredLeads.length} items');
+      isStatusFilterActive = currentStatus != 0;
+      selectedValue = inquiryProvider.fullStageCountFollowup["Total_Sum"] ?? "0"; // Use full counts
+      selectedList = "All";
+      selectedIndex = 0;
+      selectedCards = List<bool>.generate(
+        inquiryProvider.inquiriesFollowup.length,
+            (index) => false,
+      );
+      anySelected = false;
+    });
+  }
+
+  void _onScroll() {
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300 &&
+        !inquiryProvider.isLoadingFollowup &&
+        inquiryProvider.hasMoreFollowup) {
+      print('Loading more: followUpDay=$currentFollowUpDay, status=$currentStatus, stages=$currentStage');
+      inquiryProvider
+          .fetchInquiriesFollowup(
+        isLoadMore: true,
+        status: currentFollowUpDay == 'cnr' ? 9 : currentStatus, // null for CNR
+        stages: currentStage ?? "",
+        followUpDay: currentFollowUpDay,
+      )
+          .then((_) {
+        setState(() {
+          filteredLeads = inquiryProvider.inquiriesFollowup;
+          print('Loaded more inquiries: ${filteredLeads.length} items');
+        });
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final inquiryProvider = Provider.of<UserProvider>(context);
+    if (selectedCards.length != inquiryProvider.inquiriesFollowup.length) {
+      selectedCards = List<bool>.generate(
+        inquiryProvider.inquiriesFollowup.length,
+            (index) => false,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> filterLeadsByStatus(int status) async {
+    if (currentFollowUpDay == 'cnr') return; // No status filter for CNR
+
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() {
+      currentStatus = status; // Update the current status
+      currentStage = ""; // Reset the stage
+      selectedMainFilter = status == 1
+          ? "Live"
+          : status == 4
+          ? "Conversion Request"
+          : status == 5
+          ? "Due Appo"
+          : status == 6
+          ? "CNR"
+          : "Live";
+    });
+
+    await inquiryProvider.fetchInquiriesFollowup(
+      status: status,
+      stages: "",
+      followUpDay: currentFollowUpDay,
+    );
+
+    setState(() {
+      filteredLeads = inquiryProvider.inquiriesFollowup; // Update the filtered leads
+      selectedList = "All"; // Reset the selected list
+      selectedValue = inquiryProvider.stageCountsFollowup["Total_Sum"] ?? "0"; // Update the selected value
+      isStatusFilterActive = true; // Enable status filter
+    });
+  }
+
+  String? getInquiryStageFromCategory(String category) {
+    switch (category) {
+      case "Fresh":
+        return "1";
+      case "Contacted":
+        return "2";
+      case "Appointment":
+        return "3";
+      case "Visited":
+        return "4";
+      case "Negotiations":
+        return "6";
+      case "FeedBack":
+        return "9";
+      case "Re_Appointment":
+        return "10";
+      case "Re_Visited":
+        return "11";
+      case "Converted":
+        return "12";
+      default:
+        return null;
+    }
+  }
+
+  void handleAction(String action, String employee) {
+    setState(() {
+      selectedAction = null;
+      selectedEmployee = null;
+    });
+    print('Action: $action, Employee: $employee');
+  }
+
+  void toggleSelection(int index) {
+    setState(() {
+      selectedCards[index] = !selectedCards[index];
+      anySelected = selectedCards.contains(true);
+    });
+  }
+
+  Future<void> filterLeadsByStage(String stage) async {
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() {
+      currentStage = stage;
+    });
+
+    print('Filtering by stage: followUpDay=$currentFollowUpDay, status=$currentStatus, stages=$stage');
+    await inquiryProvider.fetchInquiriesFollowup(
+      status: currentFollowUpDay == 'cnr' ? 6 : currentStatus,
+      stages: stage,
+      followUpDay: currentFollowUpDay,
+    );
+
+    setState(() {
+      filteredLeads = inquiryProvider.inquiriesFollowup;
+      print('Filtered by stage: ${filteredLeads.length} items');
+      selectedList = getInquiryStageText(stage);
+      selectedValue = inquiryProvider.fullStageCountFollowup[selectedList] ?? "0"; // Use full counts
+      isStatusFilterActive = true;
+    });
+  }
+  final TextEditingController nextFollowupcontroller = TextEditingController();
   String selectedcallFilter = "Follow Up";
-  List<String> callList=['Followup','Dismissed','Appointment','Cnr'];
-
-
-  String? selectedMembership;
-  String? selectedApx;
-  String? selectedPurpose;
-  String? selectedTime;
-  String selectedList = "All Leads";
-  String selectedValue = "15";
-  int? selectedIndex;
-  List<LeadModel> LeadList = [
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"jaisdjshadkanadabcbcamnmnsaasddadsdsSS"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NASDNAXNSXMN"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJASHNDJNASN"),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"NANDNASMD"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DUIQOJSZ"),
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"DJIJSAJKJ"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"UWIDHNXN"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IDUEIWYDJANXM"),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"JEIOJDNMKS"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIOWJFDMKX"),
-    LeadModel("1", "abc", "leadmgt", "Feedback", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "abc@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"E9UWJIODKSMX"),
-    LeadModel("2", "xyz", "leadmgt", "Negotiations", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "xyz@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"EIJMFKDASJIED"),
-    LeadModel("3", "pqr", "leadmgt", "Appointment", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "pqr@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"OIUJDISKAMX "),
-    LeadModel("4", "lmn", "leadmgt", "Qualified", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "lmn@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEUWIOEJDSKMX"),
-    LeadModel("5", "jkl", "leadmgt", "Fresh", '02-01-2025', '04-01-2025', "Fresh", "1232312311", "jkl@gmail.com", "Facebook",'table','1-2 days','ielts','3 months',"IEDJSKMX"),
-  ];
-
-  List<CategoryModel> categoryList = [];
-  List<LeadModel> filteredLeads = [];
-  List<bool> selectedCards = [];
-  bool anySelected = false;
-
-
-  String? selectedAction = null;
-  String? selectedEmployee = null;
-  final List<String> actions = ['markAsComplete','assignToUser','delete'];
-  final List<String> employees = ['employee 1','employee 2','employee 3'];
-
-
+  List<String> callList = ['Followup', 'Dismissed', 'Appointment', 'Cnr'];
   Map<String, dynamic> appliedFilters = {};
-  void _updateSearchResults(List<LeadModel> results) {
-    setState(() {
-      filteredLeads = results;
-    });
-  }
-  void resetFilters() {
-    setState(() {
-      filteredLeads = List.from(LeadList); // Reset the list to the original
-      appliedFilters.clear(); // Clear all applied filters
-      filteredId = null; // Clear filtered ID
-      filteredName = null; // Clear filtered Name
-      filteredPhone = null;
-      filteredStatus.clear(); // Clear filtered Status
-
-    });
-  }
+  String? filteredId;
+  String? filteredName;
   String? filteredPhone;
+  List<String> filteredStatus = [];
+
+  void resetFilters() {
+    final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() {
+      filteredLeads = List.from(inquiryProvider.inquiriesFollowup);
+      appliedFilters.clear();
+      filteredId = null;
+      filteredName = null;
+      filteredPhone = null;
+      filteredStatus.clear();
+    });
+  }
 
   void _updateAppliedFilters(Map<String, dynamic> filters) {
     setState(() {
       appliedFilters = filters;
-
-      // Set filters only if they have a value
-      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty) ? filters['Id'] : null;
-      filteredName = (filters['Name'] != null && filters['Name'].toString().isNotEmpty) ? filters['Name'] : null;
-      filteredPhone = (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty) ? filters['Mobile'] : null;
-      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty ? List.from(filters['Status']) : [];
+      filteredId = (filters['Id'] != null && filters['Id'].toString().isNotEmpty)
+          ? filters['Id']
+          : null;
+      filteredName = (filters['Name'] != null && filters['Name'].toString().isNotEmpty)
+          ? filters['Name']
+          : null;
+      filteredPhone = (filters['Mobile'] != null && filters['Mobile'].toString().isNotEmpty)
+          ? filters['Mobile']
+          : null;
+      filteredStatus = filters['Status'] != null && filters['Status'].isNotEmpty
+          ? List.from(filters['Status'])
+          : [];
     });
   }
-  //
-  // void showBottomModalSheet(BuildContext context) {
-  //
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-  //     shape: RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-  //     ),
-  //     builder: (context) => FractionallySizedBox(
-  //       heightFactor: 0.6,
-  //       child:
-  //       FilterModal(
-  //         onFilterApplied: (List<LeadModel> filteredList, Map<String, dynamic> filters) {
-  //           _updateSearchResults(filteredList); // Pass the filtered list
-  //           _updateAppliedFilters(filters); // Update the applied filters in the parent
-  //         },
-  //         appliedFilters: appliedFilters,
-  //       ),
-  //     ),
-  //   );
-  //
 
-  // }
+  void showActionDialog(
+      BuildContext context,
+      bool anySelected,
+      Function(String, String) handleAction,
+      List<String> actions,
+      List<String> employeeNames) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        String? dialogSelectedAction = actions.isNotEmpty ? actions.first : null;
+        String? dialogSelectedEmployee =
+        employeeNames.isNotEmpty ? employeeNames.first : null;
+        bool isSubmitting = false;
 
-  // Track the applied filters
-  String? filteredId;
-  String? filteredName;
-  String? filteredMobile;
-  List<String> filteredStatus = [];
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter dialogSetState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                'Perform Action',
+                style: TextStyle(fontFamily: "poppins_thin", fontSize: 19, fontWeight: FontWeight.w600),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildDropdown(
+                      label: "Select Action",
+                      hint: "Choose Action",
+                      value: dialogSelectedAction,
+                      items: actions,
+                      onChanged: (value) => dialogSetState(() => dialogSelectedAction = value),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDropdown(
+                      label: "Select Employee",
+                      hint: "Choose Employee",
+                      value: dialogSelectedEmployee,
+                      items: employeeNames,
+                      onChanged: (value) => dialogSetState(() => dialogSelectedEmployee = value),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text("Cancel", style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.grey)),
+                    ),
+                    ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                        if (dialogSelectedAction == null || dialogSelectedEmployee == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Please select both action and employee", style: TextStyle(fontFamily: 'poppins_thin'))),
+                          );
+                          return;
+                        }
+
+                        List<String> selectedInquiryIds = [];
+                        for (int i = 0; i < selectedCards.length; i++) {
+                          if (selectedCards[i]) {
+                            selectedInquiryIds.add(filteredLeads[i].id ?? '');
+                          }
+                        }
+
+                        if (selectedInquiryIds.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("No inquiries selected", style: TextStyle(fontFamily: 'poppins_thin'))),
+                          );
+                          return;
+                        }
+
+                        String actionKey = actionList.firstWhere(
+                                (action) => action['value'] == dialogSelectedAction,
+                            orElse: () => {'key': ''})['key'] ??
+                            '';
+                        String employeeId = employeeList.firstWhere(
+                                (e) => e['name'] == dialogSelectedEmployee,
+                            orElse: () => {'id': ''})['id'] ??
+                            '';
+
+                        dialogSetState(() => isSubmitting = true);
+
+                        try {
+                          final userProvider = Provider.of<UserProvider>(context, listen: false);
+                          await userProvider.sendTransferInquiry(
+                            inqIds: selectedInquiryIds,
+                            actionKey: actionKey,
+                            employeeId: employeeId,
+                          );
+
+                          handleAction(dialogSelectedAction!, dialogSelectedEmployee!);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(color: Colors.deepPurple.shade700, strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text("Reloading follow-up inquiries...", style: TextStyle(fontFamily: 'poppins_thin')),
+                                ],
+                              ),
+                              duration: Duration(days: 1),
+                            ),
+                          );
+
+                          await loadAllInquiriesFollowup();
+
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Follow-up inquiries transferred and reloaded successfully", style: TextStyle(fontFamily: 'poppins_thin')),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+
+                          Navigator.of(dialogContext).pop();
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Failed to process follow-up inquiries: $e", style: TextStyle(fontFamily: 'poppins_thin'))),
+                          );
+                        } finally {
+                          dialogSetState(() => isSubmitting = false);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade100,
+                        foregroundColor: Colors.deepPurple.shade700,
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                        minimumSize: Size(100, 0),
+                      ),
+                      child: isSubmitting
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.deepPurple.shade700, strokeWidth: 2))
+                          : Text('Submit', style: TextStyle(fontFamily: 'poppins_thin', fontSize: 16, fontWeight: FontWeight.w500)),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String hint,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontFamily: 'poppins_thin', color: Colors.grey[800], fontSize: 16, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey.shade100),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton2<String>(
+              isExpanded: true,
+              hint: Text(hint, style: TextStyle(fontFamily: 'poppins_thin', color: Colors.grey[600], fontSize: 14)),
+              value: value,
+              onChanged: items.isEmpty ? null : onChanged,
+              items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item, style: TextStyle(fontFamily: 'poppins_thin', fontWeight: FontWeight.w400, fontSize: 13)))).toList(),
+              buttonStyleData: const ButtonStyleData(height: 40, width: double.infinity),
+              iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700])),
+              dropdownStyleData: DropdownStyleData(maxHeight: 200, width: MediaQuery.of(context).size.width / 1.65, decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final inquiryProvider = Provider.of<UserProvider>(context);
-    if (selectedCards.length != inquiryProvider.inquiries.length) {
-      selectedCards = List<bool>.generate(
-        inquiryProvider.inquiries.length,
-            (index) => false,
-      );
 
+    if (selectedCards.length != inquiryProvider.inquiriesFollowup.length) {
+      selectedCards = List<bool>.generate(inquiryProvider.inquiriesFollowup.length, (index) => false);
     }
-    return  Scaffold(
+
+    return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Assign To Other",style: TextStyle(fontFamily: "poppins_thin",color: Colors.white),),
+        title: Text("Assign To Other",style: TextStyle(fontFamily: "poppins_thin",color: Colors.white,fontWeight: FontWeight.bold),),
         leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            }, icon: Icon(Icons.arrow_back_ios,color: Colors.white,)),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.deepPurple.shade300,
         actions: [
-          SearchBar1(
-            items: LeadList,
-            onSearch: _updateSearchResults,
-          ),
-          SizedBox(width: 10,),
+          if (anySelected)
+            CircleAvatar(
+              backgroundColor: Colors.white,
+              child: GestureDetector(
+                onTap: () async {
+                  List<String> actionValues = actionList.map((action) => action['value']!).toList();
+                  List<String> employeeNames = employeeList.map((e) => e['name']!).toList();
+                  print(
+                      'Calling showActionDialog with Actions: $actionValues, Employees: $employeeNames');
+                  showActionDialog(
+                    context,
+                    anySelected,
+                    handleAction,
+                    actionValues,
+                    employeeNames,
+                  );
+                },
+                child: Image(
+                  image: AssetImage("asset/Inquiry_module/fast-forward.png"),
+                  height: 23,
+                  width: 23,
+                ),
+              ),
+            ),
+          SizedBox(width: 10),
           CircleAvatar(
             backgroundColor: Colors.white,
-            // backgroundColor: Colors.deepPurple.shade300,
             child: IconButton(
-                onPressed: () {
-                  // showBottomModalSheet(context);
-
-                }, icon: Icon(Icons.filter_list_outlined,color: Colors.black,)),
+              icon: Icon(Icons.search),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SearchPage()),
+                );
+              },
+            ),
           ),
-          SizedBox(width: 10,)
+          SizedBox(width: 10),
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => InquiryFilterScreen()));
+              },
+              icon: Icon(
+                Icons.filter_list_outlined,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
         ],
       ),
       body: Column(
         children: [
-          if (anySelected)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey.shade100,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
-                        ),
+          if (currentFollowUpDay != 'cnr') _buildMainButtonGroup(), // Hide Live/Due for CNR
+          GestureDetector(
+            onTap: () async {
+              final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
+              final Map<String, String> stageCounts = inquiryProvider.fullStageCountFollowup; // Use full counts
+
+              List<Categorymodel> filteredOptions = [
+                Categorymodel("All", int.tryParse(stageCounts["Total_Sum"] ?? "0") ?? 0),
+              ];
+              List<String> categoryTitles = [
+                "Fresh",
+                "Contacted",
+                "Appointment",
+                "Visited",
+                "Negotiations",
+                "FeedBack",
+                "Re_Appointment",
+                "Re_Visited",
+                "Converted"
+              ];
+              filteredOptions.addAll(categoryTitles.map((title) => Categorymodel(title, int.tryParse(stageCounts[title] ?? "0") ?? 0)));
+
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ListSelectionscreen(
+                    initialSelectedIndex: selectedIndex ?? 0,
+                    optionList: filteredOptions,
+                    currentStatus: currentStatus,
+                  ),
+                ),
+              );
+
+              if (result != null && result["selectedCategory"] != null) {
+                final selectedCategory = result["selectedCategory"] as Categorymodel;
+                setState(() {
+                  selectedList = selectedCategory.title;
+                  selectedValue = selectedCategory.leads.toString();
+                  selectedIndex = result["selectedIndex"];
+                });
+
+                if (selectedCategory.title != "All") {
+                  final stage = getInquiryStageFromCategory(selectedCategory.title);
+                  if (stage != null) await filterLeadsByStage(stage);
+                } else {
+                  await loadAllInquiriesFollowup();
+                }
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Container(
+                height: 52,
+                padding: EdgeInsets.symmetric(horizontal: 26.0, vertical: 8.0),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: Colors.deepPurple.shade100),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(selectedList, style: TextStyle(fontFamily: "poppins_thin", fontSize: 16)),
+                    Row(
+                      children: [
+                        Icon(Icons.group, color: Colors.black),
+                        SizedBox(width: 8.0),
+                        Text(selectedValue, style: TextStyle(fontFamily: "poppins_thin")),
+                        Icon(Icons.arrow_drop_down, color: Colors.black),
                       ],
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton2<String>(
-                        isExpanded: true,
-                        hint: Text(
-                          'Select Action',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontFamily: "poppins_thin",
-                          ),
-                        ),
-                        value: selectedAction,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedAction = value;
-                          });
-                        },
-                        items: actions.map((action) => DropdownMenuItem(
-                          value: action,
-                          child: Text(action,
-                              style: TextStyle(
-                                  fontFamily: "poppins_thin")),
-                        )).toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey.shade100,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton2<String>(
-                        isExpanded: true,
-                        hint: Text(
-                          'Select Employee',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontFamily: "poppins_thin",
-                          ),
-                        ),
-                        value: selectedEmployee,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedEmployee = value;
-                          });
-                        },
-                        items: employees
-                            .map((employee) => DropdownMenuItem(
-                          value: employee,
-                          child: Text(employee,
-                              style: TextStyle(
-                                  fontFamily: "poppins_thin")),
-                        ))
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Center(
-                    child: SizedBox(
-                      // width: 100, // Limit the width of the button
-                      child: GradientButton(
-                        buttonText: "Submit",
-                        onPressed: () {
-                          if (selectedAction == null || selectedEmployee == null) {
-                            // Show dialog to prompt the user to select data
-                            showsubmitdialog(context);
-                          } else {
-                            // Show confirmation dialog
-                            showConfirmationDialog(context);
-                            handleAction(selectedAction!, selectedEmployee!);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-
-          // Applied Filters UI
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -317,8 +664,6 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      // Display ID filter if set
-                      // Show ID filter only if it's not null or empty
                       if (filteredId != null && filteredId!.isNotEmpty)
                         FilterChip(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -327,13 +672,12 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
                             setState(() {
                               filteredId = null;
                               appliedFilters.remove('Id');
-                              filteredLeads = List.from(LeadList);
+                              loadAllInquiriesFollowup();
                             });
-                          }, onSelected: (bool value) {  },
+                          },
+                          onSelected: (bool value) {},
                         ),
-                      SizedBox(width: 5,),
-
-// Show Name filter only if it's not null or empty
+                      SizedBox(width: 5),
                       if (filteredName != null && filteredName!.isNotEmpty)
                         FilterChip(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -342,13 +686,12 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
                             setState(() {
                               filteredName = null;
                               appliedFilters.remove('Name');
-                              filteredLeads = List.from(LeadList);
+                              loadAllInquiriesFollowup();
                             });
-                          }, onSelected: (bool value) {  },
+                          },
+                          onSelected: (bool value) {},
                         ),
-                      SizedBox(width: 5,),
-
-// Show Phone filter only if it's not null or empty
+                      SizedBox(width: 5),
                       if (filteredPhone != null && filteredPhone!.isNotEmpty)
                         FilterChip(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -357,13 +700,12 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
                             setState(() {
                               filteredPhone = null;
                               appliedFilters.remove('Mobile');
-                              filteredLeads = List.from(LeadList);
+                              loadAllInquiriesFollowup();
                             });
-                          }, onSelected: (bool value) {  },
+                          },
+                          onSelected: (bool value) {},
                         ),
-                      SizedBox(width: 5,),
-
-// Show Status filter only if it has values
+                      SizedBox(width: 5),
                       if (filteredStatus.isNotEmpty)
                         FilterChip(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -372,115 +714,275 @@ class _AssignToOtherScreenState extends State<AssignToOtherScreen> {
                             setState(() {
                               filteredStatus.clear();
                               appliedFilters.remove('Status');
-                              filteredLeads = List.from(LeadList);
+                              loadAllInquiriesFollowup();
                             });
-                          }, onSelected: (bool value) {  },
+                          },
+                          onSelected: (bool value) {},
                         ),
-                      SizedBox(width: 5,),
-
-                      // const  Spacer(),
-
-
+                      SizedBox(width: 5),
                     ],
                   ),
                 ),
-                // "Clear All" button
                 if (filteredId != null || filteredName != null || filteredPhone != null || filteredStatus.isNotEmpty)
                   ElevatedButton(
                     onPressed: resetFilters,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple.shade300,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                     ),
-                    child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin',color: Colors.white)),
+                    child: const Text('Clear All', style: TextStyle(fontFamily: 'poppins_thin', color: Colors.white)),
                   ),
-
               ],
             ),
           ),
-
-
-
           Expanded(
-            child: filteredLeads.isEmpty
-                ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Center(
-                  child: Lottie.asset(
-                    'asset/Inquiry_module/no_result.json',
-                    fit: BoxFit.contain,
-                    width: 300,
-                    height: 300,
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    "No results found",
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 26,
-                      fontFamily: "poppins_thin",
-                    ),
-                  ),
-                ),
-              ],
-            )
-                : ListView.builder(
-              itemCount: filteredLeads.length,
-              itemBuilder: (context, index) {
-                if (index < filteredLeads.length && index < inquiryProvider.inquiries.length) {
-                  Inquiry inquiry = inquiryProvider.inquiries[index];
-                  return StatefulBuilder(
-                    builder: (context, setState) {
-                      return GestureDetector(
-                        onLongPress: () {
-                          toggleSelection(index);
-                        },
-                        child: TestCard(
-                          id: filteredLeads[index].id,
-                          name: filteredLeads[index].name,
-                          username: filteredLeads[index].username,
-                          label: filteredLeads[index].label,
-                          followUpDate: filteredLeads[index].followUpDate,
-                          nextFollowUpDate: filteredLeads[index].nextFollowUpDate,
-                          inquiryType: filteredLeads[index].inquiryType,
-                          intArea: inquiry.InqArea,
-                          purposeBuy: inquiry.PurposeBuy,
-                          daySkip: inquiry.dayskip,
-                          hourSkip: inquiry.hourskip,
-                          source: filteredLeads[index].source,
-                          isSelected: selectedCards[index],
-                          onSelect: () {
-                            toggleSelection(index);
-                          },
-                          callList: [
-                            "Followup",
-                            "Dismissed",
-                            "Appointment",
-                            "Negotiation",
-                            "Feedback",
-                            "Cnr"
-                          ],
-                          selectedcallFilter: selectedcallFilter,
-                          data: inquiry,
-                          isTiming: true,
-                          nextFollowupcontroller: nextFollowupcontroller,
+            child: RefreshIndicator(
+              onRefresh: () async => await loadAllInquiriesFollowup(),
+              child: Builder(
+                builder: (context) {
+                  if (inquiryProvider.isLoadingFollowup && inquiryProvider.inquiriesFollowup.isEmpty) {
+                    return ListView.builder(
+                      itemCount: 5,
+                      itemBuilder: (context, index) {
+                        return Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(height: 160, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                          ),
+                        );
+                      },
+                    );
+                  } else if (filteredLeads.isEmpty) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Center(child: Lottie.asset('asset/Inquiry_module/no_result.json', fit: BoxFit.contain, width: 300, height: 300)),
+                        Center(
+                          child: Text(
+                            "No follow-up inquiries found",
+                            style: TextStyle(color: Colors.red, fontSize: 22, fontFamily: "poppins_thin"),
+                          ),
                         ),
-                      );
-                    },
-                  );
-                } else {
-                  return SizedBox.shrink(); // Return an empty widget if index is out of bounds
-                }
-              },
+                      ],
+                    );
+                  } else {
+                    if (selectedCards.length != filteredLeads.length) {
+                      selectedCards = List<bool>.filled(filteredLeads.length, false);
+                    }
+                    return  ListView.builder(
+                      controller: _scrollController,
+                      itemCount: filteredLeads.length + (inquiryProvider.isLoadingFollowup ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index < filteredLeads.length) {
+                          InquiryFollowup inquiry = filteredLeads[index];
+                          return StatefulBuilder(
+                            builder: (context, setState) {
+                              return GestureDetector(
+                                onLongPress: () => toggleSelection(index),
+                                onTap: () {
+                                  // Uncomment if needed
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => LeadDetailScreen(InquiryInfoList: inquiry));
+                                },
+                                child: TestCardAssignToOther(
+                                  id: inquiry.id,
+                                  name: inquiry.fullName,
+                                  username: inquiry.assignId,
+                                  label: getInquiryStageText(inquiry.inquiryStages),
+                                  followUpDate: inquiry.createdAt,
+                                  nextFollowUpDate: inquiry.nextFollowUp,
+                                  inquiryType: inquiry.inquiryType,
+                                  intArea: inquiry.interestedArea,
+                                  purposeBuy: inquiry.purposeBuy,
+                                  daySkip: inquiry.daySkip,
+                                  hourSkip: inquiry.hourSkip,
+                                  source: inquiry.inquirySourceType,
+                                  isSelected: selectedCards[index],
+                                  onSelect: () => toggleSelection(index),
+                                  callList: callList,
+                                  selectedcallFilter: selectedcallFilter,
+                                  data: inquiry,
+                                  isTiming: true,
+                                  nextFollowupcontroller: nextFollowupcontroller,
+                                  // inquiryImage: AssetImage("asset/Inquiry_module/telephone.png"),
+                                  // visitImage: AssetImage("asset/Inquiry_module/map.png"),
+                                  // bookingImage: AssetImage("asset/Inquiry_module/booking2.png"),
+                                  eyseImage: null,
+                                ),
+                              );
+                            },
+                          );
+                        }
+                        if (inquiryProvider.isLoadingFollowup) {
+                          return Center(child: Lottie.asset('asset/loader.json', fit: BoxFit.contain, width: 60, height: 60));
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    );                  }
+                },
+              ),
             ),
           ),
-
         ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AddLeadScreen(isEdit: false))),
+        child: Icon(Icons.add, color: Colors.white),
+        backgroundColor: Colors.deepPurple.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+        elevation: 20,
+      ),
+    );
+  }
 
+  Widget _buildMainButtonGroup() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            _buildMainButton("Live", 1),
+            _buildMainButton("Conversion Request", 4),
+            _buildMainButton("Due", 5),
+            _buildMainButton("CNR", 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainButton(String text, int status) {
+    final bool isSelected = selectedMainFilter == text;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected ? AppColor.Buttoncolor : Colors.white,
+          foregroundColor: isSelected ? Colors.white : AppColor.MainColor,
+          side: const BorderSide(color: Color(0xff6A0DAD)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        ),
+        onPressed: () async {
+          await filterLeadsByStatus(status);
+        },
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 14, fontFamily: "poppins_thin", fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  String getInquiryStageText(String? stage) {
+    switch (stage) {
+      case "1":
+        return "Fresh";
+      case "2":
+        return "Contacted";
+      case "3":
+        return "Appointment";
+      case "4":
+        return "Visited";
+      case "6":
+        return "Negotiations";
+      case "9":
+        return "FeedBack";
+      case "10":
+        return "Re_Appointment";
+      case "11":
+        return "Re_Visited";
+      case "12":
+        return "Converted";
+      default:
+        return "Unknown";
+    }
+  }
+}
+
+class ListSelectionscreen extends StatefulWidget {
+  final int? initialSelectedIndex;
+  final List<Categorymodel> optionList;
+  final int currentStatus;
+
+  ListSelectionscreen({
+    this.initialSelectedIndex,
+    required this.optionList,
+    required this.currentStatus,
+  });
+
+  @override
+  _ListSelectionscreenState createState() => _ListSelectionscreenState();
+}
+
+class _ListSelectionscreenState extends State<ListSelectionscreen> {
+  int? selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedIndex = widget.initialSelectedIndex;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.deepPurple.shade300,
+        leading: IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.arrow_back_ios, color: Colors.white)),
+        title: Text("Choose Stage", style: TextStyle(fontFamily: "poppins_thin", color: Colors.white, fontSize: 18)),
+      ),
+      body: ListView.builder(
+        itemCount: widget.optionList.length,
+        itemBuilder: (context, index) {
+          bool isSelected = selectedIndex == index;
+          bool isDisabled = widget.optionList[index].leads == 0;
+          return Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Card(
+              elevation: isSelected ? 6 : 4,
+              color: isDisabled ? Colors.grey.shade200 : isSelected ? Colors.deepPurple.shade100 : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
+              child: ListTile(
+                title: Text(
+                  widget.optionList[index].title,
+                  style: TextStyle(
+                    color: isDisabled ? Colors.grey.shade600 : isSelected ? Colors.deepPurple : Colors.black,
+                    fontFamily: isSelected ? "poppins_thin" : "poppins_light",
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                leading: CircleAvatar(
+                  backgroundColor: isDisabled ? Colors.grey.shade400 : isSelected ? Colors.deepPurple.shade300 : Colors.grey.shade200,
+                  child: Text(
+                    widget.optionList[index].title[0],
+                    style: TextStyle(color: isDisabled ? Colors.grey.shade600 : isSelected ? Colors.white : Colors.black),
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.group, color: isDisabled ? Colors.grey.shade600 : isSelected ? Colors.deepPurple : Colors.black),
+                    SizedBox(width: 8.0),
+                    Text(widget.optionList[index].leads.toString(), style: TextStyle(color: isDisabled ? Colors.grey.shade600 : isSelected ? Colors.deepPurple : Colors.black)),
+                  ],
+                ),
+                onTap: isDisabled
+                    ? null
+                    : () {
+                  setState(() => selectedIndex = index);
+                  Navigator.pop(context, {"selectedIndex": selectedIndex, "selectedCategory": widget.optionList[index]});
+                },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

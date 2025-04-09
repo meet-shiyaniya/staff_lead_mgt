@@ -102,6 +102,7 @@ class GradientButton extends StatelessWidget {
   final Icon? icon;
   final double borderRadius;
   final TextStyle? textStyle;
+  final  bool? enable;
 
   // Constructor with required and optional parameters
   GradientButton({
@@ -113,6 +114,7 @@ class GradientButton extends StatelessWidget {
     this.borderRadius = 30.0, // Default border radius
     this.textStyle, // Optional custom text style
     this.icon, // Optional icon
+    this.enable,
   });
 
   @override

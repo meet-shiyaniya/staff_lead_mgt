@@ -1,21 +1,25 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-import 'package:hr_app/Inquiry_Management/Utils/Custom%20widgets/custom_buttons.dart';
-import 'package:hr_app/Provider/UserProvider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:timelines_plus/timelines_plus.dart';
 import 'package:lottie/lottie.dart';
-import 'dart:convert'; // For jsonEncode
-
+import 'package:url_launcher/url_launcher.dart';
+import '../../../Provider/UserProvider.dart';
 import '../../Model/Api Model/add_Lead_Model.dart';
 import '../../Model/Api Model/inquiry_transfer_Model.dart';
 import '../Colors/app_Colors.dart';
+import 'custom_buttons.dart';
 
 class InquiryScreen extends StatefulWidget {
   final String inquiryId;
+  final bool followup;
 
-  const InquiryScreen({required this.inquiryId});
+  const InquiryScreen(
+      {required this.inquiryId, required this.followup, Key? key})
+      : super(key: key);
 
   @override
   _InquiryScreenState createState() => _InquiryScreenState();
@@ -27,32 +31,57 @@ class _InquiryScreenState extends State<InquiryScreen> {
   bool isEditing = false;
   bool showCloseReasonOnly = false;
 
-  Map<String, String>? selectedArea; // {id, name}
-  Map<String, String>? selectedSite; // {id, name}
-  Map<String, String>? selectedUnitType; // {id, name}
-  Map<String, String>? selectedBudget; // {id, name}
-  Map<String, String>? selectedPurpose; // {id, name}
-  Map<String, String>? selectedBuyingTime; // {id, name}
+  Map<String, String> selectedArea = {'id': '', 'name': ''};
+  Map<String, String> selectedSite = {'id': '', 'name': ''};
+  Map<String, String> selectedUnitType = {'id': '', 'name': ''};
+  Map<String, String> selectedBudget = {'id': '', 'name': ''};
+  Map<String, String> selectedPurpose = {'id': '', 'name': ''};
+  Map<String, String> selectedBuyingTime = {'id': '', 'name': ''};
 
   String? selectedApxFollowUp;
   String? selectedApxAppointment;
   String? selectedApxOther;
+  String? selectedApxFeedback;
+  bool _submitFailed = false; //
+
   bool isDismissed = false;
   final TextEditingController nextFollowUpController = TextEditingController();
   final TextEditingController otherActionController = TextEditingController();
+  final TextEditingController FeedbackActionController =
+      TextEditingController();
+
   final TextEditingController remarkController = TextEditingController();
   String? selectedCloseReason;
   String? selectedIntMembership;
   DateTime? appointmentDate;
-  String? selectedProjectId; // Changed to store ID
+  String? selectedProjectId;
 
+  bool _isFollowUpLoading = false;
+  bool _isAppointmentLoading = false;
+  bool _isOtherLoading = false;
+  bool _isInitialLoading = true; // New flag for initial loading
   final List<String> timeOptions = ["8:00", "9:00", "10:00", "11:00", "12:00"];
-  final List<String> closeReasonOptions = ["Budget Problem", "Not Required", "Muscles"];
-  final List<String> intMembershipOptions = ["Package 1", "Package 2", "Package 3"];
+  final List<String> closeReasonOptions = [
+    "Budget Problem",
+    "Not Required",
+    "Muscles"
+  ];
+  final List<String> intMembershipOptions = [
+    "Package 1",
+    "Package 2",
+    "Package 3"
+  ];
 
   void _fetchInitialSlots() {
-    Provider.of<UserProvider>(context, listen: false)
-        .fetchNextSlots(DateFormat('yyyy-MM-dd').format(DateTime.now()));
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    provider.fetchNextSlots(DateFormat('yyyy-MM-dd').format(DateTime.now()));
+  }
+
+  String maskMobileNumber(String? mobileNo) {
+    if (mobileNo == null || mobileNo.isEmpty) return 'N/A';
+    if (mobileNo.length <= 5)
+      return mobileNo; // If number is too short, return as is
+    return '${mobileNo.substring(0, mobileNo.length - 5)}*****';
   }
 
   @override
@@ -66,24 +95,96 @@ class _InquiryScreenState extends State<InquiryScreen> {
         provider.fetchInquiryStatus();
         final inquiryModel = provider.inquiryModel;
         final dropdownData = provider.dropdownData;
+
         if (inquiryModel != null && dropdownData != null) {
           setState(() {
             final areaOptions = dropdownData.areaCityCountry ?? [];
-            selectedArea = {
-              'id': areaOptions.isNotEmpty
-                  ? areaOptions.firstWhere(
-                    (area) => area.area == (inquiryModel.inquiryData.intrestedArea ?? ""),
-                orElse: () => AreaCityCountry(id: "", area: "", city: "", state: "", country: ""),
-              ).id
-                  : "",
-              'name': inquiryModel.inquiryData.intrestedArea ?? "",
-            };
-            print("Initial Selected Area: $selectedArea");
+            selectedArea = _initializeDropdownValue(
+              areaOptions,
+              inquiryModel.inquiryData.intrestedArea ?? '',
+              (area) => area.area,
+              (area) => {'id': area.id ?? '', 'name': area.area ?? ''},
+            );
+
+            final siteOptions = dropdownData.intSite ?? [];
+            selectedSite = _initializeDropdownValue(
+              siteOptions,
+              inquiryModel.intrestedProduct ?? '',
+              (site) => site.productName,
+              (site) => {'id': site.id ?? '', 'name': site.productName ?? ''},
+            );
+
+            final unitOptions = dropdownData.propertyConfiguration ?? [];
+            selectedUnitType = _initializeDropdownValue(
+              unitOptions,
+              inquiryModel.propertyConfigurationType ?? '',
+              (unit) => unit.propertyType,
+              (unit) => {'id': unit.id ?? '', 'name': unit.propertyType ?? ''},
+            );
+
+            selectedBudget =
+                _initializeSimpleDropdownValue(inquiryModel.inquiryData.budget);
+            selectedPurpose = _initializeSimpleDropdownValue(
+                inquiryModel.inquiryData.purposeBuy);
+            selectedBuyingTime = _initializeSimpleDropdownValue(
+                inquiryModel.inquiryData.approxBuy);
+            _isInitialLoading =
+                false; // Set to false once initial data is loaded
+          });
+        } else {
+          setState(() {
+            selectedArea = {'id': '', 'name': ''};
+            selectedSite = {'id': '', 'name': ''};
+            selectedUnitType = {'id': '', 'name': ''};
+            selectedBudget = {'id': '', 'name': ''};
+            selectedPurpose = {'id': '', 'name': ''};
+            selectedBuyingTime = {'id': '', 'name': ''};
+            _isInitialLoading =
+                false; // Even if data fails, stop initial loading
           });
         }
+      }).catchError((error) {
+        setState(() {
+          selectedArea = {'id': '', 'name': ''};
+          selectedSite = {'id': '', 'name': ''};
+          selectedUnitType = {'id': '', 'name': ''};
+          selectedBudget = {'id': '', 'name': ''};
+          selectedPurpose = {'id': '', 'name': ''};
+          selectedBuyingTime = {'id': '', 'name': ''};
+          _isInitialLoading = false; // Even if data fails, stop initial loading
+        });
       });
       provider.fetchAddLeadData();
     });
+  }
+
+  Map<String, String> _initializeSimpleDropdownValue(String? value) {
+    return value != null && value.isNotEmpty
+        ? {'id': value, 'name': value}
+        : {'id': '', 'name': ''};
+  }
+
+  Map<String, String> _initializeDropdownValue<T>(
+    List<T> options,
+    String initialValue,
+    String Function(T) displayString,
+    Map<String, String> Function(T) mapper,
+  ) {
+    if (options.isEmpty) {
+      return {'id': '', 'name': initialValue.isNotEmpty ? initialValue : ''};
+    }
+    if (initialValue.isEmpty) {
+      return {'id': '', 'name': ''};
+    }
+    try {
+      final selected = options.firstWhere(
+        (option) => displayString(option) == initialValue,
+        orElse: () => options[0],
+      );
+      return mapper(selected);
+    } catch (e) {
+      return {'id': '', 'name': initialValue};
+    }
   }
 
   Map<String, String> formatCreatedAt(String createdAt) {
@@ -94,7 +195,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
         'time': DateFormat("hh:mm a").format(parsedDate),
       };
     } catch (e) {
-      return {'date': createdAt, 'time': 'N/A'};
+      return {'date': createdAt, 'time': '-'};
     }
   }
 
@@ -104,66 +205,164 @@ class _InquiryScreenState extends State<InquiryScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final screenSize = MediaQuery.of(context).size;
+        final double scaleFactor =
+            screenSize.width / 375.0; // Base width: 375px
+        final double fontScale =
+            scaleFactor.clamp(0.8, 1.2); // Limit font scaling
+        final double paddingScale =
+            scaleFactor.clamp(0.7, 1.5); // Limit padding scaling
+
         return AlertDialog(
-          title: const Text("Dismiss Inquiry?", style: TextStyle(fontFamily: "poppins_thin")),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+                12 * scaleFactor), // Smaller, scaled radius
+          ),
+          title: Text(
+            "Dismiss Inquiry?",
+            style: TextStyle(
+              fontFamily: "poppins_thin",
+              fontSize: 14 * fontScale, // Smaller title (default ~20 → 14)
+              fontWeight: FontWeight.w600, // Slight boldness for emphasis
+              color: Colors.black87,
+            ),
+          ),
           content: Container(
-            height: 230,
+            color: Colors.white,
+            height: screenSize.height * 0.25, // Reduced from 30% to 25%
+            width:
+                screenSize.width * 0.8, // 80% of screen width for compactness
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // Minimize vertical space
               children: [
-                Lottie.asset("asset/Inquiry_module/errors.json", height: 170, width: 170),
-                Center(
-                  child: Text(
-                    "Did you have a conversation with this inquiry?",
-                    style: TextStyle(fontFamily: "poppins_thin", fontSize: 18),
+                Lottie.asset(
+                  "asset/Inquiry_module/errors.json",
+                  height: screenSize.height * 0.15, // Reduced from 20% to 15%
+                  width: screenSize.width * 0.3, // Reduced from 40% to 30%
+                  fit: BoxFit.contain, // Ensure proper scaling
+                ),
+                SizedBox(height: 8 * paddingScale), // Smaller, scaled spacing
+                Text(
+                  "Did you have a conversation with this inquiry?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: "poppins_thin",
+                    fontSize: 12 * fontScale, // Smaller text (dynamic ~16 → 12)
+                    color: Colors.black54,
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  isDismissed = true;
-                  showCloseReasonOnly = false;
-                  selectedYesNo = "Yes"; // Set selected option to Yes
-                });
-                Navigator.pop(context);
-                _buildDismissedForm(); // Open the reason selection dialog
-              },
-              child: const Text("Yes", style: TextStyle(fontFamily: "poppins_thin")),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  showCloseReasonOnly = true;
-                  selectedYesNo = "No"; // Set selected option to No
-                });
-                Navigator.pop(context);
-                _buildDismissedForm(); // Open the reason selection dialog
-              },
-              child: const Text("No", style: TextStyle(fontFamily: "poppins_thin")),
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceEvenly, // Better spacing
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      isDismissed = true;
+                      showCloseReasonOnly = false;
+                      selectedYesNo = "Yes";
+                    });
+                    Navigator.pop(context);
+                    _buildDismissedForm();
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                          8 * scaleFactor), // Smaller, scaled radius
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12 * paddingScale, // Smaller, scaled padding
+                      vertical: 6 * paddingScale,
+                    ),
+                  ),
+                  child: Text(
+                    "Yes",
+                    style: TextStyle(
+                      fontFamily: "poppins_thin",
+                      fontSize: 12 * fontScale, // Smaller text (17 → 12)
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600, // Slight boldness
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      showCloseReasonOnly = true;
+                      selectedYesNo = "No";
+                    });
+                    Navigator.pop(context);
+                    _buildDismissedForm();
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                          8 * scaleFactor), // Smaller, scaled radius
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12 * paddingScale, // Smaller, scaled padding
+                      vertical: 6 * paddingScale,
+                    ),
+                  ),
+                  child: Text(
+                    "No",
+                    style: TextStyle(
+                      fontFamily: "poppins_thin",
+                      fontSize: 12 * fontScale, // Smaller text (17 → 12)
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600, // Slight boldness
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
+          contentPadding:
+              EdgeInsets.all(12 * paddingScale), // Smaller, scaled padding
+          actionsPadding: EdgeInsets.only(
+            bottom: 8 * paddingScale, // Smaller, scaled padding
+            left: 8 * paddingScale,
+            right: 8 * paddingScale,
+          ),
+          elevation: 4 * scaleFactor, // Scaled, subtle elevation
         );
       },
     );
   }
 
-
   Future<void> _pickAppointmentDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
 
     if (pickedDate != null) {
-      setState(() {
-        appointmentDate = pickedDate;
-      });
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          appointmentDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -171,7 +370,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
     if (value == "Dismissed") {
       showDismissedConfirmationDialog();
     }
-
     setState(() {
       selectedTab = value;
       remarkController.clear();
@@ -180,7 +378,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
       selectedCloseReason = null;
       selectedIntMembership = null;
       appointmentDate = null;
-      selectedProjectId = null; // Changed from selectedProject
+      selectedProjectId = null;
       showCloseReasonOnly = false;
       selectedApxFollowUp = null;
       selectedApxAppointment = null;
@@ -188,134 +386,315 @@ class _InquiryScreenState extends State<InquiryScreen> {
     });
   }
 
+  // Validation for personal/interested details
+  bool _areDetailsValid() {
+    return selectedArea['name']!.isNotEmpty &&
+        selectedSite['name']!.isNotEmpty &&
+        selectedUnitType['name']!.isNotEmpty &&
+        selectedBudget['name']!.isNotEmpty &&
+        selectedPurpose['name']!.isNotEmpty &&
+        selectedBuyingTime['name']!.isNotEmpty;
+  }
+
+  // Validation for tab-specific fields
+  bool _areTabFieldsValid() {
+    switch (selectedTab.toLowerCase()) {
+      // Ensure case-insensitive comparison
+      case 'follow up':
+        return remarkController.text.isNotEmpty &&
+            nextFollowUpController.text.isNotEmpty &&
+            selectedApxFollowUp != null;
+      case 'dismissed':
+        return (!showCloseReasonOnly && remarkController.text.isNotEmpty ||
+                showCloseReasonOnly) &&
+            selectedCloseReason != null;
+      case 'appointment':
+        return remarkController.text.isNotEmpty &&
+            nextFollowUpController.text.isNotEmpty &&
+            selectedApxAppointment != null &&
+            appointmentDate != null &&
+            selectedProjectId != null;
+      case 'negotiations': // Match the tab name exactly as in tabs list
+        return remarkController.text.isNotEmpty &&
+            otherActionController.text.isNotEmpty &&
+            selectedApxOther != null;
+      case 'feedback':
+        return remarkController.text.isNotEmpty &&
+            FeedbackActionController.text.isNotEmpty &&
+            selectedApxFeedback != null;
+      case 'cnr':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  String _getMissingTabFields() {
+    List<String> missingFields = [];
+    switch (selectedTab.toLowerCase()) {
+      // Ensure case-insensitive comparison
+      case 'follow up':
+        if (remarkController.text.isEmpty) missingFields.add("Remark");
+        if (nextFollowUpController.text.isEmpty)
+          missingFields.add("Next Follow Up");
+        if (selectedApxFollowUp == null) missingFields.add("Follow Up Time");
+        break;
+      case 'dismissed':
+        if (!showCloseReasonOnly && remarkController.text.isEmpty)
+          missingFields.add("Remark");
+        if (selectedCloseReason == null) missingFields.add("Close Reason");
+        break;
+      case 'appointment':
+        if (remarkController.text.isEmpty) missingFields.add("Remark");
+        if (nextFollowUpController.text.isEmpty)
+          missingFields.add("Next Follow Up");
+        if (selectedApxAppointment == null) missingFields.add("Follow Up Time");
+        if (appointmentDate == null) missingFields.add("Appointment Date");
+        if (selectedProjectId == null) missingFields.add("Project");
+        break;
+      case 'negotiations': // Match the tab name exactly as in tabs list
+        if (remarkController.text.isEmpty) missingFields.add("Remark");
+        if (otherActionController.text.isEmpty)
+          missingFields.add("Next Follow Up");
+        if (selectedApxOther == null) missingFields.add("Follow Up Time");
+        break;
+      case 'feedback':
+        if (remarkController.text.isEmpty) missingFields.add("Remark");
+        if (FeedbackActionController.text.isEmpty)
+          missingFields.add("Next Follow Up");
+        if (selectedApxFeedback == null) missingFields.add("Follow Up Time");
+        break;
+      // case 'cnr':
+      //   if (remarkController.text.isEmpty) missingFields.add("Remark");
+      //   if (nextFollowUpController.text.isEmpty)
+      //     missingFields.add("Next Follow Up");
+      //   if (selectedApxFollowUp == null) missingFields.add("Follow Up Time");
+      //   break;
+    }
+    return missingFields.isNotEmpty
+        ? "Missing: ${missingFields.join(', ')}"
+        : "";
+  }
+
+  Widget _buildShimmerEffect() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            // Simulate an AppBar shimmer
+            // Shimmer.fromColors(
+            //   baseColor: Colors.grey[300]!,
+            //   highlightColor: Colors.grey[100]!,
+            //   child: Container(
+            //     height: 50,
+            //     width: double.infinity,
+            //     decoration: BoxDecoration(
+            //       color: Colors.white,
+            //       borderRadius: BorderRadius.circular(8),
+            //     ),
+            //   ),
+            // ),
+            SizedBox(height: 10),
+
+            // Simulate a list/card shimmer effect
+            Expanded(
+              child: ListView.builder(
+                itemCount: 1, // Show shimmer for 5 items
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 230,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Container(
+                            height: 100,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Container(
+                            height: 90,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Container(
+                            height: 80,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Container(
+                            height: 60,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Container(
+                            height: 50,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, inquiryProvider, child) {
-        if (inquiryProvider.isLoading || inquiryProvider.isLoadingDropdown) {
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (_isInitialLoading) {
+          return _buildShimmerEffect(); // Show shimmer only during initial loading
         }
-
         final inquiryModel = inquiryProvider.inquiryModel;
         final dropdownData = inquiryProvider.dropdownData;
 
         if (inquiryModel == null) {
-          return Scaffold(body: Center(child: Text("Failed to load inquiry data")));
+          return const Scaffold(
+              body: Center(child: Text("Failed to load inquiry data")));
         }
         if (dropdownData == null) {
           return Scaffold(
-              body: Center(
-                  child: Text(
-                      inquiryProvider.errorMessage ?? "Failed to load dropdown data")));
+            body: Center(
+              child: Text(
+                inquiryProvider.errorMessage ?? "Failed to load dropdown data",
+              ),
+            ),
+          );
         }
 
         tabs = ["Follow Up", "Dismissed", "Appointment", "CNR"];
-        if (inquiryModel.inquiryData.issitevisit != null) {
-          try {
-            int siteVisitCount = int.parse(inquiryModel.inquiryData.issitevisit);
-            if (siteVisitCount > 0) {
-              tabs = [
-                "Follow Up",
-                "Dismissed",
-                "Appointment",
-                "CNR",
-                "Negotiations",
-                "Feedback",
-              ];
-            }
-          } catch (e) {
-            print("Error parsing isSiteVisit: $e");
-          }
+        final siteVisitCount =
+            int.tryParse(inquiryModel.inquiryData.issitevisit ?? '0') ?? 0;
+        if (siteVisitCount > 0) {
+          tabs = [
+            "Follow Up",
+            "Dismissed",
+            "Appointment",
+            "CNR",
+            "Negotiations",
+            "Feedback"
+          ];
         }
 
         bool showFullUI = inquiryModel.modelHeaderAccess == 1;
-        bool isEditable = inquiryModel.fillInterstCheck == 1;
 
-        final List<AreaCityCountry> areaOptions = dropdownData.areaCityCountry ?? [];
+        final List<AreaCityCountry> areaOptions =
+            dropdownData.areaCityCountry ?? [];
         final List<IntSite> siteOptions = dropdownData.intSite ?? [];
         final List<PropertyConfiguration> unitOptions =
             dropdownData.propertyConfiguration ?? [];
-        final List<Map<String, String>> budgetOptions = dropdownData.budget?.values
-            .split(',')
-            .map((value) => value.trim())
-            .where((value) => value.isNotEmpty)
-            .map((b) => {'id': b, 'name': b})
-            .toList() ??
+        final List<Map<String, String>> budgetOptions = dropdownData
+                .budget?.values
+                .split(',')
+                .map((value) => value.trim())
+                .where((value) => value.isNotEmpty)
+                .map((b) => {'id': b, 'name': b})
+                .toList() ??
             [];
         final List<Map<String, String>> purposeOptions =
-        dropdownData.purposeOfBuying != null
-            ? [
-          {
-            'id': dropdownData.purposeOfBuying!.investment ?? '',
-            'name': dropdownData.purposeOfBuying!.investment ?? ''
-          },
-          {
-            'id': dropdownData.purposeOfBuying!.personalUse ?? '',
-            'name': dropdownData.purposeOfBuying!.personalUse ?? ''
-          },
-        ].where((purpose) => purpose['name']!.isNotEmpty).toList()
-            : [];
-        final List<Map<String, String>> buyingTimeOptions =
-            dropdownData.apxTime?.apxTimeData
+            dropdownData.purposeOfBuying != null
+                ? [
+                    {
+                      'id': dropdownData.purposeOfBuying!.investment ?? '',
+                      'name': dropdownData.purposeOfBuying!.investment ?? ''
+                    },
+                    {
+                      'id': dropdownData.purposeOfBuying!.personalUse ?? '',
+                      'name': dropdownData.purposeOfBuying!.personalUse ?? ''
+                    },
+                  ].where((purpose) => purpose['name']!.isNotEmpty).toList()
+                : [];
+        final List<Map<String, String>> buyingTimeOptions = dropdownData
+                .apxTime?.apxTimeData
                 .split(',')
                 .map((time) => time.trim())
                 .where((time) => time.isNotEmpty)
                 .map((t) => {'id': t, 'name': t})
                 .toList() ??
-                [];
-
-        if (!isEditable) {
-          if (selectedSite == null) {
-            selectedSite = {
-              'id': siteOptions.firstWhere(
-                    (site) => site.productName == (inquiryModel.intrestedProduct ?? ""),
-                orElse: () => IntSite(id: "", productName: ""),
-              ).id,
-              'name': inquiryModel.intrestedProduct ?? "",
-            };
-          }
-          if (selectedUnitType == null) {
-            selectedUnitType = {
-              'id': unitOptions.firstWhere(
-                    (unit) =>
-                unit.propertyType ==
-                    (inquiryModel.propertyConfigurationType ?? "1 BHK"),
-                orElse: () => PropertyConfiguration(id: "", propertyType: "1 BHK"),
-              ).id,
-              'name': inquiryModel.propertyConfigurationType ?? "1 BHK",
-            };
-          }
-          if (selectedBudget == null) {
-            selectedBudget = {
-              'id': inquiryModel.inquiryData.budget ?? "",
-              'name': inquiryModel.inquiryData.budget ?? "",
-            };
-          }
-          if (selectedPurpose == null) {
-            selectedPurpose = {
-              'id': inquiryModel.inquiryData.purposeBuy ?? "",
-              'name': inquiryModel.inquiryData.purposeBuy ?? "",
-            };
-          }
-          if (selectedBuyingTime == null) {
-            selectedBuyingTime = {
-              'id': inquiryModel.inquiryData.approxBuy ?? "",
-              'name': inquiryModel.inquiryData.approxBuy ?? "",
-            };
-          }
+            [];
+        double _scaleFactor(BuildContext context) {
+          final screenSize = MediaQuery.of(context).size;
+          return screenSize.width / 375.0; // Base width: 375px
         }
 
+        double _fontScale(BuildContext context) {
+          return _scaleFactor(context).clamp(0.8, 1.2); // Limit font scaling
+        }
+
+        double _paddingScale(BuildContext context) {
+          return _scaleFactor(context).clamp(0.7, 1.5); // Limit padding scaling
+        }
+
+        final double screenWidth = MediaQuery.of(context).size.width;
+        final screenSize = MediaQuery.of(context).size;
+
+        final double fontScale =
+            screenWidth < 400 ? 0.85 : 0.9; // Responsive font scaling
+        final double scaleFactor =
+            screenSize.width / 375.0; // Base width: 375px
+
         return Scaffold(
-          backgroundColor: Colors.grey[200],
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            title: Text(
+            title: const Text(
               "Inquiry Details",
-              style: TextStyle(fontFamily: "poppins_thin", color: Colors.white),
+              style: TextStyle(
+                  fontFamily: "poppins_thin",
+                  color: Colors.white,
+                  fontSize: 18),
             ),
-            backgroundColor: AppColor.Buttoncolor,
+            backgroundColor: AppColor.MainColor,
             leading: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () => Navigator.pop(context, true),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             ),
           ),
           body: Column(
@@ -325,14 +704,20 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Personal and Interested Details Card
                       Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 3,
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              8 * _scaleFactor(context)), // Scaled radius
+                        ),
+                        elevation:
+                            3 * _scaleFactor(context), // Scaled elevation
                         child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: EdgeInsets.all(
+                              12 * _paddingScale(context)), // Scaled padding
                           child: _buildPersonalAndInterestedDetails(
                             inquiryModel,
-                            isEditable,
                             areaOptions,
                             siteOptions,
                             unitOptions,
@@ -342,8 +727,11 @@ class _InquiryScreenState extends State<InquiryScreen> {
                           ),
                         ),
                       ),
-                      if (showFullUI) ...[
-                        SizedBox(height: 10),
+                      if (showFullUI && widget.followup) ...[
+                        SizedBox(
+                            height:
+                                10 * _paddingScale(context)), // Scaled spacing
+                        // Tab Buttons
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: MainButtonGroup(
@@ -352,126 +740,254 @@ class _InquiryScreenState extends State<InquiryScreen> {
                             onButtonPressed: _handleTabChange,
                           ),
                         ),
-                        SizedBox(height: 10),
+                        SizedBox(
+                            height:
+                                10 * _paddingScale(context)), // Scaled spacing
+                        // Tab Content Card
                         Card(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                12 * _scaleFactor(context)), // Scaled radius
+                          ),
+                          elevation:
+                              3 * _scaleFactor(context), // Scaled elevation
                           child: Padding(
-                            padding: const EdgeInsets.all(18.0),
+                            padding: EdgeInsets.all(
+                                18 * _paddingScale(context)), // Scaled padding
                             child: _buildTabContent(),
                           ),
                         ),
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: _remarkSection(inquiryModel.processedData),
-                          ),
-                        ),
                       ],
-                      SizedBox(height: 20),
+                      SizedBox(
+                          height:
+                              20 * _paddingScale(context)), // Scaled spacing
+                      // Remark Section Card
+                      Card(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              12 * _scaleFactor(context)), // Scaled radius
+                        ),
+                        elevation:
+                            2 * _scaleFactor(context), // Scaled elevation
+                        child: Padding(
+                          padding: EdgeInsets.all(
+                              8 * _paddingScale(context)), // Scaled padding
+                          child:
+                              _remarkSection(inquiryModel.processedData ?? []),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GradientButton(
-                  buttonText: "Submit",
-                  onPressed: () async {
-                    Map<String, dynamic> formData = {
-                      'remark': remarkController.text,
-                    };
+              if (showFullUI && widget.followup)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GradientButton(
+                    buttonText: _submitFailed
+                        ? "Retry"
+                        : "Submit", // Switch based on failure state
+                    enable: _areDetailsValid() &&
+                        _areTabFieldsValid(), // Ensure validation is checked
+                    onPressed: () async {
+                      if (selectedTab.toLowerCase() != 'cnr' &&
+                          selectedTab.toLowerCase() != 'dismissed') {
+                        if (!_areDetailsValid()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    "Please complete all personal and interested details")),
+                          );
+                          return;
+                        }
+                      }
+                      if (selectedTab.toLowerCase() == 'cnr') {
+                        bool confirmCNR = await showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(15 * scaleFactor),
+                              ),
+                              backgroundColor: Colors.white,
+                              title: Text(
+                                "Confirm CNR",
+                                style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 16 * fontScale,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              content: Text(
+                                "Are you sure you want to mark this inquiry as CNR?",
+                                style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 14 * fontScale,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true); // Confirm
+                                  },
+                                  child: Text(
+                                    "Yes",
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 12 * fontScale,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, false); // Cancel
+                                  },
+                                  child: Text(
+                                    "No",
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 12 * fontScale,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
 
-                    int interest = isEditing ? 1 : 0;
+                        if (confirmCNR != true)
+                          return; // If the user taps "No", stop execution.
+                      }
 
-                    switch (selectedTab.toLowerCase()) {
-                      case 'follow up':
-                        formData.addAll({
-                          'nextFollowUp': nextFollowUpController.text,
-                          'callTime': selectedApxFollowUp,
-                        });
-                        break;
+                      if (!_areTabFieldsValid()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  "Fill all fields: ${_getMissingTabFields()}")),
+                        );
+                        return;
+                      }
 
-                      case 'dismissed':
-                        formData.addAll({
-                          'inquiry_close_reason': selectedCloseReason ?? '', // Use the ID directly
-                        });
-                        break;
+                      Map<String, dynamic> formData = {
+                        'remark': remarkController.text,
+                      };
 
-                      case 'appointment':
-                        formData.addAll({
-                          'nextFollowUp': nextFollowUpController.text,
-                          'callTime': selectedApxAppointment,
-                          'appointDate': appointmentDate != null
-                              ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
-                              : '',
-                          'interestedProduct': selectedProjectId, // Add selected project id
-                        });
-                        break;
+                      int interest = isEditing ? 1 : 0;
 
-                      case 'negotiation':
-                      case 'feedback':
-                        formData.addAll({
-                          'nextFollowUp': otherActionController.text,
-                          'callTime': selectedApxOther,
-                          'appointDate': appointmentDate != null
-                              ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
-                              : '',
-                        });
-                        break;
+                      switch (selectedTab.toLowerCase()) {
+                        case 'follow up':
+                          formData.addAll({
+                            'nextFollowUp': nextFollowUpController.text,
+                            'callTime': selectedApxFollowUp ?? '',
+                          });
+                          break;
+                        case 'dismissed':
+                          formData.addAll({
+                            'inquiry_close_reason': selectedCloseReason ?? '',
+                          });
+                          break;
+                        case 'appointment':
+                          formData.addAll({
+                            'nextFollowUp': nextFollowUpController.text,
+                            'callTime': selectedApxAppointment ?? '',
+                            'appointDate': appointmentDate != null
+                                ? DateFormat('yyyy-MM-dd HH:mm:ss')
+                                    .format(appointmentDate!)
+                                : '',
+                            'interestedProduct': selectedProjectId ?? '',
+                          });
+                          break;
+                        case 'negotiations':
+                          formData.addAll({
+                            'nextFollowUp': otherActionController.text,
+                            'callTime': selectedApxOther.toString(),
+                            'appointDate': appointmentDate != null
+                                ? DateFormat('dd-MM-yyyy')
+                                    .format(appointmentDate!)
+                                : '',
+                          });
+                          break;
+                        case 'feedback':
+                          formData.addAll({
+                            'nextFollowUp': FeedbackActionController.text,
+                            'callTime': selectedApxFeedback ?? '',
+                            'appointDate': appointmentDate != null
+                                ? DateFormat('dd-MM-yyyy')
+                                    .format(appointmentDate!)
+                                : '',
+                          });
+                          break;
+                        case 'cnr':
+                          formData.addAll({});
+                          break;
+                      }
 
-                      case 'cnr':
-                        formData.addAll({
-                          'nextFollowUp': nextFollowUpController.text,
-                          'callTime': selectedApxFollowUp,
-                          'appointDate': appointmentDate != null
-                              ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
-                              : '',
-                        });
-                        break;
-                    }
-
-                    final provider = Provider.of<UserProvider>(context, listen: false);
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => Center(child: CircularProgressIndicator()),
-                    );
-
-                    final success = await provider.updateInquiryStatus(
-                      inquiryId: widget.inquiryId,
-                      selectedTab: selectedTab,
-                      formData: formData,
-                      interestedProduct: selectedTab.toLowerCase() == 'appointment'
-                          ? selectedProjectId
-                          : selectedSite?['id'],
-                      isSiteVisit: int.tryParse(inquiryModel?.inquiryData.issitevisit ?? '0') ?? 0,
-                      interest: interest,
-                    );
-
-                    Navigator.pop(context);
-
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Status updated successfully")),
+                      final provider =
+                          Provider.of<UserProvider>(context, listen: false);
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
                       );
-                      setState(() {
-                        remarkController.clear();
-                        nextFollowUpController.clear();
-                        otherActionController.clear();
-                        selectedCloseReason = null;
-                        appointmentDate = null;
-                        selectedProjectId = null;
-                        selectedApxFollowUp = null;
-                        selectedApxAppointment = null;
-                        selectedApxOther = null;
-                      });
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Failed to update status: ${provider.error}")),
+
+                      final success = await provider.updateInquiryStatus(
+                        inquiryId: widget.inquiryId,
+                        selectedTab: selectedTab,
+                        formData: formData,
+                        interestedProduct: selectedTab.toLowerCase() ==
+                                'appointment'
+                            ? (selectedProjectId ?? selectedSite['id'] ?? '')
+                            : (selectedSite['id'] ?? ''),
+                        isSiteVisit: int.tryParse(
+                                inquiryModel!.inquiryData.issitevisit ?? '0') ??
+                            0,
+                        interest: interest,
                       );
-                    }
-                  },
-                ),
-              ),
+
+                      Navigator.pop(context); // Close loading dialog
+
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Status updated successfully")),
+                        );
+                        setState(() {
+                          _submitFailed = false; // Reset on success
+                          remarkController.clear();
+                          nextFollowUpController.clear();
+                          otherActionController.clear();
+                          FeedbackActionController.clear();
+                          selectedCloseReason = null;
+                          appointmentDate = null;
+                          selectedProjectId = null;
+                          selectedApxFollowUp = null;
+                          selectedApxAppointment = null;
+                          selectedApxOther = null;
+                          selectedApxFeedback = null;
+                        });
+                        Navigator.pop(
+                            context, true); // Navigate back on success
+                      } else {
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Something went wrong: ${provider.error ?? 'Unknown error'}",
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                )
             ],
           ),
         );
@@ -480,31 +996,19 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }
 
   Widget _buildPersonalAndInterestedDetails(
-      InquiryModel model,
-      bool isEditable,
-      List<AreaCityCountry> areaOptions,
-      List<IntSite> siteOptions,
-      List<PropertyConfiguration> unitOptions,
-      List<Map<String, String>> budgetOptions,
-      List<Map<String, String>> purposeOptions,
-      List<Map<String, String>> buyingTimeOptions) {
-    bool hasNullField = model.inquiryData.intrestedArea == null ||
-        model.inquiryData.intrestedArea!.isEmpty ||
-        model.intrestedProduct == null ||
-        model.intrestedProduct!.isEmpty ||
-        model.propertyConfigurationType == null ||
-        model.propertyConfigurationType!.isEmpty ||
-        model.inquiryData.budget == null ||
-        model.inquiryData.budget!.isEmpty ||
-        model.inquiryData.purposeBuy == null ||
-        model.inquiryData.purposeBuy!.isEmpty ||
-        model.inquiryData.approxBuy == null ||
-        model.inquiryData.approxBuy!.isEmpty;
-
-    // UPDATED: Set isEditing to true if fillInterstCheck is 1 and there are null fields
-    if (hasNullField && model.fillInterstCheck == 1) {
-      isEditing = true;
-    }
+    InquiryModel model,
+    List<AreaCityCountry> areaOptions,
+    List<IntSite> siteOptions,
+    List<PropertyConfiguration> unitOptions,
+    List<Map<String, String>> budgetOptions,
+    List<Map<String, String>> purposeOptions,
+    List<Map<String, String>> buyingTimeOptions,
+  ) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double fontScale =
+        screenWidth < 400 ? 0.85 : 0.9; // Responsive font scaling
+    bool showDropdowns = model.fillInterstCheck == 0 ||
+        (model.fillInterstCheck == 1 && isEditing);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,245 +1017,207 @@ class _InquiryScreenState extends State<InquiryScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade300,
-                  borderRadius: BorderRadius.circular(8)),
+                color: Colors.deepPurple.shade300,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                 child: Text(
-                  model.inquiryData.id,
+                  model.inquiryData.id ?? 'N/A',
                   style: TextStyle(
-                      fontSize: 13, fontFamily: "poppins_thin", color: Colors.white),
+                    fontSize: 12 * fontScale,
+                    fontFamily: "poppins_thin",
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-            SizedBox(width: 10),
-            Text(model.inquiryData.fullName,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Spacer(),
-            // UPDATED: Show edit/save button only if fillInterstCheck is 1 or there are null fields
-            if (model.fillInterstCheck == 1 || hasNullField)
-              CircleAvatar(
-                backgroundColor: AppColor.Buttoncolor,
-                radius: 18,
-                child: IconButton(
-                  icon: Icon(
-                    isEditing ? Icons.save : Icons.edit,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: () async {
-                    setState(() {
-                      isEditing = !isEditing;
-                    });
-
-                    if (!isEditing) {
-                      // UPDATED: Validate if all fields are filled before saving
-                      if ((selectedArea == null || selectedArea!['name']!.isEmpty) ||
-                          (selectedSite == null || selectedSite!['name']!.isEmpty) ||
-                          (selectedUnitType == null || selectedUnitType!['name']!.isEmpty) ||
-                          (selectedBudget == null || selectedBudget!['name']!.isEmpty) ||
-                          (selectedPurpose == null || selectedPurpose!['name']!.isEmpty) ||
-                          (selectedBuyingTime == null || selectedBuyingTime!['name']!.isEmpty)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Please fill all fields before saving")),
-                        );
-                        setState(() {
-                          isEditing = true; // Keep editing mode if validation fails
-                        });
-                        return;
-                      }
-
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => Center(child: CircularProgressIndicator()),
-                      );
-
-                      final provider = Provider.of<UserProvider>(context, listen: false);
-                      final inquiryData = model.inquiryData;
-
-                      Map<String, dynamic> updatedData = {
-                        'action': 'update',
-                        'leadId': widget.inquiryId,
-                        'fullName': inquiryData.fullName ?? '',
-                        'mobileno': inquiryData.mobileno ?? '',
-                        'altmobileno': '',
-                        'email': '',
-                        'houseno': '',
-                        'society': '',
-                        'area': inquiryData.area ?? '',
-                        'city': inquiryData.city ?? '',
-                        'countryCode': '',
-                        'intrestedArea': selectedArea?['name'] ?? '',
-                        'intrestedAreaName': selectedArea?['name'] ?? '',
-                        'intrestedSiteId': selectedSite?['id'] ?? '',
-                        'budget': selectedBudget?['id'] ?? '',
-                        'purposeBuy': selectedPurpose?['name'] ?? '',
-                        'approxBuy': selectedBuyingTime?['id'] ?? '',
-                        'propertyConfiguration': selectedUnitType?['id'] ?? '',
-                        'inquiryType': inquiryData.inquiryType ?? '',
-                        'inquirySourceType': inquiryData.inquirySourceType ?? '',
-                        'description': inquiryData.remark ?? '',
-                        'intrestedProduct': selectedSite?['id'] ?? '',
-                        'nxtFollowUp': nextFollowUpController.text.isNotEmpty
-                            ? nextFollowUpController.text
-                            : inquiryData.nxtFollowUp,
-                      };
-
-                      provider
-                          .updateLead(
-                        action: updatedData['action'],
-                        leadId: updatedData['leadId'],
-                        fullName: updatedData['fullName'],
-                        mobileno: updatedData['mobileno'],
-                        altmobileno: updatedData['altmobileno'],
-                        email: updatedData['email'],
-                        houseno: updatedData['houseno'],
-                        society: updatedData['society'],
-                        area: updatedData['area'],
-                        city: updatedData['city'],
-                        countryCode: updatedData['countryCode'],
-                        intrestedArea: updatedData['intrestedArea'],
-                        intrestedAreaName: updatedData['intrestedAreaName'],
-                        interstedSiteName: updatedData['intrestedSiteId'],
-                        budget: updatedData['budget'],
-                        purposeBuy: updatedData['purposeBuy'],
-                        approxBuy: updatedData['approxBuy'],
-                        propertyConfiguration: updatedData['propertyConfiguration'],
-                        inquiryType: updatedData['inquiryType'],
-                        inquirySourceType: updatedData['inquirySourceType'],
-                        description: updatedData['description'],
-                        intrestedProduct: updatedData['intrestedProduct'],
-                        nxtFollowUp: updatedData['nxtFollowUp'],
-                      )
-                          .then((success) {
-                        Navigator.pop(context);
-                        if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Lead updated successfully")),
-                          );
-                          provider.loadInquiryData(widget.inquiryId).then((_) {
-                            setState(() {
-                              isEditing = false;
-                            });
-                          });
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Failed to update lead")),
-                          );
-                          setState(() {
-                            isEditing = true;
-                          });
-                        }
-                      });
-                    }
-                  },
-                ),
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              model.inquiryData.fullName ?? 'N/A',
+              style: TextStyle(
+                fontSize: 16 * fontScale,
+                fontWeight: FontWeight.bold,
+                fontFamily: "poppins_thin",
               ),
+            ),
+            // const Spacer(),
+            // if(widget.followup)
+            // SpeedDial(
+            //   icon: Icons.call_outlined,
+            //   iconTheme: const IconThemeData(color: Colors.white),
+            //   activeIcon: Icons.close,
+            //   backgroundColor: Colors.deepPurple.shade300,
+            //   buttonSize: Size(38.0 * fontScale, 38.0 * fontScale),
+            //   overlayOpacity: 0.3,
+            //   spaceBetweenChildren: 8 * fontScale,
+            //   direction: SpeedDialDirection.down,
+            //   children: [
+            //     SpeedDialChild(
+            //       child: Icon(Icons.call, color: Colors.white, size: 22 * fontScale),
+            //       backgroundColor: Colors.green,
+            //       onTap: () {
+            //         _makeDirectPhoneCall(model.inquiryData.mobileno, context);
+            //       },
+            //     ),
+            //     SpeedDialChild(
+            //       child: Icon(Icons.message, color: Colors.white, size: 22 * fontScale),
+            //       backgroundColor: Colors.blue,
+            //       onTap: () async {
+            //         String phoneNumber = model.inquiryData.mobileno;
+            //         String message = "";
+            //         await _launchSMS(phoneNumber, message);
+            //       },
+            //     ),
+            //     SpeedDialChild(
+            //       child: Icon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 22 * fontScale),
+            //       backgroundColor: Colors.green.shade600,
+            //       onTap: () async {
+            //         String phoneNumber = model.inquiryData.mobileno;
+            //         String message = "";
+            //         await _launchWhatsApp(phoneNumber, message);
+            //       },
+            //     ),
+            //   ],
+            // ),
           ],
         ),
-        SizedBox(height: 6),
-        Text("\u260E ${model.inquiryData.mobileno ?? 'N/A'}"),
-        SizedBox(height: 12),
+        SizedBox(height: 6 * fontScale),
+        Text(
+          "\u260E ${!widget.followup ? maskMobileNumber(model.inquiryData.mobileno) : model.inquiryData.mobileno}",
+          style: TextStyle(
+            fontSize: 12 * fontScale,
+            fontFamily: "poppins_thin",
+          ),
+        ),
+        SizedBox(height: 12 * fontScale),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: screenWidth * 0.4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Int Area:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  // UPDATED: Show dropdown only if isEditing is true
-                  isEditing
+                  Text(
+                    "Int Area:",
+                    style: TextStyle(
+                      fontFamily: "poppins_thin",
+                      fontSize: 14 * fontScale,
+                    ),
+                  ),
+                  SizedBox(height: 5 * fontScale),
+                  showDropdowns
                       ? CombinedDropdownTextField<AreaCityCountry>(
-                    key: const ValueKey("intArea"),
-                    options: areaOptions,
-                    displayString: (area) => area.area,
-                    onSelected: (AreaCityCountry selected) {
-                      setState(() {
-                        selectedArea = {'id': selected.id, 'name': selected.area};
-                      });
-                    },
-                    onTextChanged: (String text) {
-                      setState(() {
-                        selectedArea = {'id': '', 'name': text.trim()};
-                      });
-                    },
-                    initialValue: areaOptions.isNotEmpty
-                        ? areaOptions.firstWhere(
-                          (area) =>
-                      area.area ==
-                          (selectedArea?['name'] ??
-                              model.inquiryData.intrestedArea ??
-                              ""),
-                      orElse: () => AreaCityCountry(
-                          id: "",
-                          area: selectedArea?['name'] ??
-                              model.inquiryData.intrestedArea ??
-                              "",
-                          city: "",
-                          state: "",
-                          country: ""),
-                    )
-                        : AreaCityCountry(
-                        id: "",
-                        area: selectedArea?['name'] ??
-                            model.inquiryData.intrestedArea ??
-                            "",
-                        city: "",
-                        state: "",
-                        country: ""),
-                    isRequired: true,
-                    onEditingComplete: (text) {
-                      setState(() {
-                        selectedArea = {'id': '', 'name': text.trim()};
-                      });
-                    },
-                  )
-                      : Text(selectedArea?['name'] ??
-                      model.inquiryData.intrestedArea ??
-                      "N/A"),
+                          key: const ValueKey("intArea"),
+                          options: areaOptions,
+                          displayString: (area) => area.area ?? '',
+                          onSelected: (AreaCityCountry selected) {
+                            setState(() {
+                              selectedArea = {
+                                'id': selected.id ?? '',
+                                'name': selected.area ?? ''
+                              };
+                            });
+                          },
+                          onTextChanged: (String text) {
+                            setState(() {
+                              selectedArea = {'id': '', 'name': text.trim()};
+                            });
+                          },
+                          initialValue: areaOptions.isNotEmpty &&
+                                  selectedArea['name']!.isNotEmpty
+                              ? areaOptions.firstWhere(
+                                  (area) => area.area == selectedArea['name'],
+                                  orElse: () => AreaCityCountry(
+                                    id: "",
+                                    area: selectedArea['name'] ??
+                                        model.inquiryData.intrestedArea ??
+                                        "",
+                                    city: "",
+                                    state: "",
+                                    country: "",
+                                  ),
+                                )
+                              : AreaCityCountry(
+                                  id: "",
+                                  area: selectedArea['name']!.isNotEmpty
+                                      ? selectedArea['name']!
+                                      : (model.inquiryData.intrestedArea ?? ""),
+                                  city: "",
+                                  state: "",
+                                  country: "",
+                                ),
+                          isRequired: true,
+                          onEditingComplete: (text) {
+                            setState(() {
+                              selectedArea = {'id': '', 'name': text.trim()};
+                            });
+                          },
+                        )
+                      : Text(
+                          selectedArea['name']!.isNotEmpty
+                              ? selectedArea['name']!
+                              : "N/A",
+                          style: TextStyle(
+                            fontFamily: "poppins_thin",
+                            fontSize: 14 * fontScale,
+                          ),
+                        ),
                 ],
               ),
             ),
             _infoTile<IntSite>(
               "Int Site",
-              selectedSite?['name'] ?? model.intrestedProduct ?? "N/A",
+              selectedSite['name']!.isNotEmpty
+                  ? selectedSite['name']!
+                  : (model.intrestedProduct ?? "N/A"),
               siteOptions,
-                  (newValue) {
+              (newValue) {
                 setState(() {
-                  selectedSite = {'id': newValue.id, 'name': newValue.productName};
+                  selectedSite = {
+                    'id': newValue.id ?? '',
+                    'name': newValue.productName ?? ''
+                  };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
-                  (site) => site.productName,
+              showDropdowns,
+              (site) => site.productName ?? '',
+              isRequired: true,
+              fontScale: fontScale,
             ),
           ],
         ),
-        SizedBox(height: 5),
+        SizedBox(height: 5 * fontScale),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _infoTile<PropertyConfiguration>(
               "Unit Type",
-              selectedUnitType?['name'] ?? model.propertyConfigurationType ?? "N/A",
+              selectedUnitType['name']!.isNotEmpty
+                  ? selectedUnitType['name']!
+                  : (model.propertyConfigurationType ?? "N/A"),
               unitOptions,
-                  (newValue) {
+              (newValue) {
                 setState(() {
-                  selectedUnitType = {'id': newValue.id, 'name': newValue.propertyType};
+                  selectedUnitType = {
+                    'id': newValue.id ?? '',
+                    'name': newValue.propertyType ?? ''
+                  };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
-                  (unit) => unit.propertyType,
+              showDropdowns,
+              (unit) => unit.propertyType ?? '',
+              isRequired: true,
+              fontScale: fontScale,
             ),
             _infoTile<Map<String, String>>(
               "Budget",
-              selectedBudget?['name'] ?? model.inquiryData.budget ?? "N/A",
+              selectedBudget['name']!.isNotEmpty
+                  ? selectedBudget['name']!
+                  : (model.inquiryData.budget ?? "N/A"),
               budgetOptions,
-                  (newValue) {
+              (newValue) {
                 setState(() {
                   selectedBudget = {
                     'id': newValue['id'] ?? '',
@@ -759,20 +1225,24 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
-                  (budget) => budget['name']!,
+              showDropdowns,
+              (budget) => budget['name'] ?? '',
+              isRequired: true,
+              fontScale: fontScale,
             ),
           ],
         ),
-        SizedBox(height: 5),
+        SizedBox(height: 5 * fontScale),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _infoTile<Map<String, String>>(
               "Purpose",
-              selectedPurpose?['name'] ?? model.inquiryData.purposeBuy ?? "N/A",
+              selectedPurpose['name']!.isNotEmpty
+                  ? selectedPurpose['name']!
+                  : (model.inquiryData.purposeBuy ?? "N/A"),
               purposeOptions,
-                  (newValue) {
+              (newValue) {
                 setState(() {
                   selectedPurpose = {
                     'id': newValue['id'] ?? '',
@@ -780,23 +1250,311 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   };
                 });
               },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
-                  (purpose) => purpose['name']!,
+              showDropdowns,
+              (purpose) => purpose['name'] ?? '',
+              isRequired: true,
+              fontScale: fontScale,
             ),
-            _infoTile<Map<String, String>>(
-              "Approx Buying",
-              selectedBuyingTime?['name'] ?? model.inquiryData.approxBuy ?? "N/A",
-              buyingTimeOptions,
-                  (newValue) {
-                setState(() {
-                  selectedBuyingTime = {
-                    'id': newValue['id'] ?? '',
-                    'name': newValue['name'] ?? ''
-                  };
-                });
-              },
-              isEditing, // UPDATED: Show dropdown only if isEditing is true
-                  (time) => time['name']!,
+            Row(
+              children: [
+                SizedBox(
+                  width: screenWidth * 0.31,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Approx Buying:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14 * fontScale,
+                          fontFamily: "poppins_thin",
+                        ),
+                      ),
+                      SizedBox(height: 5 * fontScale),
+                      showDropdowns
+                          ? DropdownButton2<Map<String, String>>(
+                              isExpanded: true,
+                              hint: Text(
+                                "Select Approx Buying",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14.5 * fontScale,
+                                  fontFamily: "poppins_thin",
+                                ),
+                              ),
+                              value: buyingTimeOptions.isNotEmpty &&
+                                      selectedBuyingTime['name']!.isNotEmpty &&
+                                      selectedBuyingTime['name']! != "N/A"
+                                  ? buyingTimeOptions.firstWhere(
+                                      (option) =>
+                                          option['name'] ==
+                                          selectedBuyingTime['name'],
+                                      orElse: () => buyingTimeOptions[0],
+                                    )
+                                  : null,
+                              underline: const SizedBox(width: 0),
+                              buttonStyleData: ButtonStyleData(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.shade300,
+                                      blurRadius: 4 * fontScale,
+                                      spreadRadius: 2 * fontScale,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              dropdownStyleData: DropdownStyleData(
+                                offset: const Offset(-5, -10),
+                                maxHeight: 200 * fontScale,
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20)),
+                                elevation: 10,
+                                scrollbarTheme: ScrollbarThemeData(
+                                  radius: const Radius.circular(40),
+                                  thickness:
+                                      MaterialStateProperty.all(6 * fontScale),
+                                  thumbVisibility:
+                                      MaterialStateProperty.all(true),
+                                ),
+                              ),
+                              items: buyingTimeOptions
+                                  .map((Map<String, String> item) {
+                                return DropdownMenuItem<Map<String, String>>(
+                                  value: item,
+                                  child: Text(
+                                    item['name'] ?? '',
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 15 * fontScale,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (Map<String, String>? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    selectedBuyingTime = {
+                                      'id': newValue['id'] ?? '',
+                                      'name': newValue['name'] ?? ''
+                                    };
+                                  });
+                                }
+                              },
+                            )
+                          : Text(
+                              selectedBuyingTime['name']!.isNotEmpty
+                                  ? selectedBuyingTime['name']!
+                                  : (model.inquiryData.approxBuy ?? "N/A"),
+                              style: TextStyle(
+                                fontFamily: "poppins_light",
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15 * fontScale,
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                CircleAvatar(
+                  backgroundColor: AppColor.Buttoncolor,
+                  radius: 18 * fontScale,
+                  child: IconButton(
+                    icon: Icon(
+                      isEditing ? Icons.save : Icons.edit,
+                      color: Colors.white,
+                      size: 18 * fontScale,
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        isEditing = !isEditing;
+                      });
+
+                      if (!isEditing) {
+                        if (!_areDetailsValid()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please fill all personal and interested details before saving',
+                                style: TextStyle(
+                                  fontFamily:
+                                      'poppins_thin', // Replace with your custom font family
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors
+                                  .red.shade200, // Custom background color
+                              behavior: SnackBarBehavior
+                                  .floating, // Makes the SnackBar float
+                              margin: EdgeInsets.all(
+                                  16), // Adds margin for a better look
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    12), // Rounded corners
+                              ),
+                              duration:
+                                  Duration(seconds: 3), // Auto dismiss time
+                            ),
+
+                            // const SnackBar(
+                            //   content: Text("Please fill all personal and interested details before saving"),
+                            // ),
+                          );
+                          setState(() {
+                            isEditing = true;
+                          });
+                          return;
+                        }
+
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+
+                        final provider =
+                            Provider.of<UserProvider>(context, listen: false);
+                        final inquiryData = model.inquiryData;
+
+                        Map<String, dynamic> updatedData = {
+                          'action': 'update',
+                          'leadId': widget.inquiryId,
+                          'fullName': inquiryData.fullName ?? '',
+                          'mobileno': inquiryData.mobileno ?? '',
+                          'altmobileno': '',
+                          'email': '',
+                          'houseno': '',
+                          'society': '',
+                          'area': inquiryData.area ?? '',
+                          'city': inquiryData.city ?? '',
+                          'countryCode': '',
+                          'intrestedArea': selectedArea['name']!,
+                          'intrestedAreaName': selectedArea['name']!,
+                          'intrestedSiteId': selectedSite['id']!,
+                          'budget': selectedBudget['id']!,
+                          'purposeBuy': selectedPurpose['name']!,
+                          'approxBuy': selectedBuyingTime['id']!,
+                          'propertyConfiguration': selectedUnitType['id']!,
+                          'inquiryType': inquiryData.inquiryType ?? '',
+                          'inquirySourceType':
+                              inquiryData.inquirySourceType ?? '',
+                          'description': inquiryData.remark ?? '',
+                          'intrestedProduct': selectedSite['id']!,
+                          'nxtFollowUp': nextFollowUpController.text.isNotEmpty
+                              ? nextFollowUpController.text
+                              : inquiryData.nxtFollowUp ?? '',
+                        };
+
+                        final success = await provider.updateLead(
+                          action: updatedData['action'] as String,
+                          leadId: updatedData['leadId'] as String,
+                          fullName: updatedData['fullName'] as String,
+                          mobileno: updatedData['mobileno'] as String,
+                          altmobileno: updatedData['altmobileno'] as String,
+                          email: updatedData['email'] as String,
+                          houseno: updatedData['houseno'] as String,
+                          society: updatedData['society'] as String,
+                          area: updatedData['area'] as String,
+                          city: updatedData['city'] as String,
+                          countryCode: updatedData['countryCode'] as String,
+                          intrestedArea: updatedData['intrestedArea'] as String,
+                          intrestedAreaName:
+                              updatedData['intrestedAreaName'] as String,
+                          interstedSiteName:
+                              updatedData['intrestedSiteId'] as String,
+                          budget: updatedData['budget'] as String,
+                          purposeBuy: updatedData['purposeBuy'] as String,
+                          approxBuy: updatedData['approxBuy'] as String,
+                          propertyConfiguration:
+                              updatedData['propertyConfiguration'] as String,
+                          inquiryType: updatedData['inquiryType'] as String,
+                          inquirySourceType:
+                              updatedData['inquirySourceType'] as String,
+                          description: updatedData['description'] as String,
+                          intrestedProduct:
+                              updatedData['intrestedProduct'] as String,
+                          nxtFollowUp: updatedData['nxtFollowUp'] as String,
+                        );
+
+                        Navigator.pop(context);
+                        if (!success ?? false) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Lead has been successfully updated',
+                                style: TextStyle(
+                                  fontFamily:
+                                      'poppins_thin', // Replace with your custom font family
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors
+                                  .green.shade200, // Custom background color
+                              behavior: SnackBarBehavior
+                                  .floating, // Makes the SnackBar float
+                              margin: EdgeInsets.all(
+                                  16), // Adds margin for a better look
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    12), // Rounded corners
+                              ),
+                              duration:
+                                  Duration(seconds: 3), // Auto dismiss time
+                            ),
+
+                            // const SnackBar(content: Text("Lead updated successfully")),
+                          );
+                          provider.loadInquiryData(widget.inquiryId!).then((_) {
+                            setState(() {
+                              isEditing = false;
+                            });
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Failed to update lead: ${provider.error ?? 'Unknown error'}",
+                                style: TextStyle(
+                                  fontFamily:
+                                      'poppins_thin', // Replace with your custom font family
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors
+                                  .red.shade200, // Custom background color
+                              behavior: SnackBarBehavior
+                                  .floating, // Makes the SnackBar float
+                              margin: EdgeInsets.all(
+                                  16), // Adds margin for a better look
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    12), // Rounded corners
+                              ),
+                              duration:
+                                  Duration(seconds: 3), // Auto dismiss time
+                            ),
+
+                            // SnackBar(
+                            //   content: Text(
+                            //     "Failed to update lead: ${provider.error ?? 'Unknown error'}",
+                            //   ),
+                            // ),
+                          );
+                          setState(() {
+                            isEditing = true;
+                          });
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -804,98 +1562,650 @@ class _InquiryScreenState extends State<InquiryScreen> {
     );
   }
 
+  // Widget _buildPersonalAndInterestedDetails(
+  //   InquiryModel model,
+  //   List<AreaCityCountry> areaOptions,
+  //   List<IntSite> siteOptions,
+  //   List<PropertyConfiguration> unitOptions,
+  //   List<Map<String, String>> budgetOptions,
+  //   List<Map<String, String>> purposeOptions,
+  //   List<Map<String, String>> buyingTimeOptions,
+  // ) {
+  //   bool showDropdowns = model.fillInterstCheck == 0 ||
+  //       (model.fillInterstCheck == 1 && isEditing);
+  //
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Container(
+  //             decoration: BoxDecoration(
+  //               color: Colors.deepPurple.shade300,
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //             child: Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+  //               child: Text(
+  //                 model.inquiryData.id ?? 'N/A',
+  //                 style: const TextStyle(
+  //                   fontSize: 13,
+  //                   fontFamily: "poppins_thin",
+  //                   color: Colors.white,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(width: 10),
+  //           Text(
+  //             model.inquiryData.fullName ?? 'N/A',
+  //             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //           ),
+  //           const Spacer(),
+  //           SpeedDial(
+  //             icon: Icons.call_outlined,
+  //             iconTheme:
+  //                 const IconThemeData(color: Colors.white), // Change icon color
+  //
+  //             activeIcon: Icons.close,
+  //             backgroundColor: Colors.deepPurple.shade300,
+  //             buttonSize: const Size(38.0, 38.0), // Make main button smaller
+  //             overlayOpacity: 0.3,
+  //             spaceBetweenChildren: 8,
+  //             direction: SpeedDialDirection.down,
+  //             children: [
+  //               SpeedDialChild(
+  //                 child: Icon(Icons.call, color: Colors.white),
+  //                 backgroundColor: Colors.green,
+  //                 onTap: () {
+  //                   _makeDirectPhoneCall(model.inquiryData.mobileno, context);
+  //                 },
+  //               ),
+  //               SpeedDialChild(
+  //                 child: Icon(Icons.message, color: Colors.white),
+  //                 backgroundColor: Colors.blue,
+  //                 onTap: () async {
+  //                   String phoneNumber = model.inquiryData
+  //                       .mobileno; // Replace with actual phone number
+  //                   String message = ""; // Replace with actual message
+  //                   await _launchSMS(phoneNumber, message);
+  //                 },
+  //               ),
+  //               SpeedDialChild(
+  //                 child: Icon(FontAwesomeIcons.whatsapp, color: Colors.white),
+  //                 backgroundColor: Colors.green,
+  //                 onTap: () async {
+  //                   String phoneNumber = model.inquiryData
+  //                       .mobileno; // Replace with actual phone number
+  //                   String message = "Hello"; // Replace with actual message
+  //                   await _launchWhatsApp(phoneNumber, message);
+  //                 },
+  //               ),
+  //             ],
+  //           )
+  //         ],
+  //       ),
+  //       const SizedBox(height: 6),
+  //       Text("\u260E ${model.inquiryData.mobileno ?? 'N/A'}"),
+  //       const SizedBox(height: 12),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           SizedBox(
+  //             width: MediaQuery.of(context).size.width * 0.4,
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 const Text("Int Area:",
+  //                     style:
+  //                         TextStyle(fontFamily: "poppins_thin", fontSize: 13)),
+  //                 const SizedBox(height: 5),
+  //                 showDropdowns
+  //                     ? CombinedDropdownTextField<AreaCityCountry>(
+  //                         key: const ValueKey("intArea"),
+  //                         options: areaOptions,
+  //                         displayString: (area) => area.area,
+  //                         onSelected: (AreaCityCountry selected) {
+  //                           setState(() {
+  //                             selectedArea = {
+  //                               'id': selected.id ?? '',
+  //                               'name': selected.area ?? ''
+  //                             };
+  //                           });
+  //                         },
+  //                         onTextChanged: (String text) {
+  //                           setState(() {
+  //                             selectedArea = {'id': '', 'name': text.trim()};
+  //                           });
+  //                         },
+  //                         initialValue: areaOptions.isNotEmpty &&
+  //                                 selectedArea['name']!.isNotEmpty
+  //                             ? areaOptions.firstWhere(
+  //                                 (area) => area.area == selectedArea['name'],
+  //                                 orElse: () => AreaCityCountry(
+  //                                   id: "",
+  //                                   area: selectedArea['name'] ??
+  //                                       model.inquiryData.intrestedArea ??
+  //                                       "",
+  //                                   city: "",
+  //                                   state: "",
+  //                                   country: "",
+  //                                 ),
+  //                               )
+  //                             : AreaCityCountry(
+  //                                 id: "",
+  //                                 area: selectedArea['name']!.isNotEmpty
+  //                                     ? selectedArea['name']!
+  //                                     : (model.inquiryData.intrestedArea ?? ""),
+  //                                 city: "",
+  //                                 state: "",
+  //                                 country: "",
+  //                               ),
+  //                         isRequired: true, // Make all fields required
+  //                         onEditingComplete: (text) {
+  //                           setState(() {
+  //                             selectedArea = {'id': '', 'name': text.trim()};
+  //                           });
+  //                         },
+  //                       )
+  //                     : Text(selectedArea['name']!.isNotEmpty
+  //                         ? selectedArea['name']!
+  //                         : "N/A"),
+  //               ],
+  //             ),
+  //           ),
+  //           _infoTile<IntSite>(
+  //             "Int Site",
+  //             selectedSite['name']!.isNotEmpty
+  //                 ? selectedSite['name']!
+  //                 : (model.intrestedProduct ?? "N/A"),
+  //             siteOptions,
+  //             (newValue) {
+  //               setState(() {
+  //                 selectedSite = {
+  //                   'id': newValue.id ?? '',
+  //                   'name': newValue.productName ?? ''
+  //                 };
+  //               });
+  //             },
+  //             showDropdowns,
+  //             (site) => site.productName,
+  //             isRequired: true,
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 5),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           _infoTile<PropertyConfiguration>(
+  //             "Unit Type",
+  //             selectedUnitType['name']!.isNotEmpty
+  //                 ? selectedUnitType['name']!
+  //                 : (model.propertyConfigurationType ?? "N/A"),
+  //             unitOptions,
+  //             (newValue) {
+  //               setState(() {
+  //                 selectedUnitType = {
+  //                   'id': newValue.id ?? '',
+  //                   'name': newValue.propertyType ?? ''
+  //                 };
+  //               });
+  //             },
+  //             showDropdowns,
+  //             (unit) => unit.propertyType,
+  //             isRequired: true,
+  //           ),
+  //           _infoTile<Map<String, String>>(
+  //             "Budget",
+  //             selectedBudget['name']!.isNotEmpty
+  //                 ? selectedBudget['name']!
+  //                 : (model.inquiryData.budget ?? "N/A"),
+  //             budgetOptions,
+  //             (newValue) {
+  //               setState(() {
+  //                 selectedBudget = {
+  //                   'id': newValue['id'] ?? '',
+  //                   'name': newValue['name'] ?? ''
+  //                 };
+  //               });
+  //             },
+  //             showDropdowns,
+  //             (budget) => budget['name'] ?? '',
+  //             isRequired: true,
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 5),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           _infoTile<Map<String, String>>(
+  //             "Purpose",
+  //             selectedPurpose['name']!.isNotEmpty
+  //                 ? selectedPurpose['name']!
+  //                 : (model.inquiryData.purposeBuy ?? "N/A"),
+  //             purposeOptions,
+  //             (newValue) {
+  //               setState(() {
+  //                 selectedPurpose = {
+  //                   'id': newValue['id'] ?? '',
+  //                   'name': newValue['name'] ?? ''
+  //                 };
+  //               });
+  //             },
+  //             showDropdowns,
+  //             (purpose) => purpose['name'] ?? '',
+  //             isRequired: true,
+  //           ),
+  //           Row(
+  //             children: [
+  //
+  //
+  //               SizedBox(
+  //                 width: MediaQuery.of(context).size.width * 0.31,
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Text("Approx Buying:", style: const TextStyle(fontWeight: FontWeight.bold)),
+  //                     const SizedBox(height: 5),
+  //                     showDropdowns
+  //                         ? DropdownButton2<Map<String, String>>(
+  //                       isExpanded: true,
+  //                       hint: const Text(
+  //                         "Select Approx Buying",
+  //                         style: TextStyle(
+  //                           color: Colors.black,
+  //                           fontSize: 16,
+  //                           fontFamily: "poppins_thin",
+  //                         ),
+  //                       ),
+  //                       value: buyingTimeOptions.isNotEmpty &&
+  //                           selectedBuyingTime['name']!.isNotEmpty &&
+  //                           selectedBuyingTime['name']! != "N/A"
+  //                           ? buyingTimeOptions.firstWhere(
+  //                             (option) => option['name'] == selectedBuyingTime['name'],
+  //                         orElse: () => buyingTimeOptions[0],
+  //                       )
+  //                           : null,
+  //                       underline: const SizedBox(width: 0),
+  //                       buttonStyleData: ButtonStyleData(
+  //                         decoration: BoxDecoration(
+  //                           borderRadius: BorderRadius.circular(10),
+  //                           color: Colors.white,
+  //                           boxShadow: [
+  //                             BoxShadow(
+  //                               color: Colors.grey.shade300,
+  //                               blurRadius: 4,
+  //                               spreadRadius: 2,
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                       dropdownStyleData: DropdownStyleData(
+  //                         offset: const Offset(-5, -10),
+  //                         maxHeight: 200,
+  //                         decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+  //                         elevation: 10,
+  //                         scrollbarTheme: ScrollbarThemeData(
+  //                           radius: const Radius.circular(40),
+  //                           thickness: MaterialStateProperty.all(6),
+  //                           thumbVisibility: MaterialStateProperty.all(true),
+  //                         ),
+  //                       ),
+  //                       items: buyingTimeOptions.map((Map<String, String> item) {
+  //                         return DropdownMenuItem<Map<String, String>>(
+  //                           value: item,
+  //                           child: Text(
+  //                             item['name'] ?? '',
+  //                             style: const TextStyle(fontFamily: "poppins_thin", fontSize: 13),
+  //                           ),
+  //                         );
+  //                       }).toList(),
+  //                       onChanged: (Map<String, String>? newValue) {
+  //                         if (newValue != null) {
+  //                           setState(() {
+  //                             selectedBuyingTime = {
+  //                               'id': newValue['id'] ?? '',
+  //                               'name': newValue['name'] ?? ''
+  //                             };
+  //                           });
+  //                         }
+  //                       },
+  //                     )
+  //                         : Text(
+  //                       selectedBuyingTime['name']!.isNotEmpty
+  //                           ? selectedBuyingTime['name']!
+  //                           : (model.inquiryData.approxBuy ?? "N/A"),
+  //                       style: const TextStyle(
+  //                           fontFamily: "poppins_light", fontWeight: FontWeight.bold),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //
+  //               CircleAvatar(
+  //                   backgroundColor: AppColor.Buttoncolor,
+  //                   radius: 18,
+  //                   child: IconButton(
+  //                     icon: Icon(
+  //                       isEditing ? Icons.save : Icons.edit,
+  //                       color: Colors.white,
+  //                       size: 20,
+  //                     ),
+  //                     onPressed: () async {
+  //                       setState(() {
+  //                         isEditing = !isEditing;
+  //                       });
+  //
+  //                       if (!isEditing) {
+  //                         if (!_areDetailsValid()) {
+  //                           ScaffoldMessenger.of(context).showSnackBar(
+  //                             const SnackBar(
+  //                               content: Text(
+  //                                   "Please fill all personal and interested details before saving"),
+  //                             ),
+  //                           );
+  //                           setState(() {
+  //                             isEditing = true; // Keep in edit mode if validation fails
+  //                           });
+  //                           return;
+  //                         }
+  //
+  //                         showDialog(
+  //                           context: context,
+  //                           barrierDismissible: false,
+  //                           builder: (_) =>
+  //                           const Center(child: CircularProgressIndicator()),
+  //                         );
+  //
+  //                         final provider =
+  //                         Provider.of<UserProvider>(context, listen: false);
+  //                         final inquiryData = model.inquiryData;
+  //
+  //                         Map<String, dynamic> updatedData = {
+  //                           'action': 'update',
+  //                           'leadId': widget.inquiryId,
+  //                           'fullName': inquiryData.fullName ?? '',
+  //                           'mobileno': inquiryData.mobileno ?? '',
+  //                           'altmobileno': '',
+  //                           'email': '',
+  //                           'houseno': '',
+  //                           'society': '',
+  //                           'area': inquiryData.area ?? '',
+  //                           'city': inquiryData.city ?? '',
+  //                           'countryCode': '',
+  //                           'intrestedArea': selectedArea['name']!,
+  //                           'intrestedAreaName': selectedArea['name']!,
+  //                           'intrestedSiteId': selectedSite['id']!,
+  //                           'budget': selectedBudget['id']!,
+  //                           'purposeBuy': selectedPurpose['name']!,
+  //                           'approxBuy': selectedBuyingTime['id']!,
+  //                           'propertyConfiguration': selectedUnitType['id']!,
+  //                           'inquiryType': inquiryData.inquiryType ?? '',
+  //                           'inquirySourceType': inquiryData.inquirySourceType ?? '',
+  //                           'description': inquiryData.remark ?? '',
+  //                           'intrestedProduct': selectedSite['id']!,
+  //                           'nxtFollowUp': nextFollowUpController.text.isNotEmpty
+  //                               ? nextFollowUpController.text
+  //                               : inquiryData.nxtFollowUp ?? '',
+  //                         };
+  //
+  //                         final success = await provider.updateLead(
+  //                           action: updatedData['action'] as String,
+  //                           leadId: updatedData['leadId'] as String,
+  //                           fullName: updatedData['fullName'] as String,
+  //                           mobileno: updatedData['mobileno'] as String,
+  //                           altmobileno: updatedData['altmobileno'] as String,
+  //                           email: updatedData['email'] as String,
+  //                           houseno: updatedData['houseno'] as String,
+  //                           society: updatedData['society'] as String,
+  //                           area: updatedData['area'] as String,
+  //                           city: updatedData['city'] as String,
+  //                           countryCode: updatedData['countryCode'] as String,
+  //                           intrestedArea: updatedData['intrestedArea'] as String,
+  //                           intrestedAreaName:
+  //                           updatedData['intrestedAreaName'] as String,
+  //                           interstedSiteName: updatedData['intrestedSiteId'] as String,
+  //                           budget: updatedData['budget'] as String,
+  //                           purposeBuy: updatedData['purposeBuy'] as String,
+  //                           approxBuy: updatedData['approxBuy'] as String,
+  //                           propertyConfiguration:
+  //                           updatedData['propertyConfiguration'] as String,
+  //                           inquiryType: updatedData['inquiryType'] as String,
+  //                           inquirySourceType:
+  //                           updatedData['inquirySourceType'] as String,
+  //                           description: updatedData['description'] as String,
+  //                           intrestedProduct: updatedData['intrestedProduct'] as String,
+  //                           nxtFollowUp: updatedData['nxtFollowUp'] as String,
+  //                         );
+  //
+  //                         Navigator.pop(context);
+  //                         if (!success ?? false) {
+  //                           ScaffoldMessenger.of(context).showSnackBar(
+  //                             const SnackBar(
+  //                                 content: Text("Lead updated successfully")),
+  //                           );
+  //                           provider.loadInquiryData(widget.inquiryId).then((_) {
+  //                             setState(() {
+  //                               isEditing = false;
+  //                             });
+  //                           });
+  //                         } else {
+  //                           ScaffoldMessenger.of(context).showSnackBar(
+  //                             SnackBar(
+  //                               content: Text(
+  //                                 "Failed to update lead: ${provider.error ?? 'Unknown error'}",
+  //                               ),
+  //                             ),
+  //                           );
+  //                           setState(() {
+  //                             isEditing = true;
+  //                           });
+  //                         }
+  //                       }
+  //                     },
+  //                   ),
+  //                 ),
+  //
+  //
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
   Widget _infoTile<T>(
-      String title,
-      String value,
-      List<T> options,
-      ValueChanged<T> onChanged,
-      bool forceEditable,
-      String Function(T) displayString) {
-    return (isEditing || forceEditable)
-        ? SizedBox(
-      width: MediaQuery.of(context).size.width * 0.4,
+    String title,
+    String value,
+    List<T> options,
+    ValueChanged<T> onChanged,
+    bool showDropdown,
+    String Function(T) displayString, {
+    bool isRequired = false,
+    required double fontScale,
+  }) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    return SizedBox(
+      width: screenWidth * 0.4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("$title:", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 5),
-          DropdownButton2<T>(
-            isExpanded: true,
-            hint: Text(
-              "Select $title",
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontFamily: "poppins_thin",
-              ),
+          Text(
+            "$title:",
+            style: TextStyle(
+              fontSize: 15 * fontScale,
+              fontFamily: "poppins_thin",
             ),
-            value: options.isNotEmpty
-                ? options.firstWhere(
-                  (option) => displayString(option) == value,
-              orElse: () => options.first,
-            )
-                : null,
-            underline: SizedBox(width: 0),
-            buttonStyleData: ButtonStyleData(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.grey.shade200,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade300,
-                    blurRadius: 4,
-                    spreadRadius: 2,
+          ),
+          SizedBox(height: 5 * fontScale),
+          showDropdown
+              ? DropdownButton2<T>(
+                  isExpanded: true,
+                  hint: Text(
+                    "Select $title",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14.5 * fontScale,
+                      fontFamily: "poppins_thin",
+                    ),
                   ),
-                ],
-              ),
-            ),
-            dropdownStyleData: DropdownStyleData(
-              offset: const Offset(-5, -10),
-              maxHeight: 200,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-              elevation: 10,
-              scrollbarTheme: ScrollbarThemeData(
-                radius: const Radius.circular(40),
-                thickness: MaterialStateProperty.all(6),
-                thumbVisibility: MaterialStateProperty.all(true),
-              ),
-            ),
-            items: options.map((T item) {
-              return DropdownMenuItem<T>(
-                value: item,
-                child: Text(
-                  displayString(item),
-                  style: const TextStyle(
-                    fontFamily: "poppins_thin",
-                    fontSize: 16,
+                  value:
+                      options.isNotEmpty && value.isNotEmpty && value != "N/A"
+                          ? options.firstWhere(
+                              (option) => displayString(option) == value,
+                              orElse: () => options[0],
+                            )
+                          : null,
+                  underline: const SizedBox(width: 0),
+                  buttonStyleData: ButtonStyleData(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade300,
+                          blurRadius: 4 * fontScale,
+                          spreadRadius: 2 * fontScale,
+                        ),
+                      ],
+                    ),
+                  ),
+                  dropdownStyleData: DropdownStyleData(
+                    offset: const Offset(-5, -10),
+                    maxHeight: 200 * fontScale,
+                    decoration:
+                        BoxDecoration(borderRadius: BorderRadius.circular(20)),
+                    elevation: 10,
+                    scrollbarTheme: ScrollbarThemeData(
+                      radius: const Radius.circular(40),
+                      thickness: MaterialStateProperty.all(6 * fontScale),
+                      thumbVisibility: MaterialStateProperty.all(true),
+                    ),
+                  ),
+                  items: options.map((T item) {
+                    return DropdownMenuItem<T>(
+                      value: item,
+                      child: Text(
+                        displayString(item),
+                        style: TextStyle(
+                          fontFamily: "poppins_thin",
+                          fontSize: 14 * fontScale,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (T? newValue) {
+                    if (newValue != null) {
+                      onChanged(newValue);
+                    }
+                  },
+                )
+              : Text(
+                  value.isNotEmpty ? value : "N/A",
+                  style: TextStyle(
+                    fontFamily: "poppins_light",
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12 * fontScale,
                   ),
                 ),
-              );
-            }).toList(),
-            onChanged: (T? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  onChanged(newValue);
-                });
-              }
-            },
-          ),
-        ],
-      ),
-    )
-        : SizedBox(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("$title:", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(width: 5),
-          Text(value),
         ],
       ),
     );
   }
+  // Widget _infoTile<T>(
+  //   String title,
+  //   String value,
+  //   List<T> options,
+  //   ValueChanged<T> onChanged,
+  //   bool showDropdown,
+  //   String Function(T) displayString, {
+  //   bool isRequired = false,
+  // }) {
+  //   return SizedBox(
+  //     width: MediaQuery.of(context).size.width * 0.4,
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text("$title:", style: const TextStyle(fontWeight: FontWeight.bold)),
+  //         const SizedBox(height: 5),
+  //         showDropdown
+  //             ? DropdownButton2<T>(
+  //                 isExpanded: true,
+  //                 hint: Text(
+  //                   "Select $title",
+  //                   style: const TextStyle(
+  //                     color: Colors.black,
+  //                     fontSize: 16,
+  //                     fontFamily: "poppins_thin",
+  //                   ),
+  //                 ),
+  //                 value:
+  //                     options.isNotEmpty && value.isNotEmpty && value != "N/A"
+  //                         ? options.firstWhere(
+  //                             (option) => displayString(option) == value,
+  //                             orElse: () => options[0],
+  //                           )
+  //                         : null,
+  //                 underline: const SizedBox(width: 0),
+  //                 buttonStyleData: ButtonStyleData(
+  //                   decoration: BoxDecoration(
+  //                     borderRadius: BorderRadius.circular(10),
+  //                     color: Colors.white,
+  //                     boxShadow: [
+  //                       BoxShadow(
+  //                         color: Colors.grey.shade300,
+  //                         blurRadius: 4,
+  //                         spreadRadius: 2,
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 dropdownStyleData: DropdownStyleData(
+  //                   offset: const Offset(-5, -10),
+  //                   maxHeight: 200,
+  //                   decoration:
+  //                       BoxDecoration(borderRadius: BorderRadius.circular(20)),
+  //                   elevation: 10,
+  //                   scrollbarTheme: ScrollbarThemeData(
+  //                     radius: const Radius.circular(40),
+  //                     thickness: MaterialStateProperty.all(6),
+  //                     thumbVisibility: MaterialStateProperty.all(true),
+  //                   ),
+  //                 ),
+  //                 items: options.map((T item) {
+  //                   return DropdownMenuItem<T>(
+  //                     value: item,
+  //                     child: Text(
+  //                       displayString(item),
+  //                       style: const TextStyle(
+  //                           fontFamily: "poppins_thin", fontSize: 13),
+  //                     ),
+  //                   );
+  //                 }).toList(),
+  //                 onChanged: (T? newValue) {
+  //                   if (newValue != null) {
+  //                     onChanged(newValue);
+  //                   }
+  //                 },
+  //               )
+  //             : Text(
+  //                 value.isNotEmpty ? value : "N/A",
+  //                 style: TextStyle(
+  //                     fontFamily: "poppins_light", fontWeight: FontWeight.bold),
+  //               ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildTabContent() {
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor = screenSize.width / 375.0; // Base width: 375px
+    final double fontScale = scaleFactor.clamp(0.8, 1.2);
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
     switch (selectedTab) {
       case "Follow Up":
         return _buildFollowUpForm();
@@ -904,43 +2214,28 @@ class _InquiryScreenState extends State<InquiryScreen> {
       case "Appointment":
         return _buildAppointmentForm();
       case "Negotiations":
-      case "Feedback":
         return _buildOtherActionForm();
+      case "Feedback":
+        return _buildFeedBackActionForm();
       case "CNR":
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Text("Confirm CNR", style: TextStyle(fontFamily: "poppins_thin")),
-                content: Text("Are you sure you want to mark this inquiry as CNR?",
-                    style: TextStyle(fontFamily: "poppins_thin")),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      print("Inquiry marked as CNR");
-                    },
-                    child: Text("Yes", style: TextStyle(fontFamily: "poppins_thin")),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text("No", style: TextStyle(fontFamily: "poppins_thin")),
-                  ),
-                ],
-              );
-            },
-          );
-        });
-        return Container();
+        return Container(
+          color: Colors.transparent,
+        );
       default:
-        return Container();
+        return Container(
+          color: Colors.transparent,
+        );
     }
   }
 
   Widget _buildFollowUpForm() {
+    // Get screen size information
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor =
+        screenSize.width / 375.0; // Based on standard mobile width
+    final double fontScale = scaleFactor.clamp(0.8, 1.2); // Limit scaling
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -948,138 +2243,194 @@ class _InquiryScreenState extends State<InquiryScreen> {
           controller: remarkController,
           decoration: InputDecoration(
             labelText: "Remark *",
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+            labelStyle: TextStyle(fontSize: 12 * fontScale),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15 * scaleFactor),
+            ),
             hintText: "Your Message here...",
+            hintStyle: TextStyle(fontSize: 12 * fontScale),
+            contentPadding: EdgeInsets.all(10 * paddingScale),
           ),
           maxLines: 3,
+          style: TextStyle(fontSize: 14 * fontScale),
+          validator: (value) => value!.isEmpty ? "Remark is required" : null,
         ),
-        const SizedBox(height: 16.0),
-        const Text(
+        SizedBox(height: 12.0 * paddingScale),
+        Text(
           "Next Follow Up*",
-          style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
-        ),
-        TextFormField(
-          controller: nextFollowUpController,
-          decoration: InputDecoration(
-            hintText: "Select Next Follow Up Date",
-            hintStyle: const TextStyle(fontFamily: "poppins_light"),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-            suffixIcon: const Icon(Icons.calendar_today),
+          style: TextStyle(
+            fontSize: 13 * fontScale,
+            fontFamily: "poppins_thin",
           ),
-          readOnly: true,
-          onTap: () async {
-            DateTime? picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (picked != null) {
-              setState(() {
-                nextFollowUpController.text = DateFormat('dd-MM-yyyy').format(picked);
-                Provider.of<UserProvider>(context, listen: false)
-                    .fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
-                selectedApxFollowUp = null;
-              });
-            }
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return "Next follow-up date is required";
-            }
-            return null;
-          },
         ),
-        const SizedBox(height: 16),
-        const Text(
+        Row(
+          children: [
+            Expanded(
+              flex: 3, // Give more space to the date field
+              child: TextFormField(
+                controller: nextFollowUpController,
+                decoration: InputDecoration(
+                  hintText: "Select Next Follow Up Date",
+                  hintStyle: TextStyle(
+                    fontSize: 12 * fontScale,
+                    fontFamily: "poppins_light",
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8 * scaleFactor),
+                  ),
+                  suffixIcon:
+                      Icon(Icons.calendar_today, size: 18 * scaleFactor),
+                  contentPadding: EdgeInsets.all(10 * paddingScale),
+                ),
+                style: TextStyle(fontSize: 14 * fontScale),
+                readOnly: true,
+                onTap: () async {
+                  DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      nextFollowUpController.text =
+                          DateFormat('dd-MM-yyyy').format(picked);
+                      _isFollowUpLoading = true;
+                    });
+                    await Provider.of<UserProvider>(context, listen: false)
+                        .fetchNextSlots(
+                            DateFormat('yyyy-MM-dd').format(picked));
+                    setState(() {
+                      _isFollowUpLoading = false;
+                      selectedApxFollowUp = null;
+                    });
+                  }
+                },
+                validator: (value) =>
+                    value!.isEmpty ? "Next follow-up date is required" : null,
+              ),
+            ),
+            if (_isFollowUpLoading) ...[
+              SizedBox(width: 8 * paddingScale),
+              SizedBox(
+                height: 16 * scaleFactor,
+                width: 16 * scaleFactor,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5 * scaleFactor,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ],
+        ),
+        SizedBox(height: 12 * paddingScale),
+        Text(
           "Follow Up Time*",
-          style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          style: TextStyle(
+            fontSize: 13 * fontScale,
+            fontFamily: "poppins_thin",
+          ),
         ),
-        const SizedBox(height: 5),
+        SizedBox(height: 4 * paddingScale),
         Consumer<UserProvider>(
           builder: (context, provider, child) {
             return provider.isLoading
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+                ? SizedBox(
+                    height: 16 * scaleFactor,
+                    width: 16 * scaleFactor,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 1.5 * scaleFactor),
+                  )
                 : FormField<String>(
-              initialValue: selectedApxFollowUp,
-              validator: (value) => value == null ? "This field is required" : null,
-              builder: (FormFieldState<String> state) {
-                return DropdownButton2<String>(
-                  isExpanded: true,
-                  hint: const Text(
-                    'Select Time',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontFamily: "poppins_thin",
-                    ),
-                  ),
-                  underline: const SizedBox(width: 0),
-                  value: selectedApxFollowUp,
-                  buttonStyleData: ButtonStyleData(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey.shade200,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
+                    initialValue: selectedApxFollowUp,
+                    validator: (value) =>
+                        value == null ? "Follow up time is required" : null,
+                    builder: (FormFieldState<String> state) {
+                      return DropdownButton2<String>(
+                        isExpanded: true,
+                        hint: Text(
+                          'Select Time',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12 * fontScale,
+                            fontFamily: "poppins_thin",
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  dropdownStyleData: DropdownStyleData(
-                    offset: const Offset(-5, -10),
-                    maxHeight: 200,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-                    elevation: 10,
-                    scrollbarTheme: ScrollbarThemeData(
-                      radius: const Radius.circular(40),
-                      thickness: MaterialStateProperty.all(6),
-                      thumbVisibility: MaterialStateProperty.all(true),
-                    ),
-                  ),
-                  items: provider.nextSlots.isEmpty
-                      ? [
-                    const DropdownMenuItem(
-                      value: null,
-                      enabled: false,
-                      child: Text(
-                        'No slots available',
-                        style: TextStyle(fontFamily: "poppins_thin"),
-                      ),
-                    ),
-                  ]
-                      : provider.nextSlots.map((slot) {
-                    return DropdownMenuItem<String>(
-                      value: slot.source,
-                      enabled: slot.disabled,
-                      child: Text(
-                        slot.source ?? '',
-                        style: TextStyle(
-                          fontFamily: "poppins_thin",
-                          fontSize: 16,
-                          color: slot.disabled ? Colors.black : Colors.grey,
+                        value: selectedApxFollowUp,
+                        underline: const SizedBox(width: 0),
+                        buttonStyleData: ButtonStyleData(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 8 * paddingScale),
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(8 * scaleFactor),
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.shade300,
+                                blurRadius: 3 * scaleFactor,
+                                spreadRadius: 1 * scaleFactor,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        selectedApxFollowUp = value;
-                        state.didChange(value);
-                      });
-                    }
-                  },
-                );
-              },
-            );
+                        dropdownStyleData: DropdownStyleData(
+                          offset: Offset(-5 * scaleFactor, -8 * scaleFactor),
+                          maxHeight:
+                              screenSize.height * 0.3, // 30% of screen height
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(15 * scaleFactor),
+                          ),
+                          elevation: 8,
+                          scrollbarTheme: ScrollbarThemeData(
+                            radius: Radius.circular(30 * scaleFactor),
+                            thickness:
+                                MaterialStateProperty.all(4 * scaleFactor),
+                            thumbVisibility: MaterialStateProperty.all(true),
+                          ),
+                        ),
+                        items: provider.nextSlots.isEmpty
+                            ? [
+                                DropdownMenuItem(
+                                  value: null,
+                                  enabled: false,
+                                  child: Text(
+                                    'No slots available',
+                                    style: TextStyle(
+                                      fontSize: 12 * fontScale,
+                                      fontFamily: "poppins_thin",
+                                    ),
+                                  ),
+                                ),
+                              ]
+                            : provider.nextSlots.map((slot) {
+                                return DropdownMenuItem<String>(
+                                  value: slot.source,
+                                  enabled: slot.disabled,
+                                  child: Text(
+                                    slot.source ?? '',
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 12 * fontScale,
+                                      color: slot.disabled
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedApxFollowUp = value;
+                              state.didChange(value);
+                            });
+                          }
+                        },
+                      );
+                    },
+                  );
           },
         ),
       ],
@@ -1088,26 +2439,34 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
   Widget _buildDismissedForm() {
     final inquiryProvider = Provider.of<UserProvider>(context, listen: false);
-
-    // Get close reason options based on Yes/No selection with their IDs
     List<Map<String, String>> closeReasonOptions = [];
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor = screenSize.width / 375.0; // Base width: 375px
+    final double fontScale = scaleFactor.clamp(0.8, 1.2);
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
     if (selectedYesNo == "Yes") {
       closeReasonOptions = inquiryProvider.inquiryStatus?.yes
-          ?.map((e) => {'id': e.id, 'name': e.inquiryCloseReason})
-          ?.toList() ??
+              ?.map(
+                  (e) => {'id': e.id ?? '', 'name': e.inquiryCloseReason ?? ''})
+              .toList() ??
           [];
     } else if (selectedYesNo == "No") {
       closeReasonOptions = inquiryProvider.inquiryStatus?.no
-          ?.map((e) => {'id': e.id, 'name': e.inquiryCloseReason})
-          ?.toList() ??
+              ?.map(
+                  (e) => {'id': e.id ?? '', 'name': e.inquiryCloseReason ?? ''})
+              .toList() ??
           [];
     }
 
     if (closeReasonOptions.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           "No close reasons available",
-          style: TextStyle(fontFamily: "poppins_thin", fontSize: 16),
+          style: TextStyle(
+            fontFamily: "poppins_thin",
+            fontSize: 14 * fontScale, // Smaller font
+          ),
         ),
       );
     }
@@ -1120,75 +2479,90 @@ class _InquiryScreenState extends State<InquiryScreen> {
             controller: remarkController,
             decoration: InputDecoration(
               labelText: "Remark *",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+              labelStyle: TextStyle(fontSize: 12 * fontScale), // Smaller label
+              border: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(15 * scaleFactor), // Scaled radius
+              ),
               hintText: "Your Message here...",
+              hintStyle: TextStyle(fontSize: 12 * fontScale), // Smaller hint
+              contentPadding:
+                  EdgeInsets.all(10 * paddingScale), // Scaled padding
             ),
             maxLines: 3,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return "Remark is required";
-              }
-              return null;
-            },
+            style: TextStyle(fontSize: 14 * fontScale), // Smaller input text
+            validator: (value) => value!.isEmpty ? "Remark is required" : null,
           ),
-        const SizedBox(height: 16),
-        const Text(
+        SizedBox(height: 12 * paddingScale), // Scaled spacing
+        Text(
           "Close Reason*",
-          style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          style: TextStyle(
+            fontSize: 13 * fontScale, // Smaller text
+            fontFamily: "poppins_thin",
+          ),
         ),
-        const SizedBox(height: 5),
+        SizedBox(height: 4 * paddingScale), // Scaled spacing
         FormField<String>(
           initialValue: selectedCloseReason,
-          validator: (value) => value == null ? "Close reason is required" : null,
+          validator: (value) =>
+              value == null ? "Close reason is required" : null,
           builder: (FormFieldState<String> state) {
             return DropdownButton2<String>(
               isExpanded: true,
-              hint: const Text(
+              hint: Text(
                 'Select Close Reason',
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: 16,
+                  fontSize: 12 * fontScale, // Smaller hint
                   fontFamily: "poppins_thin",
                 ),
               ),
-              value: selectedCloseReason, // This will now hold the ID
+              value: selectedCloseReason,
               underline: const SizedBox(width: 0),
               buttonStyleData: ButtonStyleData(
+                padding: EdgeInsets.symmetric(horizontal: 8 * paddingScale),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius:
+                      BorderRadius.circular(8 * scaleFactor), // Scaled radius
                   color: Colors.grey.shade200,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      spreadRadius: 2,
+                      blurRadius: 3 * scaleFactor, // Scaled shadow
+                      spreadRadius: 1 * scaleFactor,
                     ),
                   ],
                 ),
               ),
               dropdownStyleData: DropdownStyleData(
-                offset: const Offset(-5, -10),
-                maxHeight: 200,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-                elevation: 10,
+                offset: Offset(-5 * scaleFactor, -10 * scaleFactor),
+                maxHeight: screenSize.height * 0.3, // 30% of screen height
+                decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(15 * scaleFactor), // Scaled radius
+                ),
+                elevation: 8,
                 scrollbarTheme: ScrollbarThemeData(
-                  radius: const Radius.circular(40),
-                  thickness: MaterialStateProperty.all(6),
+                  radius: Radius.circular(30 * scaleFactor), // Scaled radius
+                  thickness: MaterialStateProperty.all(4 * scaleFactor),
                   thumbVisibility: MaterialStateProperty.all(true),
                 ),
               ),
               items: closeReasonOptions.map((Map<String, String> item) {
                 return DropdownMenuItem<String>(
-                  value: item['id'], // Use the ID as the value
+                  value: item['id'],
                   child: Text(
-                    item['name']!, // Display the name
-                    style: const TextStyle(fontFamily: "poppins_thin", fontSize: 16),
+                    item['name'] ?? '',
+                    style: TextStyle(
+                      fontFamily: "poppins_thin",
+                      fontSize: 12 * fontScale, // Smaller text
+                    ),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 setState(() {
-                  selectedCloseReason = value; // Store the selected ID
+                  selectedCloseReason = value;
                   state.didChange(value);
                 });
               },
@@ -1198,12 +2572,17 @@ class _InquiryScreenState extends State<InquiryScreen> {
       ],
     );
   }
+
   Widget _buildAppointmentForm() {
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor = screenSize.width / 375.0; // Base width: 375px
+    final double fontScale = scaleFactor.clamp(0.8, 1.2);
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
     return Consumer<UserProvider>(
       builder: (context, provider, child) {
         final dropdownData = provider.dropdownData;
         final siteOptions = dropdownData?.intSite ?? [];
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1211,45 +2590,61 @@ class _InquiryScreenState extends State<InquiryScreen> {
               controller: remarkController,
               decoration: InputDecoration(
                 labelText: "Remark *",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                labelStyle:
+                    TextStyle(fontSize: 12 * fontScale), // Smaller label
+                border: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(15 * scaleFactor), // Scaled radius
+                ),
                 hintText: "Your Message here...",
+                hintStyle: TextStyle(fontSize: 12 * fontScale), // Smaller hint
+                contentPadding:
+                    EdgeInsets.all(10 * paddingScale), // Scaled padding
               ),
               maxLines: 3,
+              style: TextStyle(fontSize: 14 * fontScale), // Smaller input text
+              validator: (value) =>
+                  value!.isEmpty ? "Remark is required" : null,
             ),
-            const SizedBox(height: 16.0),
+            SizedBox(height: 12 * paddingScale), // Scaled spacing
             DropdownButton2<String>(
               isExpanded: true,
-              hint: const Text(
+              hint: Text(
                 'Select Project',
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: 16,
+                  fontSize: 12 * fontScale, // Smaller hint
                   fontFamily: "poppins_thin",
                 ),
               ),
               value: selectedProjectId,
-              underline: SizedBox(width: 0),
+              underline: const SizedBox(width: 0),
               buttonStyleData: ButtonStyleData(
+                padding: EdgeInsets.symmetric(horizontal: 8 * paddingScale),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius:
+                      BorderRadius.circular(8 * scaleFactor), // Scaled radius
                   color: Colors.grey.shade200,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      spreadRadius: 2,
+                      blurRadius: 3 * scaleFactor, // Scaled shadow
+                      spreadRadius: 1 * scaleFactor,
                     ),
                   ],
                 ),
               ),
               dropdownStyleData: DropdownStyleData(
-                offset: const Offset(-5, -10),
-                maxHeight: 200,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-                elevation: 10,
+                offset: Offset(-5 * scaleFactor, -10 * scaleFactor),
+                maxHeight: screenSize.height * 0.3, // 30% of screen height
+                decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(15 * scaleFactor), // Scaled radius
+                ),
+                elevation: 8,
                 scrollbarTheme: ScrollbarThemeData(
-                  radius: const Radius.circular(40),
-                  thickness: MaterialStateProperty.all(6),
+                  radius: Radius.circular(30 * scaleFactor), // Scaled radius
+                  thickness: MaterialStateProperty.all(4 * scaleFactor),
                   thumbVisibility: MaterialStateProperty.all(true),
                 ),
               ),
@@ -1258,7 +2653,10 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   value: site.id,
                   child: Text(
                     site.productName,
-                    style: const TextStyle(fontFamily: "poppins_thin", fontSize: 16),
+                    style: TextStyle(
+                      fontFamily: "poppins_thin",
+                      fontSize: 12 * fontScale, // Smaller text
+                    ),
                   ),
                 );
               }).toList(),
@@ -1268,162 +2666,231 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 });
               },
             ),
-            const SizedBox(height: 16.0),
-            const Text(
+            SizedBox(height: 12 * paddingScale), // Scaled spacing
+            Text(
               "Next Follow Up*",
-              style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
-            ),
-            TextFormField(
-              controller: nextFollowUpController,
-              decoration: InputDecoration(
-                hintText: "Select Next Follow Up Date",
-                hintStyle: const TextStyle(fontFamily: "poppins_light"),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: const Icon(Icons.calendar_today),
+              style: TextStyle(
+                fontSize: 13 * fontScale, // Smaller text
+                fontFamily: "poppins_thin",
               ),
-              readOnly: true,
-              onTap: () async {
-                DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) {
-                  setState(() {
-                    nextFollowUpController.text = DateFormat('dd-MM-yyyy').format(picked);
-                    Provider.of<UserProvider>(context, listen: false)
-                        .fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
-                    selectedApxAppointment = null;
-                  });
-                }
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Next follow-up date is required";
-                }
-                return null;
-              },
             ),
-            const SizedBox(height: 16),
-            const Text(
+            Row(
+              children: [
+                Expanded(
+                  flex: 3, // More space for date field
+                  child: TextFormField(
+                    controller: nextFollowUpController,
+                    decoration: InputDecoration(
+                      hintText: "Select Next Follow Up Date",
+                      hintStyle: TextStyle(
+                        fontSize: 12 * fontScale, // Smaller hint
+                        fontFamily: "poppins_light",
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                            8 * scaleFactor), // Scaled radius
+                      ),
+                      suffixIcon:
+                          Icon(Icons.calendar_today, size: 18 * scaleFactor),
+                      contentPadding:
+                          EdgeInsets.all(10 * paddingScale), // Scaled padding
+                    ),
+                    style: TextStyle(
+                        fontSize: 14 * fontScale), // Smaller input text
+                    readOnly: true,
+                    onTap: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          nextFollowUpController.text =
+                              DateFormat('dd-MM-yyyy').format(picked);
+                          _isAppointmentLoading = true;
+                        });
+                        await Provider.of<UserProvider>(context, listen: false)
+                            .fetchNextSlots(
+                                DateFormat('yyyy-MM-dd').format(picked));
+                        setState(() {
+                          _isAppointmentLoading = false;
+                          selectedApxAppointment = null;
+                        });
+                      }
+                    },
+                    validator: (value) => value!.isEmpty
+                        ? "Next follow-up date is required"
+                        : null,
+                  ),
+                ),
+                if (_isAppointmentLoading) ...[
+                  SizedBox(width: 8 * paddingScale), // Scaled spacing
+                  SizedBox(
+                    height: 16 * scaleFactor,
+                    width: 16 * scaleFactor,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5 * scaleFactor, // Scaled stroke
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            SizedBox(height: 12 * paddingScale), // Scaled spacing
+            Text(
               "Follow Up Time*",
-              style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+              style: TextStyle(
+                fontSize: 13 * fontScale, // Smaller text
+                fontFamily: "poppins_thin",
+              ),
             ),
-            SizedBox(height: 5),
+            SizedBox(height: 4 * paddingScale), // Scaled spacing
             Consumer<UserProvider>(
               builder: (context, provider, child) {
                 return provider.isLoading
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                    ? SizedBox(
+                        height: 16 * scaleFactor,
+                        width: 16 * scaleFactor,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5 * scaleFactor, // Scaled stroke
+                        ),
+                      )
                     : FormField<String>(
-                  initialValue: selectedApxAppointment,
-                  validator: (value) => value == null ? "This field is required" : null,
-                  builder: (FormFieldState<String> state) {
-                    return DropdownButton2<String>(
-                      isExpanded: true,
-                      hint: const Text(
-                        'Select Time',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontFamily: "poppins_thin",
-                        ),
-                      ),
-                      underline: SizedBox(width: 0),
-                      value: selectedApxAppointment,
-                      buttonStyleData: ButtonStyleData(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.grey.shade200,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade300,
-                              blurRadius: 4,
-                              spreadRadius: 2,
+                        initialValue: selectedApxAppointment,
+                        validator: (value) =>
+                            value == null ? "Follow up time is required" : null,
+                        builder: (FormFieldState<String> state) {
+                          return DropdownButton2<String>(
+                            isExpanded: true,
+                            hint: Text(
+                              'Select Time',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12 * fontScale, // Smaller hint
+                                fontFamily: "poppins_thin",
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
-                      dropdownStyleData: DropdownStyleData(
-                        offset: const Offset(-5, -10),
-                        maxHeight: 200,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-                        elevation: 10,
-                        scrollbarTheme: ScrollbarThemeData(
-                          radius: const Radius.circular(40),
-                          thickness: MaterialStateProperty.all(6),
-                          thumbVisibility: MaterialStateProperty.all(true),
-                        ),
-                      ),
-                      items: provider.nextSlots.isEmpty
-                          ? [
-                        const DropdownMenuItem(
-                          value: null,
-                          enabled: false,
-                          child: Text(
-                            'No slots available',
-                            style: TextStyle(fontFamily: "poppins_thin"),
-                          ),
-                        ),
-                      ]
-                          : provider.nextSlots.map((slot) {
-                        return DropdownMenuItem<String>(
-                          value: slot.source,
-                          enabled: slot.disabled,
-                          child: Text(
-                            slot.source ?? '',
-                            style: TextStyle(
-                              fontFamily: "poppins_thin",
-                              fontSize: 16,
-                              color: slot.disabled ? Colors.black : Colors.grey,
+                            value: selectedApxAppointment,
+                            underline: const SizedBox(width: 0),
+                            buttonStyleData: ButtonStyleData(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8 * paddingScale),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                    8 * scaleFactor), // Scaled radius
+                                color: Colors.grey.shade200,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.shade300,
+                                    blurRadius:
+                                        3 * scaleFactor, // Scaled shadow
+                                    spreadRadius: 1 * scaleFactor,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedApxAppointment = value;
-                            state.didChange(value);
-                          });
-                        }
-                      },
-                    );
-                  },
-                );
+                            dropdownStyleData: DropdownStyleData(
+                              offset:
+                                  Offset(-5 * scaleFactor, -10 * scaleFactor),
+                              maxHeight: screenSize.height *
+                                  0.3, // 30% of screen height
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                    15 * scaleFactor), // Scaled radius
+                              ),
+                              elevation: 8,
+                              scrollbarTheme: ScrollbarThemeData(
+                                radius: Radius.circular(
+                                    30 * scaleFactor), // Scaled radius
+                                thickness:
+                                    MaterialStateProperty.all(4 * scaleFactor),
+                                thumbVisibility:
+                                    MaterialStateProperty.all(true),
+                              ),
+                            ),
+                            items: provider.nextSlots.isEmpty
+                                ? [
+                                    DropdownMenuItem(
+                                      value: null,
+                                      enabled: false,
+                                      child: Text(
+                                        'No slots available',
+                                        style: TextStyle(
+                                          fontFamily: "poppins_thin",
+                                          fontSize:
+                                              12 * fontScale, // Smaller text
+                                        ),
+                                      ),
+                                    ),
+                                  ]
+                                : provider.nextSlots.map((slot) {
+                                    return DropdownMenuItem<String>(
+                                      value: slot.source,
+                                      enabled: slot.disabled,
+                                      child: Text(
+                                        slot.source ?? '',
+                                        style: TextStyle(
+                                          fontFamily: "poppins_thin",
+                                          fontSize:
+                                              12 * fontScale, // Smaller text
+                                          color: slot.disabled
+                                              ? Colors.black
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  selectedApxAppointment = value;
+                                  state.didChange(value);
+                                });
+                              }
+                            },
+                          );
+                        },
+                      );
               },
             ),
-            const SizedBox(height: 16.0),
-            const Text(
-              "Appointment Date*",
-              style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+            SizedBox(height: 12 * paddingScale), // Scaled spacing
+            Text(
+              "Appointment Date and Time*",
+              style: TextStyle(
+                fontSize: 13 * fontScale, // Smaller text
+                fontFamily: "poppins_thin",
+              ),
             ),
             TextFormField(
               decoration: InputDecoration(
-                hintText: "Select Appointment Date",
-                hintStyle: const TextStyle(fontFamily: "poppins_light"),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: const Icon(Icons.calendar_today),
+                hintText: "Select Appointment Date and Time",
+                hintStyle: TextStyle(
+                  fontSize: 12 * fontScale, // Smaller hint
+                  fontFamily: "poppins_light",
+                ),
+                border: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(8 * scaleFactor), // Scaled radius
+                ),
+                suffixIcon: Icon(Icons.calendar_today, size: 18 * scaleFactor),
+                contentPadding:
+                    EdgeInsets.all(10 * paddingScale), // Scaled padding
               ),
               controller: TextEditingController(
                 text: appointmentDate != null
-                    ? DateFormat('dd-MM-yyyy').format(appointmentDate!)
+                    ? DateFormat('dd-MM-yyyy HH:mm').format(appointmentDate!)
                     : '',
               ),
+              style: TextStyle(fontSize: 14 * fontScale), // Smaller input text
               readOnly: true,
               onTap: () async {
                 await _pickAppointmentDate();
               },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Appointment date is required";
-                }
-                return null;
-              },
+              validator: (value) => value!.isEmpty
+                  ? "Appointment date and time are required"
+                  : null,
             ),
           ],
         );
@@ -1432,7 +2899,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }
 
   Widget _buildOtherActionForm() {
-    final isNegotiation = selectedTab.toLowerCase() == 'negotiation';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1444,11 +2910,12 @@ class _InquiryScreenState extends State<InquiryScreen> {
             hintText: "Your Message here...",
           ),
           maxLines: 3,
+          validator: (value) => value!.isEmpty ? "Remark is required" : null,
         ),
         const SizedBox(height: 16.0),
         const Text(
           "Next Follow Up*",
-          style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          style: TextStyle(fontSize: 13, fontFamily: "poppins_thin"),
         ),
         TextFormField(
           controller: otherActionController,
@@ -1463,115 +2930,318 @@ class _InquiryScreenState extends State<InquiryScreen> {
             DateTime? picked = await showDatePicker(
               context: context,
               initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
+              firstDate: DateTime.now(),
               lastDate: DateTime(2100),
             );
             if (picked != null) {
               setState(() {
-                otherActionController.text = DateFormat('dd-MM-yyyy').format(picked);
-                Provider.of<UserProvider>(context, listen: false)
-                    .fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
-                selectedApxOther = null;
+                otherActionController.text =
+                    DateFormat('dd-MM-yyyy').format(picked);
+                _isOtherLoading = true; // Show loading indicator
+              });
+              await Provider.of<UserProvider>(context, listen: false)
+                  .fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
+              setState(() {
+                _isOtherLoading = false;
+                selectedApxOther =
+                    null; // Reset to ensure user selects a new time
               });
             }
           },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return "Next follow-up date is required";
-            }
-            return null;
-          },
+          validator: (value) =>
+              value!.isEmpty ? "Next follow-up date is required" : null,
         ),
+        if (_isOtherLoading) ...[
+          const SizedBox(height: 10),
+          const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Colors.deepPurple),
+          ),
+        ],
         const SizedBox(height: 16),
         const Text(
           "Follow Up Time*",
-          style: TextStyle(fontSize: 16, fontFamily: "poppins_thin"),
+          style: TextStyle(fontSize: 13, fontFamily: "poppins_thin"),
         ),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
+        Consumer<UserProvider>(
+          builder: (context, provider, child) {
+            return provider.isLoading || _isOtherLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : FormField<String>(
+                    initialValue: selectedApxOther,
+                    validator: (value) =>
+                        value == null ? "Follow up time is required" : null,
+                    builder: (FormFieldState<String> state) {
+                      return DropdownButton2<String>(
+                        isExpanded: true,
+                        hint: const Text(
+                          'Select Time',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 13,
+                            fontFamily: "poppins_thin",
+                          ),
+                        ),
+                        value: selectedApxOther,
+                        underline: const SizedBox(width: 0),
+                        buttonStyleData: ButtonStyleData(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.grey.shade200,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.shade300,
+                                blurRadius: 4,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                        dropdownStyleData: DropdownStyleData(
+                          offset: const Offset(-5, -10),
+                          maxHeight: 200,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20)),
+                          elevation: 10,
+                          scrollbarTheme: ScrollbarThemeData(
+                            radius: const Radius.circular(40),
+                            thickness: MaterialStateProperty.all(6),
+                            thumbVisibility: MaterialStateProperty.all(true),
+                          ),
+                        ),
+                        items: provider.nextSlots.isEmpty
+                            ? [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  enabled: false,
+                                  child: Text(
+                                    'No slots available',
+                                    style:
+                                        TextStyle(fontFamily: "poppins_thin"),
+                                  ),
+                                ),
+                              ]
+                            : provider.nextSlots.map((slot) {
+                                return DropdownMenuItem<String>(
+                                  value: slot.source,
+                                  enabled: slot.disabled,
+                                  child: Text(
+                                    slot.source ?? '',
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 16,
+                                      color: slot.disabled
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedApxOther = value;
+                              state.didChange(value); // Update FormField state
+                            });
+                          }
+                        },
+                      );
+                    },
+                  );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeedBackActionForm() {
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor = screenSize.width / 375.0; // Base width: 375px
+    final double fontScale = scaleFactor.clamp(0.8, 1.2);
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: remarkController,
+          decoration: InputDecoration(
+            labelText: "Remark *",
+            labelStyle: TextStyle(fontSize: 12 * fontScale), // Smaller label
+            border: OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(15 * scaleFactor), // Scaled radius
+            ),
+            hintText: "Your Message here...",
+            hintStyle: TextStyle(fontSize: 12 * fontScale), // Smaller hint
+            contentPadding: EdgeInsets.all(10 * paddingScale), // Scaled padding
+          ),
+          maxLines: 3,
+          style: TextStyle(fontSize: 14 * fontScale), // Smaller input text
+          validator: (value) => value!.isEmpty ? "Remark is required" : null,
+        ),
+        SizedBox(height: 12 * paddingScale), // Scaled spacing
+        Text(
+          "Next Follow Up*",
+          style: TextStyle(
+            fontSize: 13 * fontScale, // Smaller text
+            fontFamily: "poppins_thin",
+          ),
+        ),
+        TextFormField(
+          controller: FeedbackActionController,
+          decoration: InputDecoration(
+            hintText: "Select Next Follow Up Date",
+            hintStyle: TextStyle(
+              fontSize: 12 * fontScale, // Smaller hint
+              fontFamily: "poppins_light",
+            ),
+            border: OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(8 * scaleFactor), // Scaled radius
+            ),
+            suffixIcon: Icon(Icons.calendar_today, size: 18 * scaleFactor),
+            contentPadding: EdgeInsets.all(10 * paddingScale), // Scaled padding
+          ),
+          style: TextStyle(fontSize: 14 * fontScale), // Smaller input text
+          readOnly: true,
+          onTap: () async {
+            DateTime? picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime(2100),
+            );
+            if (picked != null) {
+              setState(() {
+                FeedbackActionController.text =
+                    DateFormat('dd-MM-yyyy').format(picked);
+                Provider.of<UserProvider>(context, listen: false)
+                    .fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
+                selectedApxFeedback = null;
+              });
+            }
+          },
+          validator: (value) =>
+              value!.isEmpty ? "Next follow-up date is required" : null,
+        ),
+        SizedBox(height: 12 * paddingScale), // Scaled spacing
+        Text(
+          "Follow Up Time*",
+          style: TextStyle(
+            fontSize: 13 * fontScale, // Smaller text
+            fontFamily: "poppins_thin",
+          ),
+        ),
+        SizedBox(height: 4 * paddingScale), // Scaled spacing
         Consumer<UserProvider>(
           builder: (context, provider, child) {
             return provider.isLoading
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+                ? SizedBox(
+                    height: 16 * scaleFactor,
+                    width: 16 * scaleFactor,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5 * scaleFactor, // Scaled stroke
+                    ),
+                  )
                 : FormField<String>(
-              initialValue: selectedApxOther,
-              validator: (value) => value == null ? "This field is required" : null,
-              builder: (FormFieldState<String> state) {
-                return DropdownButton2<String>(
-                  isExpanded: true,
-                  hint: const Text(
-                    'Select Time',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontFamily: "poppins_thin",
-                    ),
-                  ),
-                  underline: SizedBox(width: 0),
-                  value: selectedApxOther,
-                  buttonStyleData: ButtonStyleData(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey.shade200,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 4,
-                          spreadRadius: 2,
+                    initialValue: selectedApxFeedback,
+                    validator: (value) =>
+                        value == null ? "Follow up time is required" : null,
+                    builder: (FormFieldState<String> state) {
+                      return DropdownButton2<String>(
+                        isExpanded: true,
+                        hint: Text(
+                          'Select Time',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12 * fontScale, // Smaller hint
+                            fontFamily: "poppins_thin",
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  dropdownStyleData: DropdownStyleData(
-                    offset: const Offset(-5, -10),
-                    maxHeight: 200,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-                    elevation: 10,
-                    scrollbarTheme: ScrollbarThemeData(
-                      radius: const Radius.circular(40),
-                      thickness: MaterialStateProperty.all(6),
-                      thumbVisibility: MaterialStateProperty.all(true),
-                    ),
-                  ),
-                  items: provider.nextSlots.isEmpty
-                      ? [
-                    const DropdownMenuItem(
-                      value: null,
-                      enabled: false,
-                      child: Text(
-                        'No slots available',
-                        style: TextStyle(fontFamily: "poppins_thin"),
-                      ),
-                    ),
-                  ]
-                      : provider.nextSlots.map((slot) {
-                    return DropdownMenuItem<String>(
-                      value: slot.source,
-                      enabled: slot.disabled,
-                      child: Text(
-                        slot.source ?? '',
-                        style: TextStyle(
-                          fontFamily: "poppins_thin",
-                          fontSize: 16,
-                          color: slot.disabled ? Colors.black : Colors.grey,
+                        value: selectedApxFeedback,
+                        underline: const SizedBox(width: 0),
+                        buttonStyleData: ButtonStyleData(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 8 * paddingScale),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                                8 * scaleFactor), // Scaled radius
+                            color: Colors.grey.shade200,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.shade300,
+                                blurRadius: 3 * scaleFactor, // Scaled shadow
+                                spreadRadius: 1 * scaleFactor,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        selectedApxOther = value;
-                        state.didChange(value);
-                      });
-                    }
-                  },
-                );
-              },
-            );
+                        dropdownStyleData: DropdownStyleData(
+                          offset: Offset(-5 * scaleFactor, -10 * scaleFactor),
+                          maxHeight:
+                              screenSize.height * 0.3, // 30% of screen height
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                                15 * scaleFactor), // Scaled radius
+                          ),
+                          elevation: 8,
+                          scrollbarTheme: ScrollbarThemeData(
+                            radius: Radius.circular(
+                                30 * scaleFactor), // Scaled radius
+                            thickness:
+                                MaterialStateProperty.all(4 * scaleFactor),
+                            thumbVisibility: MaterialStateProperty.all(true),
+                          ),
+                        ),
+                        items: provider.nextSlots.isEmpty
+                            ? [
+                                DropdownMenuItem(
+                                  value: null,
+                                  enabled: false,
+                                  child: Text(
+                                    'No slots available',
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 12 * fontScale, // Smaller text
+                                    ),
+                                  ),
+                                ),
+                              ]
+                            : provider.nextSlots.map((slot) {
+                                return DropdownMenuItem<String>(
+                                  value: slot.source,
+                                  enabled: slot.disabled,
+                                  child: Text(
+                                    slot.source ?? '',
+                                    style: TextStyle(
+                                      fontFamily: "poppins_thin",
+                                      fontSize: 12 * fontScale, // Smaller text
+                                      color: slot.disabled
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedApxFeedback = value;
+                              state.didChange(value);
+                            });
+                          }
+                        },
+                      );
+                    },
+                  );
           },
         ),
       ],
@@ -1579,122 +3249,273 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }
 
   Widget _remarkSection(List<ProcessedData> processedData) {
+    final screenSize = MediaQuery.of(context).size;
+    final double scaleFactor = screenSize.width / 375.0; // Base width: 375px
+    final double fontScale = scaleFactor.clamp(0.8, 1.2);
+    final double paddingScale = scaleFactor.clamp(0.7, 1.5);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Timeline",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(
-          width: double.infinity,
-          child: Timeline.tileBuilder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            theme: TimelineThemeData(
-              direction: Axis.vertical,
-              connectorTheme: ConnectorThemeData(color: Colors.grey, thickness: 2.0),
-              indicatorTheme: IndicatorThemeData(size: 12.0, color: Colors.deepPurple),
-              nodePosition: 0.1,
-            ),
-            builder: TimelineTileBuilder.connected(
-              itemCount: processedData.length,
-              connectionDirection: ConnectionDirection.before,
-              indicatorBuilder: (_, index) => DotIndicator(
-                color: Colors.deepPurple,
-                size: 12.0,
-              ),
-              connectorBuilder: (_, index, __) => SolidLineConnector(
-                color: Colors.grey,
-              ),
-              contentsBuilder: (context, index) {
-                final item = processedData[index];
-                final formattedDate = formatCreatedAt(item.createdAt);
-                return Padding(
-                  padding: const EdgeInsets.only(
-                      left: 16.0, right: 8.0, top: 8.0, bottom: 8.0),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width - 64,
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          blurRadius: 6,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade400,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            item.statusLabel,
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(Icons.person, size: 16, color: Colors.grey),
-                            SizedBox(width: 4),
-                            Text(
-                              item.username,
-                              style:
-                              TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                            SizedBox(width: 4),
-                            Text(
-                              "Next: ${item.nxtFollowDate}",
-                              style: TextStyle(fontSize: 12, color: Colors.black54),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 6),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 16, color: Colors.grey),
-                            SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                item.remarkText,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 14, color: Colors.black87),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          "${formattedDate['date']} - ${formattedDate['time']}",
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+        if (processedData.isNotEmpty)
+          Text(
+            "Timeline",
+            style: TextStyle(
+              fontFamily: "poppins_thin",
+              fontSize: 15 * fontScale, // Smaller text (18 → 16)
             ),
           ),
-        ),
+        if (processedData.isNotEmpty)
+          SizedBox(
+            width: double.infinity,
+            child: Timeline.tileBuilder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              theme: TimelineThemeData(
+                direction: Axis.vertical,
+                connectorTheme: ConnectorThemeData(
+                  color: Colors.grey.shade400, // Softer grey for a modern look
+                  thickness: 2.0 * scaleFactor, // Scaled thickness
+                ),
+                indicatorTheme: IndicatorThemeData(
+                  size: 10 * scaleFactor, // Smaller indicator
+                  color: Colors.deepPurple, // Consistent color
+                ),
+                nodePosition: 0.1,
+              ),
+              builder: TimelineTileBuilder.connected(
+                itemCount: processedData.length,
+                connectionDirection: ConnectionDirection.before,
+                indicatorBuilder: (_, index) => DotIndicator(
+                  color: Colors.deepPurple,
+                  size: 10 * scaleFactor, // Smaller indicator
+                ),
+                connectorBuilder: (_, index, __) => SolidLineConnector(
+                  color: Colors.grey.shade400, // Matching connector color
+                  thickness: 2 * scaleFactor, // Scaled thickness
+                ),
+                contentsBuilder: (context, index) {
+                  final item = processedData[index];
+                  final formattedDate = formatCreatedAt(item.createdAt ?? '');
+                  final screenSize = MediaQuery.of(context).size;
+                  final double scaleFactor =
+                      screenSize.width / 375.0; // Base width: 375px
+                  final double fontScale =
+                      scaleFactor.clamp(0.8, 1.2); // Limit font scaling
+                  final double paddingScale =
+                      scaleFactor.clamp(0.7, 1.5); // Limit padding scaling
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      left: 16 * paddingScale,
+                      right: 8 * paddingScale,
+                      top: 8 * paddingScale,
+                      bottom: 8 * paddingScale,
+                    ),
+                    child: Container(
+                      width: screenSize.width -
+                          (64 * scaleFactor), // Responsive width
+                      padding:
+                          EdgeInsets.all(12 * paddingScale), // Scaled padding
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(
+                            12 * scaleFactor), // Scaled radius
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                Colors.grey.withOpacity(0.15), // Softer shadow
+                            blurRadius: 6 * scaleFactor,
+                            spreadRadius: 1 * scaleFactor,
+                            offset: Offset(0, 3 * scaleFactor),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 4 * paddingScale,
+                              horizontal: 8 * paddingScale,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade400,
+                              borderRadius: BorderRadius.circular(
+                                  8 * scaleFactor), // Scaled radius
+                            ),
+                            child: Text(
+                              item.statusLabel ?? '-',
+                              style: TextStyle(
+                                fontFamily: "poppins_thin",
+                                color: Colors.white,
+                                fontSize: 10 * fontScale, // Smaller text
+                                fontWeight: FontWeight.w500, // Slight boldness
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 6 * paddingScale), // Scaled spacing
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person,
+                                size: 14 * scaleFactor, // Smaller icon
+                                color: Colors.grey.shade600, // Softer grey
+                              ),
+                              SizedBox(width: 4 * paddingScale),
+                              Text(
+                                item.username ?? '-',
+                                style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 12 * fontScale, // Smaller text
+                                  fontWeight:
+                                      FontWeight.w600, // Bold for emphasis
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 2 * paddingScale), // Scaled spacing
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 14 * scaleFactor, // Smaller icon
+                                color: Colors.grey.shade600,
+                              ),
+                              SizedBox(width: 4 * paddingScale),
+                              Text(
+                                "Next: ${item.nxtFollowDate ?? '-'}",
+                                style: TextStyle(
+                                  fontFamily: "poppins_thin",
+                                  fontSize: 10 * fontScale, // Smaller text
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 6 * paddingScale), // Scaled spacing
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 14 * scaleFactor, // Smaller icon
+                                color: Colors.grey.shade600,
+                              ),
+                              SizedBox(width: 6 * paddingScale),
+                              Expanded(
+                                child: Text(
+                                  item.remarkText ?? 'No remark',
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: "poppins_thin",
+                                    fontSize: 12 * fontScale, // Smaller text
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 6 * paddingScale), // Scaled spacing
+                          Text(
+                            "${formattedDate['date']} - ${formattedDate['time']}",
+                            style: TextStyle(
+                              fontFamily: "poppins_thin",
+                              fontSize: 10 * fontScale, // Smaller text
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          )
       ],
+    );
+  }
+}
+
+class CombinedDropdownTextField<T> extends StatelessWidget {
+  final List<T> options;
+  final String Function(T) displayString;
+  final ValueChanged<T> onSelected;
+  final ValueChanged<String> onTextChanged;
+  final T initialValue;
+  final bool isRequired;
+  final ValueChanged<String> onEditingComplete;
+
+  const CombinedDropdownTextField({
+    Key? key,
+    required this.options,
+    required this.displayString,
+    required this.onSelected,
+    required this.onTextChanged,
+    required this.initialValue,
+    required this.isRequired,
+    required this.onEditingComplete,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton2<T>(
+      isExpanded: true,
+      hint: const Text(
+        "Select Area",
+        style: TextStyle(fontFamily: "poppins_thin", fontSize: 13),
+      ),
+      value: options.contains(initialValue) ? initialValue : null,
+      underline: const SizedBox(), // Removes default underline
+      buttonStyleData: ButtonStyleData(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 12, vertical: 8), // Matches `_infoTile`
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+      ),
+      dropdownStyleData: DropdownStyleData(
+        offset: const Offset(10, 10), // Matches `_infoTile`
+        maxHeight: 200, // Matches `_infoTile`
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+        ),
+        elevation: 10, // Matches `_infoTile`
+        scrollbarTheme: ScrollbarThemeData(
+          radius: const Radius.circular(40),
+          thickness: MaterialStateProperty.all(6),
+          thumbVisibility: MaterialStateProperty.all(true),
+        ),
+      ),
+      items: options.map((T item) {
+        return DropdownMenuItem<T>(
+          value: item,
+          child: Text(
+            displayString(item),
+            style: const TextStyle(
+              fontFamily: "poppins_thin",
+              fontSize: 13.3,
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: (T? newValue) {
+        if (newValue != null) {
+          onSelected(newValue);
+        }
+      },
     );
   }
 }
@@ -1738,12 +3559,14 @@ class _MainButtonGroupState extends State<MainButtonGroup> {
       padding: const EdgeInsets.symmetric(horizontal: 6.0),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.deepPurple.shade100 : Colors.white,
+          backgroundColor:
+              isSelected ? Colors.deepPurple.shade100 : Colors.white,
           foregroundColor: isSelected ? Colors.deepPurple : Colors.black,
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30.0),
-            side: BorderSide(color: isSelected ? Colors.deepPurple : Colors.grey.shade300),
+            side: BorderSide(
+                color: isSelected ? Colors.deepPurple : Colors.grey.shade300),
           ),
         ),
         onPressed: () {
@@ -1752,229 +3575,110 @@ class _MainButtonGroupState extends State<MainButtonGroup> {
           });
           widget.onButtonPressed(text);
         },
-        child: Text(text, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        child: Text(text,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
       ),
     );
   }
 }
 
-class CombinedDropdownTextField<T> extends StatefulWidget {
-  final List<T> options;
-  final String Function(T)? displayString;
-  final Function(T) onSelected;
-  final Function(String) onTextChanged;
-  final bool isRequired;
-  final T initialValue;
-  final Function(String)? onEditingComplete;
+Future<void> _launchEmail({
+  required String email,
+  required String subject,
+  required String body,
+}) async {
+  // Construct mailto URI with encoded subject and body
+  String encodedSubject = Uri.encodeComponent(subject);
+  String encodedBody = Uri.encodeComponent(body);
+  String mailUri = 'mailto:$email?subject=$encodedSubject&body=$encodedBody';
 
-  const CombinedDropdownTextField({
-    super.key,
-    required this.options,
-    this.displayString,
-    required this.onSelected,
-    required this.onTextChanged,
-    this.isRequired = false,
-    required this.initialValue,
-    this.onEditingComplete,
-  });
+  if (await canLaunchUrl(Uri.parse(mailUri))) {
+    await launchUrl(Uri.parse(mailUri), mode: LaunchMode.externalApplication);
+  } else {
+    // Fallback: try without subject/body
+    String fallbackUri = 'mailto:$email';
 
-  @override
-  State<CombinedDropdownTextField<T>> createState() => _CombinedDropdownTextFieldState<T>();
+    if (await canLaunchUrl(Uri.parse(fallbackUri))) {
+      await launchUrl(Uri.parse(fallbackUri),
+          mode: LaunchMode.externalApplication);
+    } else {}
+  }
 }
 
-class _CombinedDropdownTextFieldState<T> extends State<CombinedDropdownTextField<T>> {
-  late TextEditingController _controller;
-  bool _isDropdownVisible = false;
-  late List<T> _filteredOptions;
-  final FocusNode _focusNode = FocusNode();
-  OverlayEntry? _overlayEntry;
-  final LayerLink _layerLink = LayerLink();
+Future<void> _launchSMS(String phoneNumber, String message) async {
+  String encodedMessage = Uri.encodeComponent(message);
+  String smsUri = 'sms:$phoneNumber?body=$encodedMessage';
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-        text: widget.displayString != null
-            ? widget.displayString!(widget.initialValue)
-            : widget.initialValue.toString());
-    _focusNode.addListener(_onFocusChange);
-    _filteredOptions = widget.options;
+  if (await canLaunchUrl(Uri.parse(smsUri))) {
+    await launchUrl(Uri.parse(smsUri), mode: LaunchMode.externalApplication);
+  } else {
+    await _tryFallback(phoneNumber, message);
+  }
+}
+
+Future<void> _tryFallback(String phoneNumber, String message) async {
+  String fallbackUri = 'sms:$phoneNumber';
+
+  if (await canLaunchUrl(Uri.parse(fallbackUri))) {
+    await launchUrl(Uri.parse(fallbackUri),
+        mode: LaunchMode.externalApplication);
+  } else {
+    // Try SMSTO scheme as last resort
+    String smstoUri = 'smsto:$phoneNumber?body=${Uri.encodeComponent(message)}';
+    if (await canLaunchUrl(Uri.parse(smstoUri))) {
+      await launchUrl(Uri.parse(smstoUri),
+          mode: LaunchMode.externalApplication);
+    } else {}
+  }
+}
+
+Future<void> _makeDirectPhoneCall(
+    String phoneNumber, BuildContext context) async {
+  // Clean the phone number
+  phoneNumber = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+  if (!phoneNumber.startsWith('+')) {
+    phoneNumber = '$phoneNumber'; // Add country code if needed
   }
 
-  @override
-  void didUpdateWidget(CombinedDropdownTextField<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialValue != oldWidget.initialValue) {
-      _controller.text = widget.displayString != null
-          ? widget.displayString!(widget.initialValue)
-          : widget.initialValue.toString();
-      _filteredOptions = widget.options;
+  // Request CALL_PHONE permission
+  final permissionStatus = await Permission.phone.request();
+
+  if (permissionStatus.isGranted) {
+    final phoneUrl = Uri.parse('tel:$phoneNumber');
+    try {
+      await launchUrl(
+          phoneUrl); // This will attempt to call directly on Android
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error making call: $e')),
+      );
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
-    _hideOverlay();
-    super.dispose();
-  }
-
-  void _onFocusChange() {
-    setState(() {
-      _isDropdownVisible = _focusNode.hasFocus;
-      if (_isDropdownVisible) {
-        _filteredOptions = widget.options;
-        _showOverlay(context);
-      } else {
-        _hideOverlay();
-        widget.onTextChanged(_controller.text);
-      }
-    });
-  }
-
-  void _filterOptions(String query) {
-    setState(() {
-      _filteredOptions = widget.options
-          .where((option) =>
-          (widget.displayString != null
-              ? widget.displayString!(option)
-              : option.toString())
-              .toLowerCase()
-              .contains(query.toLowerCase()))
-          .toList();
-    });
-  }
-
-  void _selectOption(T option) {
-    setState(() {
-      _controller.text = widget.displayString != null
-          ? widget.displayString!(option)
-          : option.toString();
-      _filteredOptions = widget.options;
-      _isDropdownVisible = false;
-    });
-    widget.onSelected(option);
-    _focusNode.unfocus();
-    _hideOverlay();
-  }
-
-  void _showOverlay(BuildContext context) {
-    if (_overlayEntry != null) return;
-
-    final overlayState = Overlay.of(context);
-    final renderBox = context.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        width: size.width,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(0.0, size.height + 5.0),
-          child: Card(
-            elevation: 4,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: ListView.builder(
-                padding: EdgeInsets.all(8),
-                shrinkWrap: true,
-                itemCount: _filteredOptions.length,
-                itemBuilder: (context, index) {
-                  final option = _filteredOptions[index];
-                  return InkWell(
-                    onTap: () => _selectOption(option),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(widget.displayString != null
-                          ? widget.displayString!(option)
-                          : option.toString()),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
+  } else if (permissionStatus.isDenied) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Call permission denied')),
     );
-
-    overlayState.insert(_overlayEntry!);
-  }
-
-  void _hideOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: _controller,
-            focusNode: _focusNode,
-            decoration: InputDecoration(
-              hintText: 'Select or Type',
-              hintStyle: const TextStyle(fontFamily: "poppins_light"),
-              border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(20))),
-              suffixIcon: _isDropdownVisible
-                  ? IconButton(
-                icon: const Icon(Icons.arrow_drop_up),
-                onPressed: () {
-                  setState(() {
-                    _isDropdownVisible = false;
-                    _focusNode.unfocus();
-                    _hideOverlay();
-                    widget.onTextChanged(_controller.text);
-                  });
-                },
-              )
-                  : IconButton(
-                icon: const Icon(Icons.arrow_drop_down),
-                onPressed: () {
-                  setState(() {
-                    _isDropdownVisible = true;
-                    _focusNode.requestFocus();
-                    _filteredOptions = widget.options;
-                    _showOverlay(context);
-                  });
-                },
-              ),
-            ),
-            onChanged: (text) {
-              _filterOptions(text);
-              widget.onTextChanged(text);
-            },
-            onTap: () {
-              setState(() {
-                _isDropdownVisible = true;
-                _focusNode.requestFocus();
-                _filteredOptions = widget.options;
-                _showOverlay(context);
-              });
-            },
-            onEditingComplete: () {
-              widget.onEditingComplete?.call(_controller.text);
-              _focusNode.unfocus();
-            },
-            validator: widget.isRequired
-                ? (value) {
-              if (value == null || value.isEmpty) {
-                return "This field is required";
-              }
-              return null;
-            }
-                : null,
-          ),
-        ],
-      ),
+  } else if (permissionStatus.isPermanentlyDenied) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Please enable call permission in settings')),
     );
+    await openAppSettings(); // Prompt user to enable permission in settings
+  }
+}
+
+// Function to launch WhatsApp
+Future<void> _launchWhatsApp(String phoneNumber, String message) async {
+  // Remove any non-digit characters except the leading '+' from phoneNumber
+  String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+  String encodedMessage = Uri.encodeComponent(message);
+  // WhatsApp URL scheme: whatsapp://send?phone={number}&text={message}
+  String whatsappUri =
+      'whatsapp://send?phone=$cleanNumber&text=$encodedMessage';
+
+  if (await canLaunchUrl(Uri.parse(whatsappUri))) {
+    await launchUrl(Uri.parse(whatsappUri),
+        mode: LaunchMode.externalApplication);
+  } else {
+    const SnackBar(content: Text('WhatsApp not available'));
   }
 }

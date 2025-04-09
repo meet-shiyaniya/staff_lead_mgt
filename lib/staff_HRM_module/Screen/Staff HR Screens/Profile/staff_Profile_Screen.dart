@@ -4,12 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-// import '../../../../Api_services/api_service.dart';
-// import '../../../../Provider/UserProvider.dart';
 import '../../../../../Api_services/api_service.dart';
 import '../../../../../Provider/UserProvider.dart';
-// import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
-// import '../../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../../../Model/Realtomodels/Realtostaffprofilemodel.dart';
 import '../../../Model/Staff HR Screen Model/profile_Model.dart';
 import '../../Color/app_Color.dart';
@@ -32,6 +28,8 @@ class _staffProfileScreenState extends State<staffProfileScreen> {
 
     if (pickedFile != null) {
       File imageFile = File(pickedFile.path);
+      // Fluttertoast.showToast(msg: imageFile.toString());
+      print(imageFile);
       await _apiService.updateProfilePic(imageFile);
       setState(() {
         _profileImage = imageFile;

@@ -424,7 +424,7 @@ class TestCard extends StatelessWidget {
           GestureDetector(
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) =>
-                          InquiryScreen(inquiryId: id,),
+                          InquiryScreen(inquiryId: id, followup: false,),
                       ));
                     },
                     child: Image(image: AssetImage("asset/Inquiry_module/call-forwarding.png"),width: 30,height: 30,),

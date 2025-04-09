@@ -106,7 +106,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final dropdownData = userProvider.dropdownData;
 
-    // Populate text fields
+
     _mobileController.text = editLeadData!.mobileno ?? '';
     _fullNameController.text = editLeadData!.fullName ?? '';
     _houseController.text = editLeadData!.houseno ?? '';

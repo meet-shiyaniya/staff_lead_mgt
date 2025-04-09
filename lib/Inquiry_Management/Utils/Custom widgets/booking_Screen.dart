@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hr_app/Inquiry_Management/Utils/Colors/app_Colors.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,16 @@ import 'package:toggle_switch/toggle_switch.dart';
 import '../../../Api_services/api_service.dart';
 import '../../../Provider/UserProvider.dart';
 import '../../Model/Api Model/add_Lead_Model.dart';
+
+class IntSiteOption {
+  final String id;
+  final String name;
+
+  IntSiteOption({required this.id, required this.name});
+
+  @override
+  String toString() => 'ID: $id, Name: $name';
+}
 
 class BookingScreen extends StatefulWidget {
   final String? inquiryId;
@@ -32,6 +43,12 @@ class _BookingScreenState extends State<BookingScreen> {
   List<Map<String, TextEditingController>> loanFields = [];
   bool _isPaymentValid = false;
   String? _amountError;
+  String? selectedConstruction;
+
+  List<IntSiteOption> _intAreaOptions = []; // Changed to List<IntSiteOption>
+  bool _isLoadingUnitNo = false;
+
+  final List<String> ConstructionOptions = ['none', 'G', 'G+1', 'G+1/2', 'G+2'];
 
   final TextEditingController _mobileNoController = TextEditingController();
   final TextEditingController _partyNameController = TextEditingController();
@@ -40,7 +57,6 @@ class _BookingScreenState extends State<BookingScreen> {
   final TextEditingController _landMarkController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _pincodeController = TextEditingController();
-  final TextEditingController _intAreaController = TextEditingController();
   final TextEditingController _propertyTypeController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
@@ -60,9 +76,7 @@ class _BookingScreenState extends State<BookingScreen> {
   final TextEditingController _hastakController = TextEditingController();
 
   String? _selectedAreaId;
-  String? _selectedPropertySubType;
-  String? _selectedPurposeOfBuying;
-  String? _selectedApproxBuyingTime;
+  String? _selectedIntsiteId;
   String? _selectedTokenBy;
   String? _selectedHastakSource;
   String? _selectedManager;
@@ -70,27 +84,104 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedChannelPartner;
   String? _selectedCustomer;
 
+  bool isLoadingDropdown = false;
+  IntSiteOption? _selectedIntSite;
+  String? _selectedUnitNo;
+  String? _selectedSize;
+  IntSiteOption? _selectedIntArea; // Changed to IntSiteOption?
+  List<IntSiteOption> _intSiteOptions = [];
+  List<String> _unitNoOptions = [];
+  List<String> _sizeOptions = [];
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       final provider = Provider.of<UserProvider>(context, listen: false);
+
       if (widget.inquiryId != null) {
         provider.fetchBookingData(widget.inquiryId!);
         provider.fetchVisitData(widget.inquiryId!).then((_) {
-          _populateVisitData(provider); // Populate data after fetch
+          _populateVisitData(provider);
         });
       }
-      // Pre-fill booking data
-      if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty && _mobileNoController.text.isEmpty) {
-        final booking = provider.bookingData!.data[0];
-        _houseNoController.text = booking.houseno;
-        _societyController.text = booking.society;
-        _selectedAreaId = "${booking.area}";
-        _cityController.text = booking.city;
-      }
 
-      provider.fetchAddLeadData();
+      setState(() {
+        if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty) {
+          final booking = provider.bookingData!.data[0];
+          _houseNoController.text = booking.houseno;
+          _societyController.text = booking.society;
+          // _selectedIntArea = booking.area as ?; // Assuming this is the ID or value from booking data
+
+          _cityController.text = booking.city;
+        }
+      });
+
+      provider.fetchAddLeadData().then((_) {
+        if (provider.dropdownData != null) {
+          setState(() {
+            final dropdownData = provider.dropdownData!;
+            final inquiry = provider.visitData?.inquiries;
+
+            _intSiteOptions = dropdownData.intSite.isNotEmpty
+                ? dropdownData.intSite
+                .map((site) => IntSiteOption(id: site.id, name: site.productName.trim()))
+                .toList()
+                : [IntSiteOption(id: "0", name: "Default Site")];
+            _selectedIntSite = inquiry != null && inquiry.intrestedProduct.isNotEmpty
+                ? _intSiteOptions.firstWhere(
+                    (option) => option.id == inquiry.intrestedProduct,
+                orElse: () => _intSiteOptions.first)
+                : _intSiteOptions.isNotEmpty
+                ? _intSiteOptions.first
+                : null;
+
+            // Fetch Int Area options from area_city_country
+            _intAreaOptions = dropdownData.areaCityCountry.isNotEmpty
+                ? dropdownData.areaCityCountry
+                .map((area) => IntSiteOption(id: area.id, name: area.area.trim()))
+                .toList()
+                : [IntSiteOption(id: "0", name: "Default Area")];
+
+            // Set selected Int Area from booking data if available
+            if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty) {
+              final booking = provider.bookingData!.data[0];
+              _selectedIntArea = _intAreaOptions.firstWhere(
+                    (option) => option.id == booking.area,
+                orElse: () => _intAreaOptions.first,
+              );
+            }
+
+            if (_selectedIntSite != null && widget.inquiryId != null) {
+              String intrestedProduct = inquiry != null && inquiry.intrestedProduct.isNotEmpty
+                  ? inquiry.intrestedProduct
+                  : _selectedIntSite!.id;
+              provider.fetchUnitNumbers(intrestedProduct).then((_) => _updateUnitNoAndSize(provider));
+            }
+
+            print("Int Area Options: $_intAreaOptions");
+            print("Selected Int Area: $_selectedIntArea");
+          });
+        } else {
+          setState(() {
+            _intSiteOptions = [IntSiteOption(id: "0", name: "Default Site")];
+            _selectedIntSite = _intSiteOptions.first;
+            _intAreaOptions = [IntSiteOption(id: "0", name: "Default Area")];
+            _selectedIntArea = _intAreaOptions.first;
+          });
+        }
+      }).catchError((e) {
+        print('Error fetching dropdown data: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load dropdown data: $e')));
+        setState(() {
+          _intSiteOptions = [IntSiteOption(id: "0", name: "Default Site")];
+          _selectedIntSite = _intSiteOptions.first;
+          _intAreaOptions = [IntSiteOption(id: "0", name: "Default Area")];
+          _selectedIntArea = _intAreaOptions.first;
+        });
+      });
+
       _addCashField();
       _addLoanField();
       _selectedHastakSource = 'Walk In';
@@ -108,6 +199,28 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
+  void _updateUnitNoAndSize(UserProvider provider) {
+    setState(() {
+      _unitNoOptions = provider.unitNoData?.unitNo
+          .map((unit) => unit.unitNo.trim())
+          .toSet()
+          .toList() ??
+          ['No Units Available'];
+      _selectedUnitNo = _unitNoOptions.isNotEmpty ? _unitNoOptions.first : null;
+
+      _sizeOptions = provider.unitNoData?.unitNo
+          .map((unit) => unit.propertySize.trim())
+          .where((size) => size.isNotEmpty)
+          .toSet()
+          .toList() ??
+          ['No Size Available'];
+      _selectedSize = _sizeOptions.isNotEmpty ? _sizeOptions.first : null;
+
+      print("Updated UnitNo Options: $_unitNoOptions");
+      print("Updated Size Options: $_sizeOptions");
+    });
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -118,7 +231,6 @@ class _BookingScreenState extends State<BookingScreen> {
     _landMarkController.dispose();
     _cityController.dispose();
     _pincodeController.dispose();
-    _intAreaController.dispose();
     _propertyTypeController.dispose();
     _budgetController.dispose();
     _priceController.dispose();
@@ -151,39 +263,11 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _populateVisitData(UserProvider provider) {
-
     if (provider.visitData != null) {
-
-      final address=provider.bookingData?.data;
       final inquiries = provider.visitData!.inquiries;
-      final propertySubTypeItems = provider.visitData!.projects.map((config) => config.projectSubType).toList() ?? ['Type 1', 'Type 2', 'Type 3'];
-      final purposeBuyingItems = provider.dropdownData!.purposeOfBuying != null
-          ? [provider.dropdownData!.purposeOfBuying!.investment, provider.dropdownData!.purposeOfBuying!.personalUse]
-          : ['Purpose 1', 'Purpose 2', 'Purpose 3'];
-      final approxBuyingTimeItems = provider.dropdownData!.apxTime != null
-          ? provider.dropdownData!.apxTime!.apxTimeData.split(',').map((time) => time.trim()).toList()
-          : ['Time 1', 'Time 2', 'Time 3'];
-
       setState(() {
-        // Customer Information Page
         _mobileNoController.text = inquiries.mobileno;
         _partyNameController.text = inquiries.fullName;
-
-        // _societyController.text = inquiries.address.split(', ').length > 1 ? inquiries.address.split(', ')[1] : inquiries.address;
-        // _landMarkController.text = inquiries.address.split(', ').length > 2 ? inquiries.address.split(', ')[2] : '';
-        // _cityController.text = inquiries.address.split(', ').last;
-
-        // Interest Suggestion Page
-        // _intAreaController.text = provider.visitData!.unitNo.isNotEmpty ? provider.visitData!.unitNo[0].propertySize : '';
-        _selectedPropertySubType = propertySubTypeItems.contains(inquiries.propertySubType) ? inquiries.propertySubType : null;
-        _propertyTypeController.text = inquiries.propertyType;
-        _budgetController.text = inquiries.budget;
-        _selectedPurposeOfBuying = purposeBuyingItems.contains(inquiries.purposeBuy) ? inquiries.purposeBuy : null;
-        _selectedApproxBuyingTime = approxBuyingTimeItems.contains(provider.dropdownData?.apxTime?.apxTimeData.split(',').first.trim())
-            ? provider.dropdownData!.apxTime!.apxTimeData.split(',').first.trim()
-            : approxBuyingTimeItems.isNotEmpty
-            ? approxBuyingTimeItems.first
-            : null;
       });
     }
   }
@@ -195,16 +279,11 @@ class _BookingScreenState extends State<BookingScreen> {
         _partyNameController.text.isEmpty ||
         _houseNoController.text.isEmpty ||
         _societyController.text.isEmpty ||
-        _selectedAreaId == null ||
+          // _selectedAreaId == null ||
         _landMarkController.text.isEmpty ||
         _cityController.text.isEmpty ||
         _pincodeController.text.isEmpty ||
-        _intAreaController.text.isEmpty ||
-        _selectedPropertySubType == null ||
-        _propertyTypeController.text.isEmpty ||
-        _budgetController.text.isEmpty ||
-        _selectedPurposeOfBuying == null ||
-        _selectedApproxBuyingTime == null ||
+            // _selectedIntsiteId == null ||
         _priceController.text.isEmpty ||
         _extraWorkController.text.isEmpty ||
         _totalPriceController.text.isEmpty ||
@@ -224,11 +303,16 @@ class _BookingScreenState extends State<BookingScreen> {
 
     print('Validation passed, preparing request body...');
 
-    String areaId = _selectedAreaId != null ? _selectedAreaId!.split('(').last.replaceAll(')', '').trim() : '0';
-    String? managerId = _selectedManager != null ? _selectedManager!.split('(').last.replaceAll(')', '').trim() : '';
-    String? staffId = _selectedStaff != null ? _selectedStaff!.split('(').last.replaceAll(')', '').trim() : '';
-    String? channelPartnerId = _selectedChannelPartner != null ? _selectedChannelPartner!.split('(').last.replaceAll(')', '').trim() : '';
-    String? customerId = _selectedCustomer != null ? _selectedCustomer!.split('(').last.replaceAll(')', '').trim() : '';
+    String areaId = _selectedAreaId ?? '0';
+    String? managerId =
+    _selectedManager != null ? _selectedManager!.split('(').last.replaceAll(')', '').trim() : '';
+    String? staffId =
+    _selectedStaff != null ? _selectedStaff!.split('(').last.replaceAll(')', '').trim() : '';
+    String? channelPartnerId = _selectedChannelPartner != null
+        ? _selectedChannelPartner!.split('(').last.replaceAll(')', '').trim()
+        : '';
+    String? customerId =
+    _selectedCustomer != null ? _selectedCustomer!.split('(').last.replaceAll(')', '').trim() : '';
 
     List<Map<String, dynamic>> paymentFields = isLoanSelected
         ? loanFields.map((field) => {
@@ -245,8 +329,8 @@ class _BookingScreenState extends State<BookingScreen> {
     final Map<String, dynamic> requestBody = {
       "inquiry_id": widget.inquiryId ?? "",
       "booking_date": _bookingDateController.text,
-      "product_name": "1",
-      "unitno": int.tryParse(_houseNoController.text) ?? 0,
+      "product_name": _selectedIntSite?.id ?? "",
+      "unitno": _selectedUnitNo ?? "0",
       "amount": double.tryParse(_totalAmountOfPurchaseController.text) ?? 0,
       "payment_date": _tokenDateController.text,
       "duration_day": paymentFields.isNotEmpty ? (int.tryParse(paymentFields[0]['duration'].toString()) ?? 0) : 0,
@@ -266,14 +350,15 @@ class _BookingScreenState extends State<BookingScreen> {
       "landmark": _landMarkController.text,
       "city": _cityController.text,
       "pincode": int.tryParse(_pincodeController.text) ?? 0,
-      "unitsize": _intAreaController.text,
-      "construction": 2,
+      "unitsize": _selectedSize ?? "",
+      "construction": selectedConstruction ?? "",
       "price": double.tryParse(_priceController.text) ?? 0,
       "extra_work": double.tryParse(_extraWorkController.text) ?? 0,
       "total_price": double.tryParse(_totalPriceController.text) ?? 0,
       "discount_price": double.tryParse(_discountController.text) ?? 0,
       "switcher_amount": isLoanSelected ? "loan" : "cash",
       "loan_amount": isLoanSelected ? (double.tryParse(_loanAmountController.text) ?? 0).toString() : "",
+      "int_area": _selectedIntArea?.id ?? "", // Add selected int area to request body
     };
 
     print('Request Body: ${json.encode(requestBody)}');
@@ -288,7 +373,7 @@ class _BookingScreenState extends State<BookingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Booking submitted successfully!')),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         print('API returned error: ${result['message']}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,13 +423,13 @@ class _BookingScreenState extends State<BookingScreen> {
     setState(() {
       if (remaining < 0) {
         _remainingTotalAmountController.text = '0.00';
-        _amountError = 'Amount is not equal to 0, extra: ${remaining.abs().toStringAsFixed(2)}';
+        _amountError = 'Amount exceeds total by ${remaining.abs().toStringAsFixed(2)}';
         _isPaymentValid = false;
       } else if (remaining == 0) {
         _amountError = null;
         _isPaymentValid = true;
       } else {
-        _amountError = 'Amount is not equal to 0, remaining: ${remaining.toStringAsFixed(2)}';
+        _amountError = 'Remaining amount: ${remaining.toStringAsFixed(2)}';
         _isPaymentValid = false;
       }
     });
@@ -352,7 +437,28 @@ class _BookingScreenState extends State<BookingScreen> {
 
   String _numberToWords(double number) {
     if (number == 0) return "Zero";
-    final units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    final units = [
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen'
+    ];
     final tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     double whole = number.floorToDouble();
@@ -402,7 +508,28 @@ class _BookingScreenState extends State<BookingScreen> {
 
   String _numberToWordsHelper(double number) {
     if (number == 0) return "";
-    final units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    final units = [
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen'
+    ];
     final tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     double whole = number.floorToDouble();
@@ -488,19 +615,18 @@ class _BookingScreenState extends State<BookingScreen> {
         backgroundColor: AppColor.Buttoncolor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, true),
         ),
       ),
       backgroundColor: Colors.white,
       body: Consumer<UserProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
+          if (provider.isLoadingDropdown) {
             return Center(child: CircularProgressIndicator());
           }
           if (provider.error != null) {
             return Center(child: Text('Error: ${provider.error}'));
           }
-
 
           return SafeArea(
             child: PageView(
@@ -520,10 +646,21 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildCustomerInformationPage(UserProvider provider) {
-    final areaItems = provider.bookingData?.data.map((datum) => "${datum.area} (${datum.area})").toSet().toList() ?? ['Area 1 (1)', 'Area 2 (2)', 'Area 3 (3)'];
+    final areaItems = provider.bookingData?.data
+        .map((datum) => "${datum.area} (${datum.area})")
+        .toSet()
+        .toList() ??
+        ['Area 1 (1)', 'Area 2 (2)', 'Area 3 (3)'];
     if (_selectedAreaId != null && !areaItems.contains(_selectedAreaId)) {
       _selectedAreaId = null;
     }
+
+    List<DropdownMenuItem<IntSiteOption>> intAreaItems = _intAreaOptions
+        .map((option) => DropdownMenuItem<IntSiteOption>(
+      value: option,
+      child: Text(option.name, style: TextStyle(fontFamily: "poppins_thin")),
+    ))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -552,11 +689,16 @@ class _BookingScreenState extends State<BookingScreen> {
                         _buildTextField('Party Name', controller: _partyNameController),
                         _buildTextField('House No.', controller: _houseNoController),
                         _buildTextField('Society', controller: _societyController),
-                        _buildDropdown2(
-                          label: "Area",
-                          items: areaItems,
-                          selectedValue: _selectedAreaId,
-                          onChanged: (value) => setState(() => _selectedAreaId = value),
+
+                        // _buildDropdown2(label: "Int Area*", items: intAreaItems, selectedValue: _selectedIntArea, onChanged: (value) => setState(() => _selectedIntArea = value)),
+
+                        _buildDropdown<IntSiteOption>(
+
+                          "Area*",
+                          items: intAreaItems,
+                          value: _selectedIntArea,
+                          onChanged: (value) => setState(() => _selectedIntArea = value),
+                          required: true,
                         ),
                         _buildTextField('Land Mark', controller: _landMarkController),
                         _buildTextField('City', controller: _cityController),
@@ -584,13 +726,26 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildInterestSuggestionPage(UserProvider provider) {
-    final propertySubTypeItems = provider.dropdownData?.propertyConfiguration.map((config) => config.propertyType).toList() ?? ['Type 1', 'Type 2', 'Type 3'];
-    final purposeBuyingItems = provider.dropdownData?.purposeOfBuying != null
-        ? [provider.dropdownData!.purposeOfBuying!.investment, provider.dropdownData!.purposeOfBuying!.personalUse]
-        : ['Purpose 1', 'Purpose 2', 'Purpose 3'];
-    final approxBuyingTimeItems = provider.dropdownData?.apxTime != null
-        ? provider.dropdownData!.apxTime!.apxTimeData.split(',').map((time) => time.trim()).toList()
-        : ['Time 1', 'Time 2', 'Time 3'];
+    List<DropdownMenuItem<IntSiteOption>> intSiteItems = _intSiteOptions
+        .map((option) => DropdownMenuItem<IntSiteOption>(
+      value: option,
+      child: Text(option.name, style: TextStyle(fontFamily: "poppins_thin")),
+    ))
+        .toList();
+
+    List<DropdownMenuItem<String>> unitNoItems = _unitNoOptions
+        .map((unit) => DropdownMenuItem<String>(
+      value: unit,
+      child: Text(unit, style: TextStyle(fontFamily: "poppins_thin")),
+    ))
+        .toList();
+
+    List<DropdownMenuItem<String>> sizeItems = _sizeOptions
+        .map((size) => DropdownMenuItem<String>(
+      value: size,
+      child: Text(size, style: TextStyle(fontFamily: "poppins_thin")),
+    ))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -616,26 +771,49 @@ class _BookingScreenState extends State<BookingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextField('Int Area*', controller: _intAreaController),
-                        _buildDropdown2(
-                          label: 'Property Sub Type*',
-                          items: propertySubTypeItems,
-                          selectedValue: _selectedPropertySubType,
-                          onChanged: (value) => setState(() => _selectedPropertySubType = value),
+                        _buildDropdown<IntSiteOption>(
+                          "Int Site*",
+                          items: intSiteItems,
+                          value: _selectedIntSite,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              setState(() => isLoadingDropdown = true);
+                              try {
+                                _selectedIntSite = value;
+                                await provider.fetchUnitNumbers(value.id);
+                                _updateUnitNoAndSize(provider);
+                              } finally {
+                                setState(() => isLoadingDropdown = false);
+                              }
+                            }
+                          },
+                          required: true,
                         ),
-                        _buildTextField('Property Type*', controller: _propertyTypeController),
-                        _buildTextField('Budget*', controller: _budgetController),
-                        _buildDropdown2(
-                          label: 'Purpose of Buying*',
-                          items: purposeBuyingItems,
-                          selectedValue: _selectedPurposeOfBuying,
-                          onChanged: (value) => setState(() => _selectedPurposeOfBuying = value),
+                        if (isLoadingDropdown) ...[
+                          const SizedBox(width: 10),
+                          const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepPurple)),
+                          ),
+                        ],
+                        _buildDropdown<String>(
+                          "Unit No",
+                          items: unitNoItems,
+                          value: _selectedUnitNo,
+                          onChanged: (value) => setState(() => _selectedUnitNo = value),
+                        ),
+                        _buildDropdown<String>(
+                          "Size",
+                          items: sizeItems,
+                          value: _selectedSize,
+                          onChanged: (value) => setState(() => _selectedSize = value),
                         ),
                         _buildDropdown2(
-                          label: 'Approx Buying Time*',
-                          items: approxBuyingTimeItems,
-                          selectedValue: _selectedApproxBuyingTime,
-                          onChanged: (value) => setState(() => _selectedApproxBuyingTime = value),
+                          label: "Select Construction",
+                          items: ConstructionOptions,
+                          selectedValue: selectedConstruction,
+                          onChanged: (value) => setState(() => selectedConstruction = value),
                         ),
                         Text(
                           "Expenses",
@@ -757,7 +935,8 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                           _buildTextField('Loan Amount', controller: _loanAmountController),
-                          _buildTextField('Remaining Total Amount', controller: _remainingTotalAmountController, readOnly: true),
+                          _buildTextField('Remaining Total Amount',
+                              controller: _remainingTotalAmountController, readOnly: true),
                           if (_amountError != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 5),
@@ -766,7 +945,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                 style: TextStyle(color: Colors.red, fontFamily: "poppins_thin"),
                               ),
                             ),
-                          _buildTextField('Total Amount of Purchase', controller: _totalAmountOfPurchaseController, readOnly: true),
+                          _buildTextField('Total Amount of Purchase',
+                              controller: _totalAmountOfPurchaseController, readOnly: true),
                         ] else ...[
                           for (int i = 0; i < cashFields.length; i++)
                             Column(
@@ -795,7 +975,8 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                           _buildTextField('Amount', controller: _amountController),
-                          _buildTextField('Remaining Total Amount', controller: _remainingTotalAmountController, readOnly: true),
+                          _buildTextField('Remaining Total Amount',
+                              controller: _remainingTotalAmountController, readOnly: true),
                           if (_amountError != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
@@ -804,7 +985,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                 style: TextStyle(color: Colors.red, fontFamily: "poppins_thin"),
                               ),
                             ),
-                          _buildTextField('Total Amount of Purchase', controller: _totalAmountOfPurchaseController, readOnly: true),
+                          _buildTextField('Total Amount of Purchase',
+                              controller: _totalAmountOfPurchaseController, readOnly: true),
                         ],
                       ],
                     ),
@@ -835,10 +1017,16 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildFollowUpPage(UserProvider provider) {
-    final managerItems = provider.bookingData?.manager.map((m) => "${m.firstname} (${m.id})").toList() ?? ['Select Manager'];
-    final staffItems = provider.bookingData?.staff.map((s) => "${s.firstname} (${s.id})").toList() ?? ['Select Staff'];
-    final channelPartnerItems = provider.bookingData?.channelPartner.map((cp) => "${cp.brokername} (${cp.id})").toList() ?? ['Select Channel Partner'];
-    final customerItems = provider.bookingData?.customer.map((c) => "${c.name} (${c.id})").toList() ?? ['Select Customer'];
+    final managerItems = provider.bookingData?.manager.map((m) => "${m.firstname} (${m.id})").toList() ??
+        ['Select Manager'];
+    final staffItems =
+        provider.bookingData?.staff.map((s) => "${s.firstname} (${s.id})").toList() ?? ['Select Staff'];
+    final channelPartnerItems = provider.bookingData?.channelPartner
+        .map((cp) => "${cp.brokername} (${cp.id})")
+        .toList() ??
+        ['Select Channel Partner'];
+    final customerItems =
+        provider.bookingData?.customer.map((c) => "${c.name} (${c.id})").toList() ?? ['Select Customer'];
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -864,7 +1052,8 @@ class _BookingScreenState extends State<BookingScreen> {
                     child: Column(
                       children: [
                         _buildTextField('Token Amount', controller: _tokenAmountController),
-                        _buildTextField('Token Amount in Words', controller: _tokenAmountInWordsController, readOnly: true),
+                        _buildTextField('Token Amount in Words',
+                            controller: _tokenAmountInWordsController, readOnly: true),
                         _buildDatePickerField('Token Amount Date', controller: _tokenDateController),
                         _buildDropdown2(
                           label: 'Token By',
@@ -986,7 +1175,10 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildTextField(String label,
-      {TextEditingController? controller, String? prefix, bool readOnly = false, int maxLines = 1}) {
+      {TextEditingController? controller,
+        String? prefix,
+        bool readOnly = false,
+        int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Container(
@@ -1006,9 +1198,20 @@ class _BookingScreenState extends State<BookingScreen> {
             fillColor: Colors.white,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
-          keyboardType: (label.contains('Amount') && !label.contains('Words')) || label.contains('Price') || label.contains('Discount')
+          keyboardType: (label.contains('Amount') && !label.contains('Words')) ||
+              label.contains('Price') ||
+              label.contains('Discount') ||
+              label.contains('House No.') ||
+              label.contains('Pincode')
               ? TextInputType.numberWithOptions(decimal: true)
               : TextInputType.text,
+          inputFormatters: (label.contains('Amount') && !label.contains('Words')) ||
+              label.contains('Price') ||
+              label.contains('Discount') ||
+              label.contains('House No.') ||
+              label.contains('Pincode')
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+              : null,
         ),
       ),
     );
@@ -1024,7 +1227,8 @@ class _BookingScreenState extends State<BookingScreen> {
           labelStyle: const TextStyle(fontFamily: "poppins_thin"),
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey)),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey)),
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         readOnly: true,
@@ -1065,10 +1269,12 @@ class _BookingScreenState extends State<BookingScreen> {
         child: DropdownButtonHideUnderline(
           child: DropdownButton2<String>(
             hint: Text(label, style: TextStyle(fontSize: 15, fontFamily: "poppins_thin")),
-            items: items.map((String item) => DropdownMenuItem<String>(
+            items: items
+                .map((String item) => DropdownMenuItem<String>(
               value: item,
               child: Text(item, style: TextStyle(fontSize: 16, fontFamily: "poppins_thin")),
-            )).toList(),
+            ))
+                .toList(),
             value: selectedValue,
             onChanged: onChanged,
             buttonStyleData: ButtonStyleData(
@@ -1115,6 +1321,56 @@ class _BookingScreenState extends State<BookingScreen> {
         inactiveBgColor: Colors.grey[300],
         cornerRadius: 10,
         onToggle: onToggle,
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>(
+      String label, {
+        required List<DropdownMenuItem<T>> items,
+        required T? value,
+        required ValueChanged<T?> onChanged,
+        bool required = false,
+      }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.grey[700]),
+          ),
+          SizedBox(height: 8),
+          DropdownButton2<T>(
+            isExpanded: true,
+            hint: Text("Select $label",
+                style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.grey)),
+            value: value,
+            items: items,
+            onChanged: onChanged,
+            buttonStyleData: ButtonStyleData(
+              height: 50,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade400),
+                color: Colors.white,
+              ),
+            ),
+            dropdownStyleData: DropdownStyleData(
+              maxHeight: 200,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.white),
+            ),
+            iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.deepPurple)),
+            underline: SizedBox(),
+          ),
+          if (required && value == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 12.0),
+              child: Text('$label is required', style: TextStyle(color: Colors.red, fontSize: 12)),
+            ),
+        ],
       ),
     );
   }

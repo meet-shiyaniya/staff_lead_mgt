@@ -11,6 +11,7 @@ class FetchBookingData2 {
   List<ChannelPartner> channelPartner;
   List<Customer> customer;
 
+
   FetchBookingData2({
     required this.data,
     required this.manager,

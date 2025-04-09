@@ -4,7 +4,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hr_app/All%20Reports/Models/campaign_Dropdown_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Conversions_Report_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Daily_Reports_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Lead_Reports_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Month_Filter_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Projects_Dropdown_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Site_Reports_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_User_Model.dart';
+import 'package:hr_app/All%20Reports/Models/fetch_Visit_Reports_Model.dart';
+import 'package:hr_app/All%20Reports/Models/performance_Model.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/add_Lead_Model.dart';
+import 'package:hr_app/Inquiry_Management/Model/Api%20Model/assignToOther_Model.dart';
 import 'package:hr_app/Inquiry_Management/Model/Api%20Model/dismiss_Model.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoleavetypesmodel.dart';
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationmodel.dart';
@@ -13,9 +24,12 @@ import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtoofficelocationm
 import 'package:hr_app/staff_HRM_module/Model/Realtomodels/Realtostaffprofilemodel.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import '../All Reports/Models/fetch_Inquiry_Reports_Model.dart';
+import '../Inquiry_Management/Inquiry Management Screens/Filters/inquiry_Filter_Screen.dart';
 import '../Inquiry_Management/Model/Api Model/allInquiryModel.dart';
 import '../Inquiry_Management/Model/Api Model/dismiss_dropdown_Model.dart';
 import '../Inquiry_Management/Model/Api Model/edit_Lead_Model.dart';
+import '../Inquiry_Management/Model/Api Model/fetch_unitno_model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_Transfer_Inquiry_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_booking_Model.dart';
 import '../Inquiry_Management/Model/Api Model/fetch_visit_Model.dart';
@@ -32,9 +46,142 @@ import '../staff_HRM_module/Model/Realtomodels/Realtostaffleavesmodel.dart';
 class ApiService{
   final FlutterSecureStorage _secureStorage=FlutterSecureStorage();
   static const String baseUrl="https://admin.dev.ajasys.com/api";
-  static const String childUrl="https://admin.dev.ajasys.com/api/all_inquiry_data";
-  final String apiUrl = "https://admin.dev.ajasys.com/api/SelfiPunchAttendance";
+  static const String childUrl="https://admin.ajasys.com/api/all_inquiry_data";
+  final String apiUrl = "https://admin.ajasys.com/api/SelfiPunchAttendance";
 
+
+  Future<PaginatedInquiriesFollowup?> fetchFollowupAndCNR(int status,
+      {required int page,
+        required String search,
+        String stages = '', // Added stages parameter
+        String follow_up_day = ""}) async {
+    final url = Uri.parse(
+        "$baseUrl/show_list_Dismiss_allinquiry?&status=$status&page=$page&search=$search");
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        return null;
+      }
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': "application/json",
+        },
+        body: jsonEncode({
+          'token': token,
+          'stages': stages, // Pass stages in the body
+          'follow_up_day': follow_up_day
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.body.startsWith('{') || response.body.startsWith('[')) {
+          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+          return PaginatedInquiriesFollowup.fromJson(jsonData);
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Future<PaginatedInquiriesAssignToOther?> fetchAssignToOtherInquiries(
+  //     int status, {
+  //       required int page,
+  //       required String search,
+  //       String stages = '', // Added stages parameter
+  //       String follow_up_day="assign_to_other"
+  //     }) async {
+  //   final url = Uri.parse("$baseUrl/show_list_Dismiss_allinquiry?&status=$status&page=$page&search=$search");
+  //   try {
+  //     String? token = await _secureStorage.read(key: 'token');
+  //     if (token == null) {
+  //       print("Error: No token found");
+  //       return null;
+  //     }
+  //     final response = await http.post(
+  //       url,
+  //       headers: {
+  //         'Content-Type': "application/json",
+  //       },
+  //       body: jsonEncode({
+  //         'token': token,
+  //         'stages': stages, // Pass stages in the body
+  //         'follow_up_day':follow_up_day
+  //       }),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       print("Response Status Code: ${response.statusCode}");
+  //       if (response.body.startsWith('{') || response.body.startsWith('[')) {
+  //         final Map<String, dynamic> jsonData = jsonDecode(response.body);
+  //         return PaginatedInquiriesAssignToOther.fromJson(jsonData);
+  //       } else {
+  //         print(response.body);
+  //         print("Error: Received non-JSON response");
+  //         return null;
+  //       }
+  //     } else {
+  //       return null;
+  //     }
+  //   } catch (e) {
+  //     return null;
+  //   }
+  // }
+
+
+
+
+
+ // Future<PaginatedInquiriesAssignToOther?> fetchAssignToOtherInquiries({
+ //    required int pageNumber,
+ //    required String datastages,
+ //  }) async {
+ //    final url = Uri.parse("$baseUrl/show_list_Dismiss_allinquiry?pageNumber=$pageNumber");
+ //
+ //    try {
+ //      String? token = await _secureStorage.read(key: 'token');
+ //      print("Token: $token");
+ //      if (token == null) {
+ //        print("Error: No token found");
+ //        return null;
+ //      }
+ //
+ //      final response = await http.post(
+ //        url,
+ //        headers: {
+ //          'Content-Type': "application/json",
+ //        },
+ //        body: jsonEncode({
+ //          'token': token,
+ //          'stages': datastages,
+ //          'follow_up_day': 'assign_to_other', // Static field
+ //        }),
+ //      );
+ //
+ //      if (response.statusCode == 200) {
+ //        print("Response Status Code: ${response.statusCode}");
+ //        if (response.body.startsWith('{') || response.body.startsWith('[')) {
+ //          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+ //          return jsonData;
+ //        } else {
+ //          print(response.body);
+ //          print("Error: Received non-JSON response");
+ //          return null;
+ //        }
+ //      } else {
+ //        print("Error fetching data: ${response.statusCode}");
+ //        return null;
+ //      }
+ //    } catch (e) {
+ //      print("API error: $e");
+ //      return null;
+ //    }
+ //  }
 
   Future<Realtostaffleavesmodel?> fetchStaffLeavesData () async {
 
@@ -81,6 +228,401 @@ class ApiService{
     }
 
   }
+
+  Future<performanceModel?> fetchPerformanceReports ({required String userId, required String fromDate, required String toDate}) async {
+
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/inq_performance_dashboard_api");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': "application/json"
+
+          },
+          body: jsonEncode({'token': token, 'user': userId, 'fromdate': fromDate, 'to_date': toDate})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return performanceModel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<FetchDailyReportsModel?> fetchDailyReports({
+    required String month,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/get_all_status_report");
+
+    try {
+      final String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No token found. Please log in.');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': 'Bearer $token', // Added token in header (common practice)
+        },
+        body: jsonEncode({'token': token, 'month': month}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FetchDailyReportsModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch reports: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching daily reports: $e');
+      return null;
+    }
+  }
+
+  Future<FetchConversionsReportModel?> fetchConversionsReport({
+    required String year,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/get_conversion_combined_reports_api");
+
+    try {
+      final String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No token found. Please log in.');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'token': token, 'year': year, 'more': 1}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FetchConversionsReportModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch reports: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching daily reports: $e');
+      return null;
+    }
+  }
+
+  Future<FetchProjectsDropdownModel?> fetchProjectsDropdown () async {
+
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/fetch_Site_reports_dropdown");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return FetchProjectsDropdownModel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<fetchVisitReportsModel?> fetchVisitReports({
+    required String year,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/site_visit_combined_reports_api");
+
+    try {
+      final String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No token found. Please log in.');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'token': token, 'visit_status': 1, 'year': year, 'more': '1'}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return fetchVisitReportsModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch reports: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching daily reports: $e');
+      return null;
+    }
+  }
+
+  Future<FetchLeadReportsModel?> fetchLeadReports({
+    required int pageID,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/combined_campaign_lead_report_api");
+
+    try {
+      final String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No token found. Please log in.');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'token': token, 'fb_page_id': pageID}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FetchLeadReportsModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch reports: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching daily reports: $e');
+      return null;
+    }
+  }
+
+  Future<FetchSiteReportsModel?> fetchSiteReports({
+    required String project,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/site_reports_dashboard_api");
+
+    try {
+      final String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No token found. Please log in.');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'token': token, 'project': project, 'fromdate': fromDate, 'to_date': toDate}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FetchSiteReportsModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch reports: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching daily reports: $e');
+      return null;
+    }
+  }
+
+  Future<inquiryReportModel?> fetchInquiryReport({
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final url = Uri.parse('$baseUrl/inquiry_reports_dashboard_api');
+
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      debugPrint('Token: $token');
+
+      if (token == null) {
+        debugPrint('No token found in secure storage');
+        throw Exception('Authentication token is missing');
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'token': token, 'fromdate': fromDate, 'to_date': toDate}),
+      );
+
+      debugPrint('API Response Status Code: ${response.statusCode}');
+      debugPrint('API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return inquiryReportModel.fromJson(data);
+      } else {
+        throw Exception('API failed with status ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error in fetchInquiryReport: $e');
+      rethrow; // Rethrow to handle in provider
+    }
+  }
+
+  Future<campaignDropdownModel?> fetchCampaignDropdown () async {
+
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/fetch_lead_dropdown_reports");
+
+    try {
+
+      String? token = await _secureStorage.read(key: 'token');
+
+      if (token == null) {
+
+        return null;
+
+      }
+
+      final response = await http.post(
+
+          url,
+          headers: {
+
+            'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode({'token': token})
+
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        return campaignDropdownModel.fromJson(data);
+
+      } else {
+
+        return null;
+
+      }
+
+    } catch (e) {
+
+      return null;
+
+    }
+
+  }
+
+  Future<FetchUserModel?> fetchUserData() async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/fetch_user_name_reports");
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      Map<String, String> bodyData = {"token": token};
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(bodyData),
+      );
+
+      print('API Response Status: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return FetchUserModel.fromJson(data);
+      } else {
+        throw Exception('Server error: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+      return null;
+    }
+  }
+
+  Future<fetchMonthFilterModel?> fetchMonthsData() async {
+    final url = Uri.parse("https://admin.dev.ajasys.com/api/fetch_all_status_dropdown_reports");
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      Map<String, String> bodyData = {"token": token};
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(bodyData),
+      );
+
+      print('API Response Status: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return fetchMonthFilterModel.fromJson(data);
+      } else {
+        throw Exception('Server error: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+      return null;
+    }
+  }
+
   Future<Realtoallstaffleavesmodel?> fetchAllStaffLeavesData () async {
 
     final url = Uri.parse('$baseUrl/child_leave_request');
@@ -129,6 +671,7 @@ class ApiService{
     }
 
   }
+
   Future<List<Realtostaffattendancemodel>> fetchTwoMonthsAttendance() async {
     final url = Uri.parse("$baseUrl/month_attendance");
     final String? token = await _secureStorage.read(key: 'token');
@@ -189,6 +732,7 @@ class ApiService{
       rethrow; // Allow the caller to handle the error
     }
   }
+
   Future<Realtoleavetypesmodel?> fetchLeaveTypesData () async {
 
     final url = Uri.parse("$baseUrl/Leave_add_list");
@@ -234,6 +778,7 @@ class ApiService{
     }
 
   }
+
   Future<bool> updateProfilePic(File imageFile) async {
     try {
       String? token = await _secureStorage.read(key: 'token');
@@ -261,7 +806,7 @@ class ApiService{
       } else {
         var errorData = await response.stream.bytesToString();
         print("❌ Error Data: $errorData");
-        Fluttertoast.showToast(msg: "❌ Failed to update profile picture: $errorData");
+        Fluttertoast.showToast(msg: "❌ Failed to update profile picture, Please try again after some time.");
         return false;
       }
     } catch (e) {
@@ -270,30 +815,36 @@ class ApiService{
       return false;
     }
   }
-  Future<int> sendMemberAttendance({required String qrAttendance}) async {
+
+  Future<bool> sendMemberAttendance({    // send QR Attendance
+    required String qrAttendance,
+    required double latitude,
+    required double longitude,
+  }) async {
     final url = Uri.parse('$baseUrl/memberAttendanceInsert');
+    final token = await _secureStorage.read(key: 'token');
+
     try {
-      String? token = await _secureStorage.read(key: 'token');
-      // String token = "ZXlKMWMyVnlibUZ0WlNJNkltUmxiVzlmWVdGcllYTm9JaXdpY0dGemMzZHZjbVFpT2lJeE1qTWlMQ0pwWkNJNklqSXpNU0lzSW5CeWIyUjFZM1JmYVdRaU9pSXhJbjA9";
-
-      if (token == null) return 0;
-
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'token': token, 'qrAttendance': qrAttendance}),
+        body: jsonEncode({
+          'token': token,
+          'qrAttendance': qrAttendance,
+          'latitude': latitude,
+          'longitude': longitude,
+        }),
       );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        Fluttertoast.showToast(msg: responseData['status'] == 1
-            ? 'Attendance recorded successfully.'
-            : 'Wrong QR code.');
-        return responseData['status'] ?? 2;
+        return responseData['status'] == 1;
       }
-    } catch (_) {}
-    Fluttertoast.showToast(msg: 'Failed to add attendance.');
-    return 2;
+      return false;
+    } catch (e) {
+      print('API error: $e');
+      return false;
+    }
   }
 
   Future<void> sendApproveReject({
@@ -534,6 +1085,8 @@ class ApiService{
       rethrow;
     }
   }
+
+
 
   Future<bool> updateLeadData({
     required String leadId,
@@ -813,6 +1366,8 @@ class ApiService{
     }
   }
 
+
+
   Future<RealtosmartdashboardModel?> fetchDashboard({
 
     required String countwise,
@@ -902,7 +1457,6 @@ class ApiService{
       return null; // Indicate failure with null
     }
   }
-
 
   Future<PaginatedInquiries?> fetchInquiries(
       int status, {
@@ -1111,6 +1665,7 @@ class ApiService{
       return null;
     }
   }
+
   Future<DismissModel?> fetchDismissData(int pageNumber) async {
     final url = Uri.parse("$baseUrl/show_list_Dismiss_allinquiry?pageNumber=$pageNumber");
     print("API URL: $url");
@@ -1209,7 +1764,7 @@ class ApiService{
   }
 
   Future<void> sendTransferInquiry({
-    required List<String> inqIds, // Changed to accept a list of IDs
+    required List<String> inqIds,
     required String actionKey,
     required String employeeId,
   }) async {
@@ -1219,7 +1774,7 @@ class ApiService{
       String? token = await _secureStorage.read(key: 'token');
 
       if (token == null) {
-        Fluttertoast.showToast(msg: "No authentication token found");
+        print("Error: No token found. User might not be logged in.");
         return;
       }
 
@@ -1228,35 +1783,36 @@ class ApiService{
 
       Map<String, String> bodyData = {
         "token": token,
-        "inquiry_id": inquiryIdsString, // Send as "123,456,789"
+        "inquiry_id": inquiryIdsString.toString(), // "123,456,789"
         "action_name": actionKey,
         "action": "assign",
         "assign_id": employeeId
       };
-
-      print('Sending to backend: $bodyData'); // Debug print
+      print("bodyData$actionKey");
 
       final response = await http.post(
         url,
-        body: bodyData,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode(bodyData), // Convert to JSON
       );
 
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print("Request Body: $bodyData");
 
       if (response.statusCode == 200) {
-        // Fluttertoast.showToast(msg: inqIds.toString());
-        Fluttertoast.showToast(msg: "Inquiries transferred successfully");
+        print("Response Data: ${response.body}");
       } else {
-        Fluttertoast.showToast(
-          msg: "Failed to transfer inquiries: ${response.statusCode}",
-        );
+        print("Error: Status Code ${response.statusCode}");
+        print("Response: ${response.body}"); // Show error response
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Something went wrong: $e");
-      rethrow;
+      print("Exception occurred: $e");
+      rethrow; // Keep throwing the error for higher-level handling
     }
   }
+
 
   Future<InquiryTimeLineModel?> fetchInquiryTimeline({
     required String inquiryId,
@@ -1297,7 +1853,7 @@ class ApiService{
       }
     } catch (e) {
       print('Error fetching inquiry timeline: $e'); // Log for debugging
-      return null; // Indicate failure with null
+      return null;
     }
   }
 
@@ -1413,6 +1969,29 @@ class ApiService{
 
   }
 
+  Future<FetchUnitnoModel> fetchUnitNumbers(String intrestedProduct) async {
+    String? token = await _secureStorage.read(key: 'token');
+    final body = {
+      "token": token ?? "ZXlKbGJuWmZkRzlyWlc0aU9pSjZXVkJwTVRVelZHMXhSbUYwV0doS1ZVOXpjbmg1Wm1kcE56bDRhR280YTFFMmREbElXRmh5TWpOdFVtTk1ORk4xWm5aNFpHUXpXVGxTYlhweE5rUktJaXdpZFhObGNtNWhiV1VpT2lKa1pXMXZYMkZoYTJGemFDSXNJbU5zYVdWdWRGOXBaQ0k2SWpRMklpd2ljM1JoWm1aZmFXUWlPaUl5TXpFaUxDSndjbTlrZFdOMFgybGtJam94ZlE9PQ==",
+      "intrested_product": int.parse(intrestedProduct), // Convert to int as per API requirement
+    };
+    print('Fetching unit numbers with body: $body');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/fetch_int_side_unitno'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    print('Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      print("Unit Numbers API Successfully worked");
+      return FetchUnitnoModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load unit numbers: ${response.statusCode} - ${response.body}');
+    }
+  }
+
   Future<VisitEntryModel> fetchVisitData(String inquiryId) async {
     String? token = await _secureStorage.read(key: 'token');
     final body = {
@@ -1437,6 +2016,8 @@ class ApiService{
       throw Exception('Failed to load visit data: ${response.statusCode} - ${response.body}');
     }
   }
+
+
   Future<Map<String, dynamic>> submitVisitData(Map<String, dynamic> data) async {
     print("API Service - Data to be sent: ${jsonEncode(data)}"); // Log the data being sent
 
@@ -1504,7 +2085,7 @@ class ApiService{
       debugPrint('Response Body: ${response.body}');
       debugPrint('=== Booking API Request End ===');
 
-      // Parse and return the response
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         return responseData;
@@ -1561,6 +2142,36 @@ class ApiService{
       rethrow;
     }
   }
+
+  Future<AllInquiryFilter> filterInquiries(Map<String, dynamic> filters) async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/filter_allinquiry'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+          ...filters,
+        }),
+      );
+
+      print('Filter API Response: ${response.statusCode} - ${response.body}');
+      if (response.statusCode == 200) {
+        return AllInquiryFilter.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to filter inquiries: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error filtering inquiries: $e');
+    }
+  }
+
   Future<InquiryFilter> fetchFilterData() async {
 
     try {
@@ -1585,4 +2196,6 @@ class ApiService{
     }
   }
 
+
 }
+

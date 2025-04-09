@@ -14,7 +14,7 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      height: 65,
+      height: 64,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
@@ -23,43 +23,31 @@ class CategoryCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color:  Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 5),
+            blurRadius: 6,
+            offset: Offset(1, 3),
           ),
         ],
       ),
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             backgroundColor: Colors.grey.shade200,
             child: Icon(
               icon,
-              size: 28,
+              size: 24,
               color: Colors.deepPurple,
             ),
           ),
           SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: "poppins_thin",
-                    color:  Colors.black,
-                  ),
-                ),
-
-              ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: "poppins_thin",
+              color:  Colors.black,
             ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.white,
           ),
         ],
       ),

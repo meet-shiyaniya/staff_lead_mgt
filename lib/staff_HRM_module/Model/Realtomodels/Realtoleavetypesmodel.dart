@@ -27,6 +27,7 @@ class Data {
   String? firstname;
   String? head;
   String? headName;
+  String? underTeam;
   List<TypeOfLeave>? typeOfLeave;
 
   Data(
@@ -34,6 +35,7 @@ class Data {
         this.firstname,
         this.head,
         this.headName,
+        this.underTeam,
         this.typeOfLeave});
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class Data {
     firstname = json['firstname'];
     head = json['head'];
     headName = json['head_name'];
+    underTeam = json['under_team'];
     if (json['type_of_leave'] != null) {
       typeOfLeave = <TypeOfLeave>[];
       json['type_of_leave'].forEach((v) {
@@ -55,6 +58,7 @@ class Data {
     data['firstname'] = this.firstname;
     data['head'] = this.head;
     data['head_name'] = this.headName;
+    data['under_team'] = this.underTeam;
     if (this.typeOfLeave != null) {
       data['type_of_leave'] = this.typeOfLeave!.map((v) => v.toJson()).toList();
     }

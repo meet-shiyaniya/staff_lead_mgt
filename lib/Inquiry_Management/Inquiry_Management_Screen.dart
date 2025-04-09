@@ -480,7 +480,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) =>
-                                    FollowupAndCnrScreen()),
+                                    FollowupAndCnrScreen(0)),
                               );
                             },
                             child: CategoryCard(
@@ -522,7 +522,7 @@ class _InquiryManagementScreenState extends State<InquiryManagementScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => AllInquiriesScreen()),
+                                    builder: (context) => AssignToOtherScreen()),
                               );
                             },
                             child: CategoryCard(

@@ -4,9 +4,12 @@ import 'package:hr_app/Provider/UserProvider.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog.dart';
 import 'package:hr_app/Staff%20Attendance%20Options/QR%20Scanner/custom_Dialog_Worn_Qr.dart';
 import 'package:hr_app/bottom_navigation.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 
 class qrAttendanceScreen extends StatefulWidget {
   const qrAttendanceScreen({Key? key}) : super(key: key);
@@ -27,14 +30,52 @@ class _qrAttendanceScreenState extends State<qrAttendanceScreen> {
   @override
   void initState() {
     super.initState();
-    _requestCameraPermission();
+    _requestPermissions();
   }
 
-  Future<void> _requestCameraPermission() async {
-    PermissionStatus status = await Permission.camera.request();
-    if (!status.isGranted) {
-      Fluttertoast.showToast(msg: "Camera permission is required to scan QR codes.");
-      if (mounted) Navigator.pop(context); // Return to previous screen if permission denied
+  Future<void> _requestPermissions() async {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.location,
+    ].request();
+
+    if (!statuses[Permission.camera]!.isGranted) {
+      Fluttertoast.showToast(
+        msg: "We need camera access to scan the QR code. Please enable it in your settings!",
+        toastLength: Toast.LENGTH_LONG,
+      );
+      if (mounted) Navigator.pop(context);
+    }
+
+    if (!statuses[Permission.location]!.isGranted) {
+      Fluttertoast.showToast(
+        msg: "We need your location to mark attendance. Please allow it in settings!",
+        toastLength: Toast.LENGTH_LONG,
+      );
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        Fluttertoast.showToast(
+          msg: "Location services are off. Please turn them on to continue!",
+          toastLength: Toast.LENGTH_LONG,
+        );
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Oops! We couldn’t get your location. Please try again.",
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return null;
     }
   }
 
@@ -48,11 +89,32 @@ class _qrAttendanceScreenState extends State<qrAttendanceScreen> {
       controller.pauseCamera();
 
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      bool success = await userProvider.sendMemberAttendance(qrAttendance: scanData.code!);
+
+      Position? position = await _getCurrentLocation();
+
+      if (position == null) {
+        setState(() {
+          showWrong = true;
+          isScanning = true;
+        });
+        controller.resumeCamera();
+        return;
+      }
+
+      bool success = await userProvider.sendMemberAttendance(
+        qrAttendance: scanData.code!,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
 
       if (!mounted) return;
 
       if (success) {
+        final prefs = await SharedPreferences.getInstance();
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        await prefs.setString('attendanceTime', DateFormat('hh:mm:ss a').format(DateTime.now()));
+        await prefs.setBool('attendanceMarked_$today', true);
+        await prefs.setString('entryDate', today);
         setState(() => showSuccessAnimation = true);
         await Future.delayed(const Duration(seconds: 3));
         if (!hasClosed && mounted) {
@@ -64,6 +126,10 @@ class _qrAttendanceScreenState extends State<qrAttendanceScreen> {
         }
       } else {
         setState(() => showWrong = true);
+        Fluttertoast.showToast(
+          msg: "Something went wrong with the QR code. Please try scanning again!",
+          toastLength: Toast.LENGTH_LONG,
+        );
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
           setState(() {
@@ -114,12 +180,12 @@ class _qrAttendanceScreenState extends State<qrAttendanceScreen> {
           if (showSuccessAnimation)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 200),
-              child: customDialog(), // Assuming this is your success dialog widget
+              child: customDialog(),
             ),
           if (showWrong)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 200),
-              child: customDialogWornQr(), // Assuming this is your error dialog widget
+              child: customDialogWornQr(),
             ),
         ],
       ),

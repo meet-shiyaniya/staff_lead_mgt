@@ -1,3 +1,5 @@
+import 'inquiry_filter_model.dart';
+
 class AddLeadDataModel {
   final List<CstStatus> cststatus;
   final List<AreaCityCountry> areaCityCountry;
@@ -69,6 +71,7 @@ class AreaCityCountry {
     country: json['country'] ?? '',
   );
 }
+
 
 class Budget {
   final String values;

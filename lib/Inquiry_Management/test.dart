@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../Api_services/api_service.dart';
 import '../Provider/UserProvider.dart';
-
-// import 'Model/add_Lead_Model.dart';
 import 'Model/Api Model/add_Lead_Model.dart';
 import 'Utils/Colors/app_Colors.dart';
 
@@ -19,7 +18,7 @@ class IntSiteOption {
   IntSiteOption({required this.id, required this.name});
 
   @override
-  String toString() => name;
+  String toString() => 'ID: $id, Name: $name';
 }
 
 class AddVisitScreen extends StatefulWidget {
@@ -32,17 +31,14 @@ class AddVisitScreen extends StatefulWidget {
 }
 
 class _AddVisitScreenState extends State<AddVisitScreen> {
-  String approxBuying = "";
   PageController _pageController = PageController();
   int _currentPage = 0;
   DateTime? nextFollowUp;
-  final TextEditingController _dateController = TextEditingController();
   bool isLoanSelected = true;
 
   final TextEditingController _mobileNoController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _intAreaController = TextEditingController();
   final TextEditingController _propertyTypeController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _dpAmountController = TextEditingController();
@@ -53,21 +49,23 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   String? _purposeOfBuying;
   String? _approxBuyingTime;
   IntSiteOption? _selectedIntSite;
-  String? _cashPaymentCondition;
   String? _selectTime;
   String? _selectedPropertySubType;
   String? _selectedUnitNo;
   String? _selectedSize;
-
   String? _iscountvisit;
+  String? _selectedIntArea;
+
 
   List<String> _propertySubTypeOptions = [];
-  List<String> _unitNoOptions = [];
   List<String> _sizeOptions = [];
   List<IntSiteOption> _intSiteOptions = [];
+  List<String> _unitNoOptions = [];
+  List<IntSiteOption> _intAreaOptions = [];
 
   final ApiService _apiService = ApiService();
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -78,18 +76,17 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         provider.fetchVisitData(widget.inquiryId!).then((_) {
           if (provider.visitData != null) {
             final inquiry = provider.visitData!.inquiries;
-            final projects = provider.visitData!.projects;
-            final unitNos = provider.visitData!.unitNo;
+            // final area=provider.bookingData!.data[2]; //fetch selected int are from this api
             setState(() {
-              _iscountvisit = inquiry.iscountvisit;
-              _mobileNoController.text = inquiry.mobileno ?? '';
-              _nameController.text = inquiry.fullName ?? '';
-              _addressController.text = inquiry.address ?? '';
-              _intAreaController.text = 'Olpad';
-              _propertyTypeController.text = inquiry.propertyType ?? '';
-              _budgetController.text = inquiry.budget ?? '';
+              _iscountvisit = inquiry.isSiteVisit;
+              _mobileNoController.text = inquiry.mobileno;
+              _nameController.text = inquiry.fullName;
+              _addressController.text = inquiry.address;
+              _propertyTypeController.text = inquiry.propertyType;
+              _budgetController.text = inquiry.budget;
+              // _selectedIntArea=area.area;
 
-              _propertySubTypeOptions = projects
+              _propertySubTypeOptions = provider.visitData!.projects
                   .map((project) => project.projectSubType.trim())
                   .where((subType) => subType.isNotEmpty)
                   .toSet()
@@ -100,8 +97,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   ? _propertySubTypeOptions.first
                   : null;
 
-              _unitNoOptions = unitNos.isNotEmpty
-                  ? unitNos
+              _unitNoOptions = provider.visitData!.unitNo.isNotEmpty
+                  ? provider.visitData!.unitNo
                   .map((unit) => unit.unitNo.trim())
                   .where((unit) => unit.isNotEmpty)
                   .toSet()
@@ -113,31 +110,38 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   ? _unitNoOptions.first
                   : null;
 
-              _sizeOptions = unitNos.isNotEmpty
-                  ? unitNos
+              _sizeOptions = provider.visitData!.unitNo.isNotEmpty
+                  ? provider.visitData!.unitNo
                   .map((unit) => unit.propertySize.trim())
                   .where((size) => size.isNotEmpty)
                   .toSet()
                   .toList()
                   : ['No Size Available'];
-              _selectedSize = unitNos.isNotEmpty && _unitNoOptions.contains(inquiry.unitNo)
-                  ? unitNos
+              _selectedSize = provider.visitData!.unitNo.isNotEmpty && _unitNoOptions.contains(inquiry.unitNo)
+                  ? provider.visitData!.unitNo
                   .firstWhere((unit) => unit.unitNo == inquiry.unitNo)
                   .propertySize
                   .trim()
                   : _sizeOptions.isNotEmpty
                   ? _sizeOptions.first
                   : null;
+
+              if (provider.bookingData != null && provider.bookingData!.data.isNotEmpty) {
+                final booking = provider.bookingData!.data[0];
+                _selectedIntArea = _intAreaOptions.firstWhere(
+                      (option) => option.id == booking.area,
+                  orElse: () => _intAreaOptions.first,
+                ) as String?;
+              }
+
+              String intrestedProduct = inquiry.intrestedProduct.isNotEmpty ? inquiry.intrestedProduct : "1";
+              provider.fetchUnitNumbers(intrestedProduct).then((_) => _updateUnitNoAndSize(provider));
             });
           }
         }).catchError((e) {
           print('Error fetching visit data: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to load visit data: $e')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load visit data: $e')));
         });
-      } else {
-        print('No inquiryId provided');
       }
 
       provider.fetchAddLeadData().then((_) {
@@ -146,14 +150,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             final dropdownData = provider.dropdownData!;
             final inquiry = provider.visitData?.inquiries;
 
-            _purposeOfBuying = dropdownData.purposeOfBuying?.investment?.trim() ??
-                dropdownData.purposeOfBuying?.personalUse?.trim();
-            if (inquiry != null && inquiry.purposeBuy.isNotEmpty) {
-              _purposeOfBuying = dropdownData.purposeOfBuying?.investment == inquiry.purposeBuy ||
-                  dropdownData.purposeOfBuying?.personalUse == inquiry.purposeBuy
-                  ? inquiry.purposeBuy
-                  : _purposeOfBuying;
-            }
+            print("Dropdown Data Loaded: ${dropdownData.toString()}");
+            print("intArea : ${dropdownData.intArea.map((a) => 'ID: ${a.id}, Area: ${a.area}').toList()}");
+
+            _purposeOfBuying = dropdownData.purposeOfBuying?.investment ?? dropdownData.purposeOfBuying?.personalUse;
+            if (inquiry != null && inquiry.purposeBuy.isNotEmpty) _purposeOfBuying = inquiry.purposeBuy;
 
             _approxBuyingTime = dropdownData.apxTime?.apxTimeData?.split(',')?.first.trim();
             if (inquiry != null && inquiry.budget.isNotEmpty) {
@@ -165,41 +166,57 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             }
 
             _intSiteOptions = dropdownData.intSite.isNotEmpty
-                ? dropdownData.intSite
-                .map((site) => IntSiteOption(
-              id: site.id ?? "6",
-              name: site.productName.trim(),
-            ))
-                .toList()
-                : [IntSiteOption(id: "6", name: "Default Site")];
-            if (inquiry != null && inquiry.intrestedProduct.isNotEmpty) {
-              _selectedIntSite = _intSiteOptions.firstWhere(
-                    (option) => option.id == inquiry.intrestedProduct,
-                orElse: () => _intSiteOptions.first,
-              );
-            } else {
-              _selectedIntSite = _intSiteOptions.isNotEmpty ? _intSiteOptions.first : null;
-            }
+                ? dropdownData.intSite.map((site) => IntSiteOption(id: site.id, name: site.productName.trim())).toList()
+                : [IntSiteOption(id: "0", name: "Default Site")];
+            _selectedIntSite = inquiry != null && inquiry.intrestedProduct.isNotEmpty
+                ? _intSiteOptions.firstWhere((option) => option.id == inquiry.intrestedProduct, orElse: () => _intSiteOptions.first)
+                : _intSiteOptions.isNotEmpty
+                ? _intSiteOptions.first
+                : null;
 
-            _selectTime = null; // Initially null, updated by API
-            print("IntSite Options: ${_intSiteOptions.map((e) => 'ID: ${e.id}, Name: ${e.name}').toList()}");
+            _intAreaOptions = dropdownData.intArea.isNotEmpty
+                ? dropdownData.intArea
+                .map((area) => IntSiteOption(id: area.id, name: area.area.trim()))
+                .toList()
+                : [IntSiteOption(id: "0", name: "Default Area")];
+            // Do not set _selectedIntArea here to allow hint to show initially
+            // _selectedIntArea = _intAreaOptions.isNotEmpty ? _intAreaOptions.first.id : null;
+
+            print("IntSite Options: $_intSiteOptions");
+            print("IntArea Options: $_intAreaOptions");
+            print("Selected Int Area: $_selectedIntArea");
           });
         } else {
           setState(() {
-            _purposeOfBuying = 'Investment';
-            _approxBuyingTime = '2-3 days';
-            _intSiteOptions = [IntSiteOption(id: "6", name: "Default Site")];
+            _intSiteOptions = [IntSiteOption(id: "0", name: "Default Site")];
             _selectedIntSite = _intSiteOptions.first;
-            _selectTime = null; // Initially null, updated by API
-            print("IntSite Options (Default): ${_intSiteOptions.map((e) => 'ID: ${e.id}, Name: ${e.name}').toList()}");
+            _intAreaOptions = [IntSiteOption(id: "0", name: "Default Area")];
+            // Do not set _selectedIntArea here to allow hint to show initially
+            // _selectedIntArea = _intAreaOptions.first.id;
+            print("Fallback IntArea Options: $_intAreaOptions");
           });
         }
       }).catchError((e) {
         print('Error fetching dropdown data: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load dropdown data: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load dropdown data: $e')));
+        setState(() {
+          _intAreaOptions = [IntSiteOption(id: "0", name: "Default Area")];
+          // _selectedIntArea = _intAreaOptions.first.id;
+        });
       });
+    });
+  }
+
+  void _updateUnitNoAndSize(UserProvider provider) {
+    setState(() {
+      _unitNoOptions = provider.unitNoData?.unitNo.map((unit) => unit.unitNo.trim()).toSet().toList() ?? ['No Units Available'];
+      _selectedUnitNo = _unitNoOptions.isNotEmpty ? _unitNoOptions.first : null;
+
+      _sizeOptions = provider.unitNoData?.unitNo.map((unit) => unit.propertySize.trim()).where((size) => size.isNotEmpty).toSet().toList() ?? ['No Size Available'];
+      _selectedSize = _sizeOptions.isNotEmpty ? _sizeOptions.first : null;
+
+      print("Updated UnitNo Options: $_unitNoOptions");
+      print("Updated Size Options: $_sizeOptions");
     });
   }
 
@@ -208,20 +225,18 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     _mobileNoController.dispose();
     _nameController.dispose();
     _addressController.dispose();
-    _intAreaController.dispose();
     _propertyTypeController.dispose();
     _budgetController.dispose();
     _dpAmountController.dispose();
     _loanAmountController.dispose();
     _afterVisitStatusController.dispose();
-    _dateController.dispose();
     _followUpDateController.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   void _nextPage() {
-    if (_currentPage < 1) {
+    if (_formKey.currentState!.validate() && _currentPage < 1) {
       setState(() => _currentPage++);
       _pageController.nextPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
     }
@@ -235,200 +250,150 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   Future<void> _submitData() async {
+    if (!_formKey.currentState!.validate()) {
+      print("Form validation failed");
+      return;
+    }
+
     String? token = await _secureStorage.read(key: 'token');
     print("Submit Data - Token: $token");
 
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: No token found in secure storage")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: No token found in secure storage")));
       return;
     }
 
     if (widget.inquiryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: No inquiry ID provided")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: No inquiry ID provided")));
       return;
     }
+
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    final inquiry = provider.visitData!.inquiries;
 
     final Map<String, dynamic> apiData = {
       "token": token,
       "remark": _afterVisitStatusController.text,
+      "full_name": _nameController.text,
       "intrested_product": _selectedIntSite?.id ?? "6",
-      "budget": _budgetController.text.isNotEmpty ? "1" : "1",
+      "budget": _budgetController.text,
       "approx_buy": _approxBuyingTime ?? "2-3 days",
       "inquiry_id": widget.inquiryId,
-      "isSiteVisit": "3",
-      "intrested_area": _intAreaController.text.isNotEmpty ? _intAreaController.text : "64",
+      "isSiteVisit": inquiry.isSiteVisit,
+      "iscountvisit": inquiry.iscountvisit,
+      // "property_sub_type":_selectedPropertySubType,(send id of selected property sub type)
+      "purpose_buy":_purposeOfBuying,
+      "intrested_area": _selectedIntArea ?? "0",
       "unit_no": _selectedUnitNo ?? "5",
       "paymentref": isLoanSelected ? "loan" : "cash",
-      "dp_amount": _dpAmountController.text.isNotEmpty ? _dpAmountController.text : "2000000",
-      "nxt_follow_up":
-      _followUpDateController.text.isNotEmpty ? _followUpDateController.text : "2025-02-28",
+      "dp_amount": _dpAmountController.text,
+      "nxt_follow_up": _followUpDateController.text,
       "time": _selectTime ?? "",
+      if (isLoanSelected) "loan_amount": _loanAmountController.text,
     };
 
     print("Submit Data - API Data: ${jsonEncode(apiData)}");
 
-    final result = await _apiService.submitVisitData(apiData);
-    print("Submit Data - API Result: $result");
+    try {
+      final result = await _apiService.submitVisitData(apiData);
+      print("Submit Data - API Result: $result");
 
-    if (result["success"]) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"])));
+      if (result["success"] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"] ?? "Visit submitted successfully")));
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result["message"] ?? "Submission failed")));
+      }
+    } catch (e) {
+      print("Submission Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error submitting data: $e")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    final inquiry = provider.visitData?.inquiries;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Visit Entry${_iscountvisit != null ? " ($_iscountvisit)" : ""}',
+          'Visit Entry(${inquiry?.iscountvisit ?? "N/A"})',
           style: TextStyle(fontFamily: "poppins_thin", color: Colors.white),
         ),
         backgroundColor: AppColor.Buttoncolor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, true),
         ),
       ),
       backgroundColor: Colors.white,
       body: Consumer<UserProvider>(
         builder: (context, provider, child) {
           if (provider.isLoadingDropdown) {
+            print("Dropdown Loading State: ${provider.isLoadingDropdown}");
             return Center(child: CircularProgressIndicator());
           }
           if (provider.error != null) {
+            print("Dropdown Error: ${provider.error}");
             return Center(child: Text('Error: ${provider.error}'));
           }
 
           final dropdownData = provider.dropdownData;
+          print("Dropdown Data in Build: ${dropdownData?.toString() ?? 'null'}");
 
           List<DropdownMenuItem<String>> purposeOfBuyingItems = dropdownData != null
               ? [
             if (dropdownData.purposeOfBuying?.investment != null)
               DropdownMenuItem<String>(
                 value: dropdownData.purposeOfBuying!.investment.trim(),
-                child: Text(dropdownData.purposeOfBuying!.investment.trim(),
-                    style: TextStyle(fontFamily: "poppins_thin"),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(dropdownData.purposeOfBuying!.investment.trim(), style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
               ),
             if (dropdownData.purposeOfBuying?.personalUse != null)
               DropdownMenuItem<String>(
                 value: dropdownData.purposeOfBuying!.personalUse.trim(),
-                child: Text(dropdownData.purposeOfBuying!.personalUse.trim(),
-                    style: TextStyle(fontFamily: "poppins_thin"),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(dropdownData.purposeOfBuying!.personalUse.trim(), style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
               ),
           ].where((item) => item.value!.isNotEmpty).toList()
               : [
-            DropdownMenuItem<String>(
-              value: 'Investment',
-              child: Text('Investment',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-            DropdownMenuItem<String>(
-              value: 'Personal Use',
-              child: Text('Personal Use',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
+            DropdownMenuItem<String>(value: 'Investment', child: Text('Investment', style: TextStyle(fontFamily: "poppins_thin"))),
+            DropdownMenuItem<String>(value: 'Personal Use', child: Text('Personal Use', style: TextStyle(fontFamily: "poppins_thin"))),
           ];
 
-          List<DropdownMenuItem<String>> approxBuyingTimeItems = dropdownData != null &&
-              dropdownData.apxTime?.apxTimeData != null
+          List<DropdownMenuItem<String>> approxBuyingTimeItems = dropdownData != null && dropdownData.apxTime?.apxTimeData != null
               ? dropdownData.apxTime!.apxTimeData
               .split(',')
               .map((time) => time.trim())
               .where((time) => time.isNotEmpty)
               .toSet()
-              .map((time) => DropdownMenuItem<String>(
-            value: time,
-            child: Text(time,
-                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ))
+              .map((time) => DropdownMenuItem<String>(value: time, child: Text(time, style: TextStyle(fontFamily: "poppins_thin"))))
               .toList()
               : [
-            DropdownMenuItem<String>(
-              value: '2-3 days',
-              child: Text('2-3 days',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-            DropdownMenuItem<String>(
-              value: '1 week',
-              child: Text('1 week',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-            DropdownMenuItem<String>(
-              value: '1 month',
-              child: Text('1 month',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
+            DropdownMenuItem<String>(value: '2-3 days', child: Text('2-3 days', style: TextStyle(fontFamily: "poppins_thin"))),
+            DropdownMenuItem<String>(value: '1 week', child: Text('1 week', style: TextStyle(fontFamily: "poppins_thin"))),
+            DropdownMenuItem<String>(value: '1 month', child: Text('1 month', style: TextStyle(fontFamily: "poppins_thin"))),
           ];
 
-          List<DropdownMenuItem<IntSiteOption>> intSiteItems = _intSiteOptions
-              .map((option) => DropdownMenuItem<IntSiteOption>(
-            value: option,
-            child: Text(option.name,
-                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ))
-              .toList();
+          List<DropdownMenuItem<IntSiteOption>> intSiteItems =
+          _intSiteOptions.map((option) => DropdownMenuItem<IntSiteOption>(value: option, child: Text(option.name, style: TextStyle(fontFamily: "poppins_thin")))).toList();
 
           List<DropdownMenuItem<String>> propertySubTypeItems = _propertySubTypeOptions.isNotEmpty
-              ? _propertySubTypeOptions
-              .map((subType) => DropdownMenuItem<String>(
-            value: subType,
-            child: Text(subType,
-                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ))
-              .toList()
+              ? _propertySubTypeOptions.map((subType) => DropdownMenuItem<String>(value: subType, child: Text(subType, style: TextStyle(fontFamily: "poppins_thin")))).toList()
               : [
-            DropdownMenuItem<String>(
-              value: 'Residential',
-              child: Text('Residential',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-            DropdownMenuItem<String>(
-              value: 'Commercial',
-              child: Text('Commercial',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
+            DropdownMenuItem<String>(value: 'Residential', child: Text('Residential', style: TextStyle(fontFamily: "poppins_thin"))),
+            DropdownMenuItem<String>(value: 'Commercial', child: Text('Commercial', style: TextStyle(fontFamily: "poppins_thin"))),
           ];
 
           List<DropdownMenuItem<String>> unitNoItems = _unitNoOptions.isNotEmpty
-              ? _unitNoOptions
-              .map((unit) => DropdownMenuItem<String>(
-            value: unit,
-            child: Text(unit,
-                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ))
-              .toList()
-              : [
-            DropdownMenuItem<String>(
-              value: 'Default Unit',
-              child: Text('Default Unit',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-          ];
+              ? _unitNoOptions.map((unit) => DropdownMenuItem<String>(value: unit, child: Text(unit, style: TextStyle(fontFamily: "poppins_thin")))).toList()
+              : [DropdownMenuItem<String>(value: 'No Units Available', child: Text('No Units Available', style: TextStyle(fontFamily: "poppins_thin")))];
 
           List<DropdownMenuItem<String>> sizeItems = _sizeOptions.isNotEmpty
-              ? _sizeOptions
-              .map((size) => DropdownMenuItem<String>(
-            value: size,
-            child: Text(size,
-                style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-          ))
-              .toList()
-              : [
-            DropdownMenuItem<String>(
-              value: 'Default Size',
-              child: Text('Default Size',
-                  style: TextStyle(fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis),
-            ),
-          ];
+              ? _sizeOptions.map((size) => DropdownMenuItem<String>(value: size, child: Text(size, style: TextStyle(fontFamily: "poppins_thin")))).toList()
+              : [DropdownMenuItem<String>(value: 'No Size Available', child: Text('No Size Available', style: TextStyle(fontFamily: "poppins_thin")))];
+
+          List<DropdownMenuItem<String>> intAreaItems =
+          _intAreaOptions.map((option) => DropdownMenuItem<String>(value: option.id, child: Text(option.name, style: TextStyle(fontFamily: "poppins_thin")))).toList();
+          print("intAreaItems: ${intAreaItems.map((item) => 'Value: ${item.value}, Child: ${item.child}').toList()}");
 
           _purposeOfBuying = purposeOfBuyingItems.any((item) => item.value == _purposeOfBuying)
               ? _purposeOfBuying
@@ -440,30 +405,24 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               : approxBuyingTimeItems.isNotEmpty
               ? approxBuyingTimeItems.first.value
               : null;
-          _selectedPropertySubType =
-          propertySubTypeItems.any((item) => item.value == _selectedPropertySubType)
+          _selectedPropertySubType = propertySubTypeItems.any((item) => item.value == _selectedPropertySubType)
               ? _selectedPropertySubType
               : propertySubTypeItems.isNotEmpty
               ? propertySubTypeItems.first.value
               : null;
-          _selectedUnitNo = unitNoItems.any((item) => item.value == _selectedUnitNo)
-              ? _selectedUnitNo
-              : unitNoItems.isNotEmpty
-              ? unitNoItems.first.value
-              : null;
-          _selectedSize = sizeItems.any((item) => item.value == _selectedSize)
-              ? _selectedSize
-              : sizeItems.isNotEmpty
-              ? sizeItems.first.value
-              : null;
+          _selectedUnitNo = unitNoItems.any((item) => item.value == _selectedUnitNo) ? _selectedUnitNo : unitNoItems.isNotEmpty ? unitNoItems.first.value : null;
+          _selectedSize = sizeItems.any((item) => item.value == _selectedSize) ? _selectedSize : sizeItems.isNotEmpty ? sizeItems.first.value : null;
 
-          return PageView(
-            controller: _pageController,
-            physics: NeverScrollableScrollPhysics(),
-            children: [
-              _buildCustomerInformationPage(purposeOfBuyingItems, approxBuyingTimeItems, propertySubTypeItems),
-              _buildInterestSuggestionPage(intSiteItems, unitNoItems, sizeItems, provider),
-            ],
+          return Form(
+            key: _formKey,
+            child: PageView(
+              controller: _pageController,
+              physics: NeverScrollableScrollPhysics(),
+              children: [
+                _buildCustomerInformationPage(purposeOfBuyingItems, approxBuyingTimeItems, propertySubTypeItems, intAreaItems),
+                _buildInterestSuggestionPage(intSiteItems, unitNoItems, sizeItems, provider),
+              ],
+            ),
           );
         },
       ),
@@ -471,9 +430,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   Widget _buildCustomerInformationPage(
-      List<DropdownMenuItem<String>> purposeOfBuyingItems,
-      List<DropdownMenuItem<String>> approxBuyingTimeItems,
-      List<DropdownMenuItem<String>> propertySubTypeItems) {
+      List<DropdownMenuItem<String>> purposeOfBuyingItems, List<DropdownMenuItem<String>> approxBuyingTimeItems, List<DropdownMenuItem<String>> propertySubTypeItems, List<DropdownMenuItem<String>> intAreaItems) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView(
@@ -494,8 +451,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _buildTextField('Mobile No.', prefix: '+91', controller: _mobileNoController),
-                  _buildTextField('Name', controller: _nameController),
+                  _buildTextField('Mobile No.', prefix: '+91', controller: _mobileNoController, maxLength: 10),
+                  _buildTextField('Name', controller: _nameController, required: true),
                   _buildTextField('Address', controller: _addressController),
                 ],
               ),
@@ -518,7 +475,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               padding: const EdgeInsets.all(12.0),
               child: Column(
                 children: [
-                  _buildTextField('Int Area*', controller: _intAreaController),
+                  _buildDropdown<String>(
+                    "Int Area*",
+                    items: intAreaItems,
+                    value: _selectedIntArea,
+                    onChanged: (value) => setState(() => _selectedIntArea = value),
+                    required: true,
+                  ),
                   _buildDropdown<String>(
                     "Property Sub Type",
                     items: propertySubTypeItems,
@@ -526,18 +489,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     onChanged: (value) => setState(() => _selectedPropertySubType = value),
                   ),
                   _buildTextField('Property Type*', controller: _propertyTypeController),
-                  _buildTextField('Budget*', controller: _budgetController),
+                  _buildTextField('Budget*', controller: _budgetController, required: true, isNumeric: true),
                   _buildDropdown<String>(
                     "Purpose of Buying*",
                     items: purposeOfBuyingItems,
                     value: _purposeOfBuying,
                     onChanged: (value) => setState(() => _purposeOfBuying = value),
+                    required: true,
                   ),
                   _buildDropdown<String>(
                     "Approx Buying Time*",
                     items: approxBuyingTimeItems,
                     value: _approxBuyingTime,
                     onChanged: (value) => setState(() => _approxBuyingTime = value),
+                    required: true,
                   ),
                 ],
               ),
@@ -549,21 +514,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
   }
 
-  Widget _buildInterestSuggestionPage(
-      List<DropdownMenuItem<IntSiteOption>> intSiteItems,
-      List<DropdownMenuItem<String>> unitNoItems,
-      List<DropdownMenuItem<String>> sizeItems,
-      UserProvider provider) {
-    // Filter nextSlots to unique source values, preferring available slots
-    final uniqueSlots = <String, NextSlot>{};
-    for (var slot in provider.nextSlots) {
-      if (!uniqueSlots.containsKey(slot.source)) {
-        uniqueSlots[slot.source] = slot;
-      } else if (!slot.disabled) {
-        uniqueSlots[slot.source] = slot; // Prefer available slot
-      }
-    }
-    final filteredSlots = uniqueSlots.values.toList();
+  Widget _buildInterestSuggestionPage(List<DropdownMenuItem<IntSiteOption>> intSiteItems, List<DropdownMenuItem<String>> unitNoItems, List<DropdownMenuItem<String>> sizeItems, UserProvider provider) {
+    final allSlots = provider.nextSlots;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -586,7 +538,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     'Int Site*',
                     items: intSiteItems,
                     value: _selectedIntSite,
-                    onChanged: (value) => setState(() => _selectedIntSite = value),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedIntSite = value;
+                        if (value != null) provider.fetchUnitNumbers(value.id).then((_) => _updateUnitNoAndSize(provider));
+                      });
+                    },
+                    required: true,
                   ),
                   _buildDropdown<String>(
                     'Unit No',
@@ -619,201 +577,45 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               child: Column(
                 children: [
                   _buildToggleSwitch(),
-                  if (isLoanSelected) ...[
-                    _buildTextField('DP Amount*', controller: _dpAmountController),
-                    _buildTextField('Loan Amount*', controller: _loanAmountController),
-                    _buildTextField('After Visit Status*', controller: _afterVisitStatusController),
-                    TextFormField(
-                      controller: _followUpDateController,
-                      decoration: InputDecoration(
-                        hintText: "Select Next Follow Up Date",
-                        hintStyle: const TextStyle(fontFamily: "poppins_light"),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: const Icon(Icons.calendar_today),
-                      ),
-                      readOnly: true,
-                      onTap: () async {
-                        DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            nextFollowUp = picked;
-                            _followUpDateController.text = DateFormat('yyyy-MM-dd').format(nextFollowUp!);
-                            provider.fetchNextSlots(_followUpDateController.text);
-                          });
-                        }
-                      },
+                  _buildTextField('DP Amount*', controller: _dpAmountController, required: true, isNumeric: true),
+                  if (isLoanSelected) _buildTextField('Loan Amount*', controller: _loanAmountController, required: true, isNumeric: true),
+                  _buildTextField('After Visit Status*', controller: _afterVisitStatusController, required: true),
+                  _buildDatePickerField('Next Followup Date*', controller: _followUpDateController, required: true),
+                  SizedBox(height: 10),
+                  provider.isLoading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : DropdownButton2<String>(
+                    isExpanded: true,
+                    hint: const Text('Select Time', style: TextStyle(fontFamily: "poppins_thin")),
+                    value: _selectTime,
+                    buttonStyleData: ButtonStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.grey.shade200)),
+                    underline: const SizedBox(),
+                    dropdownStyleData: DropdownStyleData(maxHeight: 200),
+                    items: allSlots.map((slot) {
+                      return DropdownMenuItem<String>(
+                        value: slot.source,
+                        enabled: slot.disabled,
+                        child: Text(
+                          slot.source ?? '',
+                          style: TextStyle(fontFamily: "poppins_thin", color: slot.disabled ? Colors.black : Colors.grey),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null && allSlots.any((slot) => slot.source == value && slot.disabled)) {
+                        setState(() => _selectTime = value);
+                      }
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return "Next follow-up date is required";
+                          return 'Please select a time';
                         }
                         return null;
-                      },
-                    ),
-                    SizedBox(height: 10),
-                    provider.isLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                        : DropdownButton2<String>(
-                      isExpanded: true,
-                      hint: const Text(
-                        'Select Time',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontFamily: "poppins_thin",
-                        ),
-                      ),
-                      value: _selectTime,
-                      buttonStyleData: ButtonStyleData(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.grey.shade200,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade300,
-                              blurRadius: 4,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      underline: const SizedBox(),
-                      dropdownStyleData: DropdownStyleData(
-                        offset: const Offset(-5, -10),
-                        maxHeight: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 10,
-                        scrollbarTheme: ScrollbarThemeData(
-                          radius: const Radius.circular(40),
-                          thickness: MaterialStateProperty.all(6),
-                          thumbVisibility: MaterialStateProperty.all(true),
-                        ),
-                      ),
-                      items: filteredSlots.isEmpty
-                          ? [
-                        const DropdownMenuItem(
-                          value: 'None',
-                          enabled: false,
-                          child: Text(
-                            'No slots available',
-                            style: TextStyle(fontFamily: "poppins_thin", color: Colors.grey),
-                          ),
-                        ),
-                      ]
-                          : filteredSlots.map((slot) {
-                        return DropdownMenuItem<String>(
-                          value: slot.source,
-                          enabled: !slot.disabled,
-                          child: Text(
-                            slot.source ?? '',
-                            style: TextStyle(
-                              fontFamily: "poppins_thin",
-                              color: !slot.disabled ? Colors.black : Colors.grey,
-                              fontWeight: !slot.disabled ? FontWeight.normal : FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectTime = value;
-                          });
-                        }
-                      },
-                    ),
-                  ] else ...[
-                    _buildTextField('DP Amount*', controller: _dpAmountController),
-                    _buildTextField('After Visit Status*', controller: _afterVisitStatusController),
-                    _buildDatePickerField('Next Followup Date*', controller: _followUpDateController),
-                    provider.isLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                        : DropdownButton2<String>(
-                      isExpanded: true,
-                      hint: const Text(
-                        'Select Time',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontFamily: "poppins_thin",
-                        ),
-                      ),
-                      value: _selectTime,
-                      buttonStyleData: ButtonStyleData(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.grey.shade200,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade300,
-                              blurRadius: 4,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      underline: const SizedBox(),
-                      dropdownStyleData: DropdownStyleData(
-                        offset: const Offset(-5, -10),
-                        maxHeight: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 10,
-                        scrollbarTheme: ScrollbarThemeData(
-                          radius: const Radius.circular(40),
-                          thickness: MaterialStateProperty.all(6),
-                          thumbVisibility: MaterialStateProperty.all(true),
-                        ),
-                      ),
-                      items: filteredSlots.isEmpty
-                          ? [
-                        const DropdownMenuItem(
-                          value: 'None',
-                          enabled: false,
-                          child: Text(
-                            'No slots available',
-                            style: TextStyle(fontFamily: "poppins_thin", color: Colors.grey),
-                          ),
-                        ),
-                      ]
-                          : filteredSlots.map((slot) {
-                        return DropdownMenuItem<String>(
-                          value: slot.source,
-                          enabled: !slot.disabled,
-                          child: Text(
-                            slot.source ?? '',
-                            style: TextStyle(
-                              fontFamily: "poppins_thin",
-                              color: !slot.disabled ? Colors.black : Colors.grey,
-                              fontWeight: !slot.disabled ? FontWeight.normal : FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectTime = value;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+                      };
+                    },
+
+
+
+                  ),
                 ],
               ),
             ),
@@ -838,17 +640,18 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
   }
 
-  Widget _buildTextField(String label, {String? prefix, required TextEditingController controller}) {
+  Widget _buildTextField(String label,
+      {String? prefix, required TextEditingController controller, bool required = false, bool isNumeric = false, int? maxLength}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 12.0),
       child: Container(
         height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade400)],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade400)]),
         child: TextFormField(
           controller: controller,
+          keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+          inputFormatters: isNumeric ? [FilteringTextInputFormatter.digitsOnly] : null,
+          maxLength: maxLength,
           decoration: InputDecoration(
             labelText: label,
             labelStyle: TextStyle(fontFamily: "poppins_thin", fontSize: 15),
@@ -856,21 +659,25 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            counterText: maxLength != null ? '' : null,
           ),
+          validator: (value) {
+            if (required && (value == null || value.isEmpty)) return '$label is required';
+            if (isNumeric && value != null && value.isNotEmpty && int.tryParse(value) == null) return 'Enter a valid number for $label';
+            if (maxLength != null && value != null && value.length != maxLength) return '$label must be $maxLength digits';
+            return null;
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDatePickerField(String label, {required TextEditingController controller}) {
+  Widget _buildDatePickerField(String label, {required TextEditingController controller, bool required = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 10),
       child: Container(
         height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade400)],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(offset: Offset(1, 3), color: Colors.grey.shade400)]),
         child: TextFormField(
           controller: controller,
           decoration: InputDecoration(
@@ -883,52 +690,62 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           ),
           readOnly: true,
           onTap: () async {
-            DateTime? picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
+            DateTime? picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
             if (picked != null) {
+              final provider = Provider.of<UserProvider>(context, listen: false);
               setState(() {
                 nextFollowUp = picked;
-                controller.text = DateFormat('yyyy-MM-dd').format(picked);
+                _followUpDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+                _selectTime = null;
+                provider.fetchNextSlots(DateFormat('yyyy-MM-dd').format(picked));
               });
             }
           },
+          validator: (value) => required && (value == null || value.isEmpty) ? '$label is required' : null,
         ),
       ),
     );
   }
 
-  Widget _buildDropdown<T>(
-      String label, {
-        List<DropdownMenuItem<T>>? items,
-        T? value,
-        required ValueChanged<T?> onChanged,
-      }) {
+  Widget _buildDropdown<T>(String label, {List<DropdownMenuItem<T>>? items, T? value, required ValueChanged<T?> onChanged, bool required = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5),
-      child: Container(
-        width: double.infinity,
-        child: DropdownButtonFormField<T>(
-          value: value,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            labelText: label,
-            labelStyle: TextStyle(fontFamily: "poppins_thin", fontSize: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-            contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.grey[700]),
           ),
-          items: items ?? [],
-          onChanged: onChanged,
-          icon: Icon(Icons.arrow_drop_down, color: Colors.deepPurple),
-          elevation: 8,
-          dropdownColor: Colors.white,
-          style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.black),
-          isExpanded: true,
-        ),
+          SizedBox(height: 8),
+          DropdownButton2<T>(
+            isExpanded: true,
+            hint: Text("Select $label", style: TextStyle(fontFamily: "poppins_thin", fontSize: 16, color: Colors.grey)),
+            value: value,
+            items: items ?? [],
+            onChanged: onChanged,
+            buttonStyleData: ButtonStyleData(
+              height: 50,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade400),
+                color: Colors.white,
+              ),
+            ),
+            dropdownStyleData: DropdownStyleData(
+              maxHeight: 200,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.white),
+            ),
+            iconStyleData: IconStyleData(icon: Icon(Icons.arrow_drop_down, color: Colors.deepPurple)),
+            underline: SizedBox(),
+          ),
+          if (required && value == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 12.0),
+              child: Text('$label is required', style: TextStyle(color: Colors.red, fontSize: 12)),
+            ),
+        ],
       ),
     );
   }
@@ -941,7 +758,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         totalSwitches: 2,
         labels: ['Loan', 'Cash'],
         customTextStyles: [TextStyle(fontFamily: "poppins_thin")],
-        activeBgColors: [[Colors.deepPurple.shade300], [Colors.deepPurple.shade300]],
+        activeBgColors: [
+          [Colors.deepPurple.shade300],
+          [Colors.deepPurple.shade300]
+        ],
         inactiveBgColor: Colors.grey[300],
         cornerRadius: 10.0,
         onToggle: (index) => setState(() => isLoanSelected = index == 0),
@@ -955,10 +775,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       child: ElevatedButton(
         onPressed: _nextPage,
         child: Text('Next', style: TextStyle(fontFamily: "poppins_thin", color: Colors.white)),
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          backgroundColor: Colors.deepPurple.shade300,
-        ),
+        style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), backgroundColor: Colors.deepPurple.shade300),
       ),
     );
   }

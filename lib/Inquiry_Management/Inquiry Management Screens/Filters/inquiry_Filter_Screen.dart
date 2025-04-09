@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:hr_app/Api_services/api_service.dart';
 import 'package:hr_app/Provider/UserProvider.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../../Utils/Custom widgets/booking_Screen.dart';
 import '../../test.dart';
 
-// Model for filtered inquiries
+// Model and FilterApiService remain unchanged unless API expects different keys
 class AllInquiryFilter {
   int status;
   String message;
@@ -66,39 +67,7 @@ class Pagination {
   };
 }
 
-// API Service for filtering inquiries
-class FilterApiService {
-  static const String baseUrl = 'https://admin.dev.ajasys.com/api';
-  final _secureStorage = const FlutterSecureStorage();
 
-  Future<AllInquiryFilter> filterInquiries(Map<String, dynamic> filters) async {
-    try {
-      String? token = await _secureStorage.read(key: 'token');
-      if (token == null) {
-        throw Exception('No authentication token found');
-      }
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/filter_allinquiry'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'token': token,
-          ...filters,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        return AllInquiryFilter.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to filter inquiries: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error filtering inquiries: $e');
-    }
-  }
-}
 
 class InquiryFilterScreen extends StatefulWidget {
   const InquiryFilterScreen({super.key});
@@ -111,40 +80,53 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
   List<Map<String, String>> _allInquiries = [];
   bool _isFiltering = false;
   String? _filterError;
-  Pagination? _pagination;
   Map<String, dynamic> _lastFilters = {};
-  final ScrollController _scrollController = ScrollController();
-  bool _hasShownBottomSheet = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-        _loadNextPage();
-      }
+    print("initState called");
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print("Post-frame callback triggered");
+      _initializeAndShowBottomSheet();
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasShownBottomSheet) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<UserProvider>(context, listen: false).fetchFilterData();
+  Future<void> _initializeAndShowBottomSheet() async {
+    print("Starting _initializeAndShowBottomSheet");
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    Map<String, dynamic> filters = {'page': 1};
+
+    setState(() {
+      _isFiltering = true;
+    });
+
+    try {
+      print("Calling filterInquiries with filters: $filters");
+      await provider.filterInquiries(filters);
+      print("filterInquiries completed successfully");
+      if (mounted) {
         _showInquiryBottomSheet(context);
+      }
+    } catch (error) {
+      print("Error in filterInquiries: $error");
+      setState(() {
+        _filterError = error.toString();
       });
-      _hasShownBottomSheet = true;
+      if (mounted) {
+        _showInquiryBottomSheet(context); // Show even on error
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFiltering = false;
+        });
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   void _showInquiryBottomSheet(BuildContext context) {
+    print("Attempting to show bottom sheet");
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -154,18 +136,23 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
         maxChildSize: 0.9,
         builder: (context, scrollController) => InquiryBottomSheet(
           onFilterApplied: (result, filters) {
+            print("Filter applied: ${result.inquiries.length} inquiries");
             Navigator.pop(context);
-            setState(() {
-              _allInquiries = result.inquiries;
-              _pagination = result.pagination;
-              _lastFilters = filters;
-              _filterError = null;
-            });
+            if (mounted) {
+              setState(() {
+                _allInquiries = result.inquiries;
+                _lastFilters = filters;
+                _filterError = null;
+              });
+            }
           },
           onFilterError: (error) {
-            setState(() {
-              _filterError = error;
-            });
+            print("Filter error: $error");
+            if (mounted) {
+              setState(() {
+                _filterError = error;
+              });
+            }
           },
         ),
       ),
@@ -173,39 +160,16 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       backgroundColor: Colors.transparent,
-    );
-  }
-
-  Future<void> _loadNextPage() async {
-    if (_pagination == null || _pagination!.currentPage >= _pagination!.totalPages) {
-      return;
-    }
-
-    setState(() {
-      _isFiltering = true;
+    ).then((_) {
+      print("Bottom sheet closed");
+    }).catchError((error) {
+      print("Error showing bottom sheet: $error");
     });
-
-    try {
-      final filters = {
-        ..._lastFilters,
-        'page': _pagination!.currentPage + 1,
-      };
-      final result = await FilterApiService().filterInquiries(filters);
-      setState(() {
-        _allInquiries.addAll(result.inquiries);
-        _pagination = result.pagination;
-        _isFiltering = false;
-      });
-    } catch (e) {
-      setState(() {
-        _filterError = e.toString();
-        _isFiltering = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print("Building InquiryFilterScreen");
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -223,13 +187,28 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
+              print("Filter icon pressed");
               setState(() {
                 _filterError = null;
                 _allInquiries.clear();
-                _pagination = null;
               });
-              Provider.of<UserProvider>(context, listen: false).fetchFilterData();
-              _showInquiryBottomSheet(context);
+              Map<String, dynamic> filters = {'page': 1};
+              Provider.of<UserProvider>(context, listen: false)
+                  .filterInquiries(filters)
+                  .then((_) {
+                print("Filter icon: filterInquiries completed");
+                if (mounted) {
+                  _showInquiryBottomSheet(context);
+                }
+              }).catchError((error) {
+                print("Filter icon: error in filterInquiries - $error");
+                setState(() {
+                  _filterError = error.toString();
+                });
+                if (mounted) {
+                  _showInquiryBottomSheet(context);
+                }
+              });
             },
           ),
         ],
@@ -240,7 +219,7 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
           children: [
             if (_filterError != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
+                padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
                   _filterError!,
                   style: const TextStyle(
@@ -250,7 +229,11 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
                   ),
                 ),
               ),
-            if (_allInquiries.isEmpty)
+            if (_isFiltering)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_allInquiries.isEmpty)
               const Expanded(
                 child: Center(
                   child: Text(
@@ -269,9 +252,9 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(top: 16.0),
                       child: Text(
-                        'Inquiries Found', //${_allInquiries.length}
+                        'Inquiries Found: ${_allInquiries.length}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -282,29 +265,25 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
                     ),
                     Expanded(
                       child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: _allInquiries.length + (_isFiltering ? 1 : 0),
+                        itemCount: _allInquiries.length,
                         itemBuilder: (context, index) {
-                          if (index == _allInquiries.length) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-
                           final inquiry = _allInquiries[index];
+                          print("Building card for inquiry: $inquiry");
                           return InquiryCard(
                             id: inquiry['id'] ?? 'N/A',
                             name: inquiry['full_name'] ?? 'N/A',
                             username: inquiry['assign_id'] ?? 'N/A',
                             label: inquiry['mobileno'] ?? 'N/A',
                             inquiryType: inquiry['inquiry_type'] ?? 'N/A',
-                            intArea: inquiry['intrested_area'] ?? 'N/A',
-                            purposeBuy: inquiry['purpose_buy'] ?? 'N/A',
+                            intArea: inquiry['intrested_area'] ?? '',
+                            purposeBuy: inquiry['purpose_buy'].toString(),
                             followUpDate: inquiry['nxt_follow_up'] ?? 'N/A',
-                            nextFollowUpDate: inquiry['nxt_follow_up'] ?? 'N/A',
-                            daySkip: inquiry['day_skip'] ?? '0',
-                            hourSkip: inquiry['hour_skip'] ?? '0',
+                            daySkip: inquiry['day_skip'].toString(),
+                            hourSkip: inquiry['hour_skip'].toString(),
                             isSelected: false,
                             onSelect: () {},
                             context: context,
+                            nextFollowUpDate: inquiry['nxt_follow_up'].toString(),
                           );
                         },
                       ),
@@ -318,6 +297,7 @@ class _InquiryFilterScreenState extends State<InquiryFilterScreen> {
     );
   }
 }
+
 
 class InquiryCard extends StatelessWidget {
   final String id;
@@ -409,7 +389,7 @@ class InquiryCard extends StatelessWidget {
                     Colors.deepPurple.shade500,
                     Colors.white,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 5),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,7 +417,7 @@ class InquiryCard extends StatelessWidget {
                             Text(
                               username,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontFamily: "poppins_thin",
                                 color: Colors.grey,
                               ),
@@ -456,12 +436,7 @@ class InquiryCard extends StatelessWidget {
                           width: 24,
                           height: 24,
                         ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => InquiryScreen()),
-                          );
-                        },
+                        onPressed: () {},
                       ),
                       IconButton(
                         icon: Image.asset(
@@ -497,7 +472,8 @@ class InquiryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 5),
+
               Wrap(
                 spacing: 8,
                 children: [
@@ -579,6 +555,8 @@ class InquiryCard extends StatelessWidget {
   }
 }
 
+
+
 class InquiryBottomSheet extends StatefulWidget {
   final Function(AllInquiryFilter, Map<String, dynamic>) onFilterApplied;
   final Function(String) onFilterError;
@@ -612,67 +590,126 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
   String? _selectedPropertyConfiguration;
 
   bool _isFiltering = false;
-  final FilterApiService _filterApiService = FilterApiService();
+  final ApiService _apiService = ApiService();
 
   Future<void> _applyFilters() async {
     setState(() {
       _isFiltering = true;
     });
 
-    Map<String, dynamic> filters = {'page': 1};
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    final filterData = provider.filterData;
 
+    if (filterData == null) {
+      widget.onFilterError("Filter data is not available");
+      setState(() => _isFiltering = false);
+      return;
+    }
+
+    Map<String, dynamic> filters = {'page': 1};
+    List<Map<String, String>> allInquiries = [];
+
+    // Basic text fields
     if (_idController.text.isNotEmpty) {
-      filters['id'] = _idController.text;
+      filters['id'] = _idController.text.trim();
     }
     if (_nameController.text.isNotEmpty) {
-      filters['name'] = _nameController.text;
+      filters['full_name'] = _nameController.text.trim();
     }
     if (_mobileController.text.isNotEmpty) {
-      filters['mobile_no'] = _mobileController.text;
+      filters['mobileno'] = _mobileController.text.trim();
     }
     if (_selectedDate != null) {
-      filters['next_follow_up'] =
-      '${_selectedDate!.year}-${_selectedDate!.month}-${_selectedDate!.day}';
+      filters['nxt_follow_up'] = DateFormat('dd-MM-yyyy hh:mm a').format(_selectedDate!);
+      print("Formatted nxt_follow_up: ${filters['nxt_follow_up']}");
     }
     if (_selectedInquiryStages.isNotEmpty) {
-      filters['inquiry_stages'] = _selectedInquiryStages.join(',');
+      final stageIds = filterData.inquiryStages
+          .where((stage) => _selectedInquiryStages.contains(stage.inquiryStages))
+          .map((stage) => stage.id ?? stage.inquiryStages)
+          .join(',');
+      filters['inquiry_stages'] = stageIds;
+      print("Inquiry stages filter: $stageIds");
     }
     if (_selectedAssignTo != null) {
-      filters['assign_to'] = _selectedAssignTo;
+      filters['assign_id'] = _selectedAssignTo;
+      print("Assign ID filter: $_selectedAssignTo");
     }
     if (_selectedOwnerTo != null) {
-      filters['owner_to'] = _selectedOwnerTo;
+      final ownerTo = filterData.ownerTo.firstWhere(
+            (e) => e.firstname == _selectedOwnerTo,
+        orElse: () => filterData.ownerTo.first,
+      );
+      filters['owner_id'] = ownerTo.id.toString();
+      print("Owner ID filter: ${filters['owner_id']}");
     }
     if (_selectedInquiryType != null) {
       filters['inquiry_type'] = _selectedInquiryType;
+      print("Inquiry type filter: $_selectedInquiryType");
     }
     if (_selectedInquirySourceType != null) {
       filters['inquiry_source_type'] = _selectedInquirySourceType;
+      print("Inquiry source type filter: $_selectedInquirySourceType");
     }
     if (_selectedInquirySource != null) {
       filters['inquiry_source'] = _selectedInquirySource;
+      print("Inquiry source filter: $_selectedInquirySource");
     }
     if (_selectedInterestedArea != null) {
-      filters['interested_area'] = _selectedInterestedArea;
+      filters['intrested_area'] = _selectedInterestedArea;
+      print("Interested area filter: $_selectedInterestedArea");
     }
     if (_selectedPropertySubType != null) {
       filters['project_sub_type'] = _selectedPropertySubType;
+      print("Property sub type filter: $_selectedPropertySubType");
     }
     if (_selectedPropertyType != null) {
       filters['project_type'] = _selectedPropertyType;
+      print("Property type filter: $_selectedPropertyType");
     }
     if (_selectedInterestedSite != null) {
-      filters['IntSite'] = _selectedInterestedSite;
+      filters['intrested_product'] = _selectedInterestedSite;
+      print("Interested product filter: $_selectedInterestedSite");
     }
     if (_selectedPropertyConfiguration != null) {
       filters['PropertyConfiguration'] = _selectedPropertyConfiguration;
+      print("Property configuration filter: $_selectedPropertyConfiguration");
     }
 
     try {
-      print("Applying filters: $filters");
-      final result = await _filterApiService.filterInquiries(filters);
-      print("API Response: ${result.toJson()}");
-      widget.onFilterApplied(result, filters);
+      print("Starting filter with: ${json.encode(filters)}");
+      int currentPage = 1;
+      int totalPages = 1;
+
+      while (currentPage <= totalPages) {
+        filters['page'] = currentPage;
+        print("Fetching page $currentPage of $totalPages with filters: ${json.encode(filters)}");
+
+        final result = await _apiService.filterInquiries(filters);
+        print("API Response for page $currentPage - Status: ${result.status}, Message: ${result.message}");
+        print("Inquiries for page $currentPage: ${result.inquiries}");
+
+        allInquiries.addAll(result.inquiries);
+        totalPages = result.pagination.totalPages;
+        currentPage++;
+
+        print("Current total inquiries: ${allInquiries.length}");
+      }
+
+      // Create a final AllInquiryFilter object with all inquiries
+      final finalResult = AllInquiryFilter(
+        status: 200,
+        message: "All inquiries fetched successfully",
+        pagination: Pagination(
+          currentPage: 1,
+          totalPages: 1,
+          totalRecords: allInquiries.length,
+          perPage: allInquiries.length,
+        ),
+        inquiries: allInquiries,
+      );
+
+      widget.onFilterApplied(finalResult, filters);
     } catch (e) {
       print("Error applying filters: $e");
       widget.onFilterError(e.toString());
@@ -752,7 +789,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                     child: Text(
                                       _selectedDate == null
                                           ? 'NEXT FOLLOW UP'
-                                          : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                          : DateFormat('dd/MM/yyyy').format(_selectedDate!),
                                       style: TextStyle(
                                         color: _selectedDate == null ? Colors.grey[400] : Colors.black,
                                         fontSize: 14,
@@ -763,7 +800,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 MultiSelectDropdownTextField(
-                                  options: filterData.inquiryStages.map((e) => e.inquiryStages ?? '').toList(),
+                                  options: filterData.inquiryStages.map((e) => e.inquiryStages).toList(),
                                   selectedOptions: _selectedInquiryStages,
                                   onSelectionChanged: (selected) {
                                     setState(() {
@@ -774,7 +811,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.assignTo.map((e) => e.firstname ?? '').toList(),
+                                  options: filterData.assignTo.map((e) => e.firstname).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedAssignTo = value;
@@ -785,7 +822,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.ownerTo.map((e) => e.firstname ?? '').toList(),
+                                  options: filterData.ownerTo.map((e) => e.firstname).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedOwnerTo = value;
@@ -796,7 +833,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.inquiryDetails.map((e) => e.inquiryDetails ?? '').toList(),
+                                  options: filterData.inquiryDetails.map((e) => e.inquiryDetails).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedInquiryType = value;
@@ -807,7 +844,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.inquirySourceType.map((e) => e.inquirySourceType ?? '').toList(),
+                                  options: filterData.inquirySourceType.map((e) => e.inquirySourceType).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedInquirySourceType = value;
@@ -818,7 +855,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.inquirySource.map((e) => e.source ?? '').toList(),
+                                  options: filterData.inquirySource.map((e) => e.source).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedInquirySource = value;
@@ -829,7 +866,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.inquirySource.map((e) => e.source ?? '').toList(),
+                                  options: filterData.areaCityCountry.map((e) => e.area).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedInterestedArea = value;
@@ -840,7 +877,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.projectSubType.map((e) => e.projectSubType ?? '').toList(),
+                                  options: filterData.projectSubType.map((e) => e.projectSubType).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedPropertySubType = value;
@@ -851,7 +888,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.projectType.map((e) => e.projectType ?? '').toList(),
+                                  options: filterData.projectType.map((e) => e.projectType).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedPropertyType = value;
@@ -862,7 +899,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.intSite.map((e) => e.productName ?? '').toList(),
+                                  options: filterData.intSite.map((e) => e.productName).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedInterestedSite = value;
@@ -873,7 +910,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
                                 ),
                                 const SizedBox(height: 16),
                                 CombinedDropdownTextField(
-                                  options: filterData.propertyConfiguration.map((e) => e.propertyconfigurationType ?? '').toList(),
+                                  options: filterData.propertyConfiguration.map((e) => e.propertyconfigurationType).toList(),
                                   onSelected: (value) {
                                     setState(() {
                                       _selectedPropertyConfiguration = value;
@@ -950,6 +987,7 @@ class _InquiryBottomSheetState extends State<InquiryBottomSheet> {
   }
 }
 
+// MultiSelectDropdownTextField and CombinedDropdownTextField remain unchanged unless further customization is needed
 class MultiSelectDropdownTextField extends StatefulWidget {
   final List<String> options;
   final List<String> selectedOptions;
@@ -992,9 +1030,7 @@ class _MultiSelectDropdownTextFieldState extends State<MultiSelectDropdownTextFi
   }
 
   void _updateControllerText() {
-    _controller.text = widget.selectedOptions.isEmpty
-        ? ''
-        : widget.selectedOptions.join(', ');
+    _controller.text = widget.selectedOptions.isEmpty ? '' : widget.selectedOptions.join(', ');
   }
 
   void _onFocusChange() {
@@ -1370,14 +1406,3 @@ class _CombinedDropdownTextFieldState extends State<CombinedDropdownTextField> {
     );
   }
 }
-
-class InquiryScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Inquiry Details")),
-      body: const Center(child: Text("Inquiry Details Screen")),
-    );
-  }
-}
-

@@ -139,9 +139,18 @@ class _leaveRequestScreenState extends State<leaveRequestScreen> {
 
                             ),
 
-                            title: Text("${leave.fullName}", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: "poppins_thin"),),
+                            title: Container(
+                              height: 20,
+                              // width: MediaQuery.of(context).size.width.toDouble() / 1.2,
+                              // color: Colors.green,
+                              child: Text("${leave.fullName}", style: TextStyle(color: appColor.bodymainTxtColor, fontSize: 12.8, fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis, maxLines: 1,),
+                            ),
 
-                            subtitle: Text("Team: ${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"),),
+                            subtitle: Container(
+                              height: 31,
+                              // color: Colors.green,
+                              child: Text("Team: ${leave.underTeam}", style: TextStyle(color: Colors.grey.shade600, fontSize: 11.6, fontWeight: FontWeight.w600, fontFamily: "poppins_thin"), overflow: TextOverflow.ellipsis, maxLines: 2,)
+                            ),
 
                             trailing: Container(
 

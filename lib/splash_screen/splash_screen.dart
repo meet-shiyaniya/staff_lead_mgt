@@ -10,6 +10,7 @@ import '../Provider/UserProvider.dart';
 import '../Staff Attendance Options/Mannual Day Start/mannual_Attendance_Screen.dart';
 import '../Staff Attendance Options/QR Scanner/qr_Onboarding_Screen.dart';
 import '../Staff Attendance Options/Selfie Punch Attendance/face_onboarding.dart';
+import '../Week Off Or Holiday/inactive_Screen.dart';
 import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/timeOutScreen.dart';
 import '../staff_HRM_module/Screen/Staff HR Screens/Attendannce/weekOffScreen.dart';
 
@@ -63,58 +64,92 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _handleAuthenticatedFlow() async {
     if (!mounted) return;
 
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.fetchProfileData();
-    if (!mounted) return;
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.fetchProfileData();
+      if (!mounted) return;
 
-    final profileData = userProvider.profileData?.staffProfile;
+      final profileData = userProvider.profileData?.staffProfile;
 
-    // Redirect to login if profile data is null
-    if (profileData == null) {
-      _showErrorToast('Failed to load profile. Please try again.');
+      // Handle missing profile data
+      if (profileData == null) {
+        _showErrorToast('Failed to load profile. Please try again.');
+        _navigateToLogin();
+        return;
+      }
+
+      // Check user status and redirect if inactive
+      if (_isUserInactive(profileData)) {
+        _navigateToScreen(inactiveScreen(), 'User is inactive');
+        return;
+      }
+
+      // Validate active time window
+      if (!_isWithinActiveTime(profileData)) {
+        _navigateToScreen(timeOutScreen(), '⏰ Outside active time window');
+        return;
+      }
+
+      // Check for special days (holiday, week-off, vacation)
+      if (_isSpecialDay(profileData)) {
+        _navigateToScreen(weekOffScreen(), '📅 Holiday, week-off, or vacation detected');
+        return;
+      }
+
+      // Handle attendance flow based on staffAttendanceMethod
+      await _processAttendanceFlow(profileData);
+
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error in authenticated flow: $e\n$stackTrace');
+      _showErrorToast('An unexpected error occurred. Please try again.');
       _navigateToLogin();
-      return;
     }
+  }
 
+// Helper methods for improved readability and modularity
+  bool _isUserInactive(dynamic profile) {
+    return profile.status == "inactive";
+  }
+
+  bool _isWithinActiveTime(dynamic profile) {
     final now = DateTime.now();
-    final activeFromTime = _parseTime(profileData.activeFromTime);
-    final activeToTime = _parseTime(profileData.activeToTime);
+    final activeFromTime = _parseTime(profile.activeFromTime);
+    final activeToTime = _parseTime(profile.activeToTime);
 
-    if (activeFromTime != null && activeToTime != null) {
-      if (now.isBefore(activeFromTime) || now.isAfter(activeToTime)) {
-        _navigateToScreen(timeOutScreen(), '⏰ Navigating to TimeoutScreen');
-        return;
-      }
-    } else {
-      print('⚠️ Warning: activeFromTime or activeToTime is null');
+    if (activeFromTime == null || activeToTime == null) {
+      debugPrint('⚠️ Warning: activeFromTime or activeToTime is null');
+      return true; // Default to allowing if time parsing fails
     }
 
-    // Handle holidays, week-offs, or vacations
-    if (profileData.holidayToday == 1 ||
-        profileData.weekoffToday == 1 ||
-        profileData.vacationToday == 1) {
-      _navigateToScreen(weekOffScreen(), '📅 Navigating to WeekOffScreen');
-      return;
+    return now.isAfter(activeFromTime) && now.isBefore(activeToTime);
+  }
+
+  bool _isSpecialDay(dynamic profile) {
+    return profile.holidayToday == 1 ||
+        profile.weekoffToday == 1 ||
+        profile.vacationToday == 1;
+  }
+
+  Future<void> _processAttendanceFlow(dynamic profile) async {
+    final staffAttendanceMethod = profile.isAttendance;
+
+    switch (staffAttendanceMethod) {
+      case "1":
+        _navigateToDashboard('✅ No attendance required');
+        break;
+
+      case "0":
+        final isAttendanceMarked = await _isAttendanceMarked();
+        if (isAttendanceMarked) {
+          _navigateToDashboard('✅ Attendance already marked');
+        } else {
+          _navigateToAttendanceScreen(profile.attendanceMethod);
+        }
+        break;
+
+      default:
+        _showErrorToast('Invalid attendance method: $staffAttendanceMethod. Please contact support.');
     }
-
-    final staffAttendanceMethod = profileData.staffAttendanceMethod;
-    if (staffAttendanceMethod == "0") {
-      _navigateToDashboard('✅ Navigating to Dashboard (Attendance not required)');
-      return;
-    }
-
-    if (staffAttendanceMethod == "1") {
-      final isAttendanceMarked = await _isAttendanceMarked();
-      if (isAttendanceMarked) {
-        _navigateToDashboard('✅ Navigating to Dashboard (Attendance already marked)');
-        return;
-      }
-
-      _navigateToAttendanceScreen(profileData.attendanceMethod);
-      return;
-    }
-
-    _showErrorToast('Invalid attendance method. Please contact support.');
   }
 
   Future<bool> _isAttendanceMarked() async {
@@ -138,39 +173,41 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushReplacementNamed(context, '/login');
   }
 
-  void _showErrorToast(String message) {
-    print('❌ Error: $message');
-    Fluttertoast.showToast(msg: message);
-  }
+  void _navigateToAttendanceScreen(String? attendanceMethod) {
+    final method = attendanceMethod ?? 'selfi_attendance';
+    Widget nextScreen;
 
-  void _navigateToAttendanceScreen(String? method) {
-    final Widget nextScreen;
     switch (method) {
-      case "day_attendance":
+      case 'day_attendance':
         nextScreen = mannualAttendanceScreen();
         break;
-      case "qr_attendance":
+      case 'qr_attendance':
         nextScreen = qrOnboardingScreen();
         break;
       default:
         nextScreen = FaceOnboarding();
     }
-    _navigateToScreen(nextScreen, '📸 Navigating to Attendance Screen');
+
+    debugPrint('📸 Navigating to Attendance Screen: $method');
+    _navigateToScreen(nextScreen, 'Navigating to $method attendance');
   }
 
-  /// Helper function to parse time strings (e.g., "09:00") into DateTime objects
   DateTime? _parseTime(String? timeString) {
     if (timeString == null || timeString.isEmpty) return null;
 
     try {
       final now = DateTime.now();
-      final formattedTime = DateFormat('hh:mm a').parse(timeString); // Parse '09:00 AM' format
-
+      final formattedTime = DateFormat('hh:mm a').parse(timeString);
       return DateTime(now.year, now.month, now.day, formattedTime.hour, formattedTime.minute);
     } catch (e) {
-      print('⚠️ Error parsing time: $e');
+      debugPrint('⚠️ Error parsing time: $e');
       return null;
     }
+  }
+
+  void _showErrorToast(String message) {
+    print('❌ Error: $message');
+    Fluttertoast.showToast(msg: message);
   }
 
   @override

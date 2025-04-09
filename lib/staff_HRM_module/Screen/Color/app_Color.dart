@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class appColor {
 
-  static Color primaryColor = Colors.deepPurple.shade300;
+  static Color primaryColor = Color(0xff9d55c7);
 
   static Color subPrimaryColor = Colors.deepPurple.shade50;
 

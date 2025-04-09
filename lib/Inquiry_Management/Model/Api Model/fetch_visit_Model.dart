@@ -34,6 +34,7 @@ class VisitEntryModel {
 
 class Inquiries {
   String iscountvisit;
+  String isSiteVisit;
   String fullName;
   String mobileno;
   String address;
@@ -55,9 +56,11 @@ class Inquiries {
     required this.purposeBuy,
     required this.intrestedProduct,
     required this.unitNo,
+    required this.isSiteVisit
   });
 
   factory Inquiries.fromJson(Map<String, dynamic> json) => Inquiries(
+    isSiteVisit: json["isSiteVisit"],
     iscountvisit: json["iscountvisit"],
     fullName: json["full_name"],
     mobileno: json["mobileno"],
