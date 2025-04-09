@@ -54,6 +54,7 @@ class InquiryData {
   final String city;
   final String intrestedProduct;
   final String intrestedArea;
+  final String inquiry_close_reason;
   final String budget;
   final String purposeBuy;
   final String approxBuy;
@@ -79,6 +80,7 @@ class InquiryData {
     required this.city,
     required this.intrestedProduct,
     required this.intrestedArea,
+    required this.inquiry_close_reason,
     required this.budget,
     required this.purposeBuy,
     required this.approxBuy,
@@ -106,6 +108,7 @@ class InquiryData {
       city: json['city'],
       intrestedProduct: json['intrested_product'],
       intrestedArea: json['intrested_area'],
+        inquiry_close_reason:json['inquiry_close_reason'],
       budget: json['budget'],
       purposeBuy: json['purpose_buy'],
       approxBuy: json['approx_buy'],

@@ -49,7 +49,7 @@ class EditLeadData {
 
   factory EditLeadData.fromJson(Map<String, dynamic> json) {
     return EditLeadData(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '', // Ensure string type
       fullName: json['full_name'] ?? '',
       mobileno: json['mobileno'] ?? '',
       altmobileno: json['altmobileno'] ?? '',
@@ -60,19 +60,28 @@ class EditLeadData {
       city: json['city'] ?? '',
       countryCode: json['country_code'] ?? '',
       altCountryCode: json['alt_country_code'] ?? '',
-      intrestedArea: json['intrested_area']?['id'] ?? '',
+      // Handle intrested_area as a string, not an object
+      intrestedArea: json['intrested_area'] is Map
+          ? json['intrested_area']['id']?.toString() ?? ''
+          : json['intrested_area']?.toString() ?? '',
       intrestedAreaName: json['intrested_area_name'] ?? '',
       interstedSiteName: json['intersted_site_name'] ?? '',
       budget: json['budget'] ?? '',
       purposeBuy: json['purpose_buy'] ?? '',
       approxBuy: json['approx_buy'] ?? '',
       propertyConfiguration: json['PropertyConfiguration'] ?? '',
-      inquiryType: json['inquiry_type']?['id'] ?? '',
-      inquirySourceType: json['inquiry_source_type']?['id'] ?? '',
+      // Safely handle nested objects
+      inquiryType: json['inquiry_type'] is Map
+          ? json['inquiry_type']['id']?.toString() ?? ''
+          : json['inquiry_type']?.toString() ?? '',
+      inquirySourceType: json['inquiry_source_type'] is Map
+          ? json['inquiry_source_type']['id']?.toString() ?? ''
+          : json['inquiry_source_type']?.toString() ?? '',
       nxtFollowUp: json['nxt_follow_up'] ?? '',
       inquiryDescription: json['inquiry_description'] ?? '',
     );
   }
+
 
   @override
   String toString() {
